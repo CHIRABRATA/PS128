@@ -2,19 +2,14 @@
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routes import health
+from app.routes import predict # <-- ADD THIS LINE
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description=(
-        "Backend AI/ML & Early Warning Decision-Support API for "
-        "SIH Problem Statement 128 (Livestock Disease Early Detection & Prevention)."
-    ),
-    docs_url="/docs",
-    redoc_url="/redoc",
+    description="Backend AI/ML API for SIH PS128"
 )
 
-# Enable CORS for React Frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins if settings.cors_origins else ["*"],
@@ -23,14 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers
 app.include_router(health.router, prefix=settings.API_V1_STR)
-
+app.include_router(predict.router, prefix=settings.API_V1_STR) # <-- ADD THIS LINE
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {
-        "message": f"Welcome to {settings.PROJECT_NAME}",
-        "docs": "/docs",
-        "health": f"{settings.API_V1_STR}/health"
-    }
+    return {"message": f"Welcome to {settings.PROJECT_NAME}"}
