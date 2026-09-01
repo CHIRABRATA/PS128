@@ -10,6 +10,7 @@ In modern companies, important knowledge is scattered across Slack, GitHub, docu
 
 When experienced employees leave, valuable **tribal knowledge** can disappear, making it difficult for new developers to understand **why decisions were made, who worked on something, or what happened in the past**.
 
+
 ---
 
 ## 💡 Our Solution
