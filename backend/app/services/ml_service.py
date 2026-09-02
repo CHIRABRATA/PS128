@@ -1,44 +1,49 @@
-﻿import joblib
-import numpy as np
-import os
+﻿import os
+import joblib
+import logging
+from typing import Union, List, Any
+
+logger = logging.getLogger(__name__)
+
+MODEL_PATH = "app/ml_artifacts/livestock_model.pkl"
+VECTORIZER_PATH = "app/ml_artifacts/vectorizer.pkl"
 
 class DiseasePredictor:
     def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(__file__))
-        model_path = os.path.join(base_dir, 'ai', 'ml_models', 'rf_disease_model.joblib')
-        mlb_path = os.path.join(base_dir, 'ai', 'ml_models', 'mlb_symptoms.joblib')
-        
-        self.model = joblib.load(model_path)
-        self.mlb = joblib.load(mlb_path)
+        if os.path.exists(MODEL_PATH) and os.path.exists(VECTORIZER_PATH):
+            self.model = joblib.load(MODEL_PATH)
+            self.vectorizer = joblib.load(VECTORIZER_PATH)
+            self.is_loaded = True
+            logger.info("Successfully loaded Random Forest model trained on Kaggle dataset.")
+        else:
+            self.is_loaded = False
+            logger.warning("ML artifacts missing in app/ml_artifacts/")
 
-    def predict(self, symptoms: list[str], duration_days: int) -> dict:
-        # Standardize symptom strings (lowercase, strip spaces)
-        clean_symptoms = [s.lower().strip() for s in symptoms]
-        
-        # Transform symptoms using the saved MultiLabelBinarizer
-        # Ignore unknown symptoms silently using classes_ intersection
-        valid_symptoms = [s for s in clean_symptoms if s in self.mlb.classes_]
-        
-        # If no valid symptoms are found and they didn't report "none"
-        if not valid_symptoms and "none" not in clean_symptoms:
-            valid_symptoms = ["none"]
+    def predict(self, symptoms: Union[List[str], str], duration_days: int = 1, animal: Any = "Cow", herd_size: int = 1) -> dict:
+        if not self.is_loaded:
+            return {
+                "suspected_condition": "Model Not Loaded",
+                "confidence": 0.0,
+                "symptoms_analyzed": str(symptoms)
+            }
 
-        symptoms_encoded = self.mlb.transform([valid_symptoms])
-        
-        # Combine with duration
-        X_input = np.hstack((symptoms_encoded, [[duration_days]]))
-        
-        # Predict probability
+        # Handle list vs string for symptoms
+        if isinstance(symptoms, list):
+            symptoms_str = " ".join(symptoms)
+        else:
+            symptoms_str = str(symptoms)
+
+        X_input = self.vectorizer.transform([symptoms_str])
         probabilities = self.model.predict_proba(X_input)[0]
-        max_prob_index = np.argmax(probabilities)
+        max_idx = probabilities.argmax()
         
-        condition = self.model.classes_[max_prob_index]
-        confidence = probabilities[max_prob_index]
-        
+        predicted_class = self.model.classes_[max_idx]
+        confidence = float(probabilities[max_idx])
+
         return {
-            "suspected_condition": condition,
-            "confidence": round(float(confidence), 2)
+            "suspected_condition": predicted_class,
+            "confidence": round(confidence, 4),
+            "symptoms_analyzed": symptoms_str
         }
 
-# Singleton instance to load model only once at startup
 predictor = DiseasePredictor()
