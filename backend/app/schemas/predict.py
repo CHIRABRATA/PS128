@@ -9,14 +9,11 @@ class AnimalDetails(BaseModel):
 
 class SymptomPredictionRequest(BaseModel):
     animal: Union[AnimalDetails, Dict[str, Any], str] = Field(
-        default_factory=AnimalDetails,
-        example={
-            "animal_id": "COW-01",
-            "species": "Cow",
-            "age_years": 3,
-            "vaccination_status": "none"
-        }
+        default="Cow",
+        example="Cow"
     )
+    body_temp: Optional[float] = Field(default=38.5, example=40.1)
+    heart_rate: Optional[float] = Field(default=80.0, example=95.0)
     symptoms: Union[List[str], str] = Field(
         ..., 
         example=["Fever", "Nasal Discharge", "Labored Breathing", "Coughing"]
@@ -29,4 +26,7 @@ class SymptomPredictionRequest(BaseModel):
 class SymptomPredictionResponse(BaseModel):
     suspected_condition: str
     confidence: float
+    animal_type: str
+    vitals_evaluated: Dict[str, float]
     symptoms_analyzed: str
+    epidemiology_context: Dict[str, int]

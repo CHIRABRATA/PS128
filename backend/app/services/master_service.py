@@ -1,76 +1,102 @@
-﻿from app.schemas.master import MasterAnalysisRequest, MasterAnalysisResponse
+﻿import numpy as np
+import logging
 from app.services.ml_service import predictor
-from app.services.risk_engine import calculate_hybrid_risk
-from app.services.iot_service import analyze_iot_telemetry
 from app.services.weather_service import fetch_weather_risk
-from app.services.trend_service import evaluate_disease_trend
-from app.schemas.analytics import HistoricalTrendRequest
+from app.services.iot_simulator import generate_simulated_telemetry
+from app.services.advisory_service import generate_farmer_advisory
 
-async def execute_master_analysis(request: MasterAnalysisRequest) -> MasterAnalysisResponse:
-    # 1. Disease Prediction & Epidemiological Hybrid Engine
-    ml_res = predictor.predict(request.health_report.symptoms, request.health_report.duration_days)
-    hybrid_res = calculate_hybrid_risk(ml_res, request.health_report)
-    
-    # 2. Process IoT Telemetry (if available)
-    iot_res = None
-    if request.iot_telemetry:
-        iot_res = analyze_iot_telemetry(request.iot_telemetry)
+logger = logging.getLogger(__name__)
 
-    # 3. Dynamic Weather Risk Intake
-    weather_res = await fetch_weather_risk(request.latitude, request.longitude)
+class MasterAnalysisEngine:
+    def analyze_livestock_health(self, payload: dict) -> dict:
+        # 1. Extract GPS coordinates & Weather
+        lat = payload.get("latitude", 28.6139)
+        lon = payload.get("longitude", 77.2090)
+        weather_res = fetch_weather_risk(latitude=lat, longitude=lon)
 
-    # 4. Disease Trend & Outbreak Surge Analysis
-    trend_req = HistoricalTrendRequest(
-        region_id=request.region_id,
-        disease_name=ml_res["suspected_condition"],
-        current_week_cases=request.health_report.affected_count,
-        historical_weekly_cases=request.historical_weekly_cases or [2, 3, 1, 4]
-    )
-    trend_res = evaluate_disease_trend(trend_req)
+        # 2. Extract IoT Sensor Telemetry (or call Simulator fallback)
+        iot_input = payload.get("iot_telemetry", {})
+        animal_id = iot_input.get("animal_id", "ESP32-SIM-01") if iot_input else "ESP32-SIM-01"
+        
+        if iot_input and "temperature" in iot_input and iot_input["temperature"] is not None:
+            iot_temp = float(iot_input["temperature"])
+            iot_act = int(iot_input.get("activity", 50))
+        else:
+            simulated = generate_simulated_telemetry(
+                animal_id=animal_id, 
+                simulate_fever=iot_input.get("simulate_fever", False) if iot_input else False
+            )
+            iot_temp = simulated["temperature"]
+            iot_act = simulated["activity_index"]
 
-    # 5. Composite Master Risk Calculation
-    final_score = hybrid_res["final_score"]
-    
-    # Adjust score dynamically based on external factors
-    if iot_res and iot_res.is_anomaly:
-        final_score += 15
-    if weather_res.vector_breeding_risk == "HIGH":
-        final_score += 10
-    if trend_res.is_outbreak_spike:
-        final_score += 20
+        iot_anomalies = []
+        if iot_temp > 39.5:
+            iot_anomalies.append(f"Hyperthermia detected: {iot_temp}°C")
+        if iot_act < 30:
+            iot_anomalies.append(f"Lethargy detected: Activity index {iot_act}")
 
-    final_score = min(final_score, 100)
+        # 3. ML Multi-Modal Symptom & Vitals Analysis
+        health_report = payload.get("health_report", {})
+        species = health_report.get("animal", "Cow")
+        symptoms = health_report.get("symptoms", ["Fever"])
 
-    # Resolve Overall Risk Category
-    if final_score >= 80:
-        overall_level = "CRITICAL"
-    elif final_score >= 60:
-        overall_level = "HIGH"
-    elif final_score >= 35:
-        overall_level = "MEDIUM"
-    else:
-        overall_level = "LOW"
+        ml_res = predictor.predict(
+            symptoms=symptoms,
+            animal_type=species if isinstance(species, str) else "Cow",
+            body_temp=iot_temp,
+            heart_rate=health_report.get("heart_rate", 85.0),
+            affected_count=health_report.get("affected_count", 1),
+            herd_size=health_report.get("herd_size", 10),
+            mortality_count=health_report.get("mortality_count", 0)
+        )
 
-    # Consolidate Recommendations
-    unified_actions = list(hybrid_res["recommended_actions"])
-    if weather_res.vector_breeding_risk == "HIGH":
-        unified_actions.append("Apply anti-vector sprays and clear standing water near shelter.")
-    if trend_res.is_outbreak_spike:
-        unified_actions.append("ALARM: Local outbreak spike detected. Notify regional veterinary authorities.")
+        # 4. Outbreak Z-Score Analytics
+        history = payload.get("historical_weekly_cases", [10, 12, 11, 13, 12, 14])
+        mean_val = float(np.mean(history[:-1])) if len(history) > 1 else float(history[0])
+        std_val = float(np.std(history[:-1])) if len(history) > 1 and np.std(history[:-1]) > 0 else 1.0
+        latest_cases = history[-1]
+        z_score = round((latest_cases - mean_val) / std_val, 2)
+        is_spike = z_score > 2.5
 
-    return MasterAnalysisResponse(
-        overall_risk_score=final_score,
-        overall_risk_level=overall_level,
-        disease_prediction={
-            "risk_score": hybrid_res["final_score"],
-            "risk_level": hybrid_res["risk_level"],
-            "suspected_condition": ml_res["suspected_condition"],
-            "confidence": ml_res["confidence"],
-            "reasons": hybrid_res["reasons"],
-            "recommended_actions": hybrid_res["recommended_actions"]
-        },
-        iot_analysis=iot_res,
-        weather_risk=weather_res,
-        epidemiological_trend=trend_res,
-        unified_recommendations=list(set(unified_actions))
-    )
+        # 5. Composite Multi-Stream Risk Matrix Calculation
+        risk_score = 15
+        if ml_res.get("confidence", 0) > 0.20:
+            risk_score += 25
+        if len(iot_anomalies) > 0:
+            risk_score += 30
+        if weather_res.get("vector_breeding_risk") == "HIGH":
+            risk_score += 15
+        if is_spike:
+            risk_score += 15
+
+        risk_score = min(risk_score, 100)
+        risk_level = "CRITICAL" if risk_score >= 75 else "ELEVATED" if risk_score >= 45 else "LOW"
+
+        analysis_summary = {
+            "overall_risk_score": risk_score,
+            "overall_risk_level": risk_level,
+            "disease_prediction": ml_res,
+            "iot_telemetry_analysis": {
+                "animal_id": animal_id,
+                "temperature": iot_temp,
+                "activity_index": iot_act,
+                "has_anomaly": len(iot_anomalies) > 0,
+                "anomalies": iot_anomalies
+            },
+            "weather_analysis": weather_res,
+            "outbreak_surge_analysis": {
+                "latest_cases": latest_cases,
+                "historical_mean": round(mean_val, 2),
+                "z_score": z_score,
+                "is_outbreak_spike": is_spike
+            }
+        }
+
+        # 6. GenAI Multilingual Advisory Fallback Generation
+        preferred_lang = payload.get("language", "English")
+        advisory_res = generate_farmer_advisory(analysis_summary, language=preferred_lang)
+        analysis_summary["farmer_advisory"] = advisory_res
+
+        return analysis_summary
+
+master_engine = MasterAnalysisEngine()

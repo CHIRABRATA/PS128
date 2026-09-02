@@ -1,54 +1,51 @@
-﻿import httpx
-from app.schemas.analytics import WeatherRiskResponse
+﻿import requests
+import logging
 
-async def fetch_weather_risk(latitude: float, longitude: float) -> WeatherRiskResponse:
-    url = "https://api.open-meteo.com/v1/forecast"
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": ["temperature_2m", "relative_humidity_2m", "precipitation"]
+logger = logging.getLogger(__name__)
+
+def fetch_weather_risk(latitude: float = 28.6139, longitude: float = 77.2090) -> dict:
+    """
+    Fetches real-time weather metrics from Open-Meteo REST API (No Key Required)
+    and evaluates vector-borne disease transmission risks (mosquitos/midges for LSD/BT).
+    """
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,relative_humidity_2m,precipitation"
+    
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json().get("current", {})
+            temp = data.get("temperature_2m", 25.0)
+            humidity = data.get("relative_humidity_2m", 50.0)
+            precip = data.get("precipitation", 0.0)
+
+            # High humidity (>70%) or rain triggers vector-borne disease breeding risk
+            if (temp > 24.0 and humidity > 70.0) or precip > 1.0:
+                vector_risk = "HIGH"
+                advisory = "High vector breeding risk: Mosquito and fly activity elevated due to high humidity/rainfall."
+            elif temp > 20.0 and humidity > 55.0:
+                vector_risk = "MEDIUM"
+                advisory = "Moderate vector activity. Check surroundings for stagnant water."
+            else:
+                vector_risk = "LOW"
+                advisory = "Low environmental vector breeding risk."
+
+            return {
+                "temperature": temp,
+                "humidity": humidity,
+                "precipitation": precip,
+                "vector_breeding_risk": vector_risk,
+                "weather_advisory": advisory,
+                "source": "Live Open-Meteo API"
+            }
+    except Exception as e:
+        logger.error(f"Open-Meteo API connection error: {e}")
+
+    # Fallback response if network is offline
+    return {
+        "temperature": 28.0,
+        "humidity": 80.0,
+        "precipitation": 0.0,
+        "vector_breeding_risk": "HIGH",
+        "weather_advisory": "High humidity indicates elevated vector risk.",
+        "source": "Offline Fallback"
     }
-    
-    async with httpx.AsyncClient(timeout=8.0) as client:
-        try:
-            resp = await client.get(url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            curr = data.get("current", {})
-            temp = curr.get("temperature_2m", 28.0)
-            humidity = curr.get("relative_humidity_2m", 65.0)
-            precip = curr.get("precipitation", 0.0)
-        except Exception:
-            # Fallback default values if network fails
-            temp, humidity, precip = 29.0, 70.0, 0.0
-
-    reasons = []
-    
-    # Vector-borne proliferation rule (Warm + Humid/Rainy favors vector vectors like Culicoides/Mosquitoes)
-    if temp >= 24.0 and humidity >= 70.0:
-        vector_risk = "HIGH"
-        reasons.append("High ambient humidity and warmth present ideal conditions for vector proliferation (LSD / BTV midges).")
-    elif temp >= 20.0 and humidity >= 55.0:
-        vector_risk = "MODERATE"
-        reasons.append("Moderate weather conditions; vector transmission risk is moderate.")
-    else:
-        vector_risk = "LOW"
-        reasons.append("Low ambient humidity/temperature suppresses active insect vector reproduction.")
-
-    # Temperature Humidity Index (THI) Heat Stress rule for cattle
-    if temp >= 32.0 and humidity >= 60.0:
-        heat_stress = "HIGH_STRESS"
-        reasons.append("High Temperature-Humidity Index indicates thermal stress, suppressing ruminant immunity.")
-    elif temp >= 28.0:
-        heat_stress = "CAUTION"
-    else:
-        heat_stress = "NORMAL"
-
-    return WeatherRiskResponse(
-        temperature_c=temp,
-        relative_humidity_pct=humidity,
-        precipitation_mm=precip,
-        vector_breeding_risk=vector_risk,
-        heat_stress_index=heat_stress,
-        risk_factor_reasons=reasons
-    )
