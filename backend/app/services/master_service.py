@@ -9,12 +9,22 @@ logger = logging.getLogger(__name__)
 
 class MasterAnalysisEngine:
     def analyze_livestock_health(self, payload: dict) -> dict:
-        # 1. Extract GPS coordinates & Weather
+        """
+        Automated Orchestration Engine:
+        Executes IoT, Weather, ML, and Outbreak Analytics concurrently,
+        compiles a composite data stream, and feeds it into GenAI.
+        """
+        
+        # -------------------------------------------------------------
+        # STEP 1: Weather Service (Automatic live fetch via Open-Meteo)
+        # -------------------------------------------------------------
         lat = payload.get("latitude", 28.6139)
         lon = payload.get("longitude", 77.2090)
         weather_res = fetch_weather_risk(latitude=lat, longitude=lon)
 
-        # 2. Extract IoT Sensor Telemetry (or call Simulator fallback)
+        # -------------------------------------------------------------
+        # STEP 2: IoT Sensor Processing (Real data or auto-simulation)
+        # -------------------------------------------------------------
         iot_input = payload.get("iot_telemetry", {})
         animal_id = iot_input.get("animal_id", "ESP32-SIM-01") if iot_input else "ESP32-SIM-01"
         
@@ -31,11 +41,13 @@ class MasterAnalysisEngine:
 
         iot_anomalies = []
         if iot_temp > 39.5:
-            iot_anomalies.append(f"Hyperthermia detected: {iot_temp}°C")
+            iot_anomalies.append(f"Hyperthermia: {iot_temp}°C")
         if iot_act < 30:
-            iot_anomalies.append(f"Lethargy detected: Activity index {iot_act}")
+            iot_anomalies.append(f"Lethargy: Activity index {iot_act}")
 
-        # 3. ML Multi-Modal Symptom & Vitals Analysis
+        # -------------------------------------------------------------
+        # STEP 3: Machine Learning Model Inference
+        # -------------------------------------------------------------
         health_report = payload.get("health_report", {})
         species = health_report.get("animal", "Cow")
         symptoms = health_report.get("symptoms", ["Fever"])
@@ -50,7 +62,9 @@ class MasterAnalysisEngine:
             mortality_count=health_report.get("mortality_count", 0)
         )
 
-        # 4. Outbreak Z-Score Analytics
+        # -------------------------------------------------------------
+        # STEP 4: Outbreak Surge & Historical Analytics (Z-Score)
+        # -------------------------------------------------------------
         history = payload.get("historical_weekly_cases", [10, 12, 11, 13, 12, 14])
         mean_val = float(np.mean(history[:-1])) if len(history) > 1 else float(history[0])
         std_val = float(np.std(history[:-1])) if len(history) > 1 and np.std(history[:-1]) > 0 else 1.0
@@ -58,7 +72,9 @@ class MasterAnalysisEngine:
         z_score = round((latest_cases - mean_val) / std_val, 2)
         is_spike = z_score > 2.5
 
-        # 5. Composite Multi-Stream Risk Matrix Calculation
+        # -------------------------------------------------------------
+        # STEP 5: Composite Multi-Stream Risk Aggregation
+        # -------------------------------------------------------------
         risk_score = 15
         if ml_res.get("confidence", 0) > 0.20:
             risk_score += 25
@@ -72,6 +88,7 @@ class MasterAnalysisEngine:
         risk_score = min(risk_score, 100)
         risk_level = "CRITICAL" if risk_score >= 75 else "ELEVATED" if risk_score >= 45 else "LOW"
 
+        # Combine all stream results into a unified structure
         analysis_summary = {
             "overall_risk_score": risk_score,
             "overall_risk_level": risk_level,
@@ -92,7 +109,10 @@ class MasterAnalysisEngine:
             }
         }
 
-        # 6. GenAI Multilingual Advisory Fallback Generation
+        # -------------------------------------------------------------
+        # STEP 6: Automatic GenAI Advisory Ingestion
+        # Passes the complete analysis_summary payload directly to GenAI
+        # -------------------------------------------------------------
         preferred_lang = payload.get("language", "English")
         advisory_res = generate_farmer_advisory(analysis_summary, language=preferred_lang)
         analysis_summary["farmer_advisory"] = advisory_res

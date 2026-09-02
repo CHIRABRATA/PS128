@@ -1,9 +1,18 @@
-﻿import logging
+﻿import os
+import logging
 import requests
 from typing import Dict, Any
-from app.config import settings
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+GEMINI_KEY_1 = os.getenv("GEMINI_API_KEY_1", "AQ.Ab8RN6Jxx9JXVFzialvgskCbCcu1nE4sb-boLb8FafKQ9xMqYg")
+GEMINI_KEY_2 = os.getenv("GEMINI_API_KEY_2", "AQ.Ab8RN6IUKUBq-F3C2V-yADZ-FyQtbVJBgYJ-p34EQFhEk52v4Q")
+GROQ_KEY = os.getenv("GROQ_API_KEY", "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")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 def _call_gemini(api_key: str, prompt: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
@@ -13,65 +22,59 @@ def _call_gemini(api_key: str, prompt: str) -> str:
             "parts": [{"text": prompt}]
         }]
     }
-    response = requests.post(url, json=payload, headers=headers, timeout=12)
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
     response.raise_for_status()
     data = response.json()
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
-def _call_groq(api_key: str, prompt: str) -> str:
+def _call_groq(api_key: str, model_name: str, prompt: str) -> str:
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": settings.GROQ_MODEL,
+        "model": model_name,
         "messages": [
-            {"role": "system", "content": "You are an expert veterinary epidemiologist and agricultural extension specialist."},
+            {"role": "system", "content": "You are a concise veterinary advisor giving brief emergency instructions to farmers."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.3
+        "temperature": 0.2
     }
-    response = requests.post(url, json=payload, headers=headers, timeout=12)
+    response = requests.post(url, json=payload, headers=headers, timeout=10)
     response.raise_for_status()
     data = response.json()
     return data["choices"][0]["message"]["content"]
 
 def generate_farmer_advisory(analysis_data: Dict[str, Any], language: str = "English") -> Dict[str, Any]:
     disease = analysis_data.get("disease_prediction", {}).get("suspected_condition", "Unknown Disease")
-    confidence = analysis_data.get("disease_prediction", {}).get("confidence", 0.0)
     risk_level = analysis_data.get("overall_risk_level", "ELEVATED")
     risk_score = analysis_data.get("overall_risk_score", 50)
     iot_anomalies = analysis_data.get("iot_telemetry_analysis", {}).get("anomalies", [])
-    weather = analysis_data.get("weather_analysis", {})
-    vector_risk = weather.get("vector_breeding_risk", "MODERATE")
-    is_outbreak = analysis_data.get("outbreak_surge_analysis", {}).get("is_outbreak_spike", False)
 
+    # CONCISE MOBILE-FRIENDLY PROMPT (< 150 words)
     prompt = f"""
-    You are an expert veterinary and agricultural health extension officer.
-    Generate a clear, actionable, and empathetic advisory for a farmer in language: {language}.
+    Create a VERY SHORT emergency advisory for a farmer in language: {language}.
+    Maximum length: 150 words total. Use plain bullet points only. No long paragraphs, no markdown tables.
 
-    LIVESTOCK DIAGNOSTIC DATA:
-    - Suspected Disease: {disease} (Confidence: {confidence * 100:.1f}%)
-    - Overall Risk Level: {risk_level} ({risk_score}/100)
-    - Sensor Anomalies: {', '.join(iot_anomalies) if iot_anomalies else 'None'}
-    - Vector/Breeding Environmental Risk: {vector_risk}
-    - Outbreak Surge Active in Region: {is_outbreak}
+    DIAGNOSIS:
+    - Disease: {disease} (Risk Level: {risk_level}, Score: {risk_score}/100)
+    - Key Issue: High Fever ({', '.join(iot_anomalies) if iot_anomalies else 'None'})
 
-    FORMAT REQUIREMENTS (Respond in {language}):
-    1. Direct Diagnostic Explanation (Simple terms)
-    2. Immediate Action Steps for Farm Operations (Isolation, treatment, sanitization)
-    3. Biosecurity & Vector Control Instructions
-    4. Emergency Contact Notice for Local Veterinary Officer
+    FORMAT EXACTLY AS:
+    🚨 **DIAGNOSIS:** 1-sentence warning in simple language.
+    ⚡ **3 IMMEDIATE ACTIONS:**
+      1. Action 1 (Isolation)
+      2. Action 2 (Contact Vet)
+      3. Action 3 (Biosecurity / Disinfection)
+    📞 **EMERGENCY VET:** Call local officer immediately.
     """
 
-    providers = []
-    if settings.GEMINI_API_KEY_1:
-        providers.append(("Gemini (Key 1)", lambda: _call_gemini(settings.GEMINI_API_KEY_1, prompt)))
-    if settings.GEMINI_API_KEY_2:
-        providers.append(("Gemini (Key 2)", lambda: _call_gemini(settings.GEMINI_API_KEY_2, prompt)))
-    if settings.GROQ_API_KEY:
-        providers.append(("Groq (Llama-3.3-70B)", lambda: _call_groq(settings.GROQ_API_KEY, prompt)))
+    providers = [
+        ("Gemini (Key 1)", lambda: _call_gemini(GEMINI_KEY_1, prompt)),
+        ("Gemini (Key 2)", lambda: _call_gemini(GEMINI_KEY_2, prompt)),
+        (f"Groq ({GROQ_MODEL})", lambda: _call_groq(GROQ_KEY, GROQ_MODEL, prompt))
+    ]
 
     advisory_text = None
     used_provider = None
@@ -88,9 +91,10 @@ def generate_farmer_advisory(analysis_data: Dict[str, Any], language: str = "Eng
 
     if not advisory_text:
         advisory_text = (
-            f"Advisory Generation Fallback ({language}):\n"
-            f"Critical risk detected ({risk_level}). Suspected condition: {disease}.\n"
-            f"Immediate Actions: Isolate affected animals, restrict farm entry, consult local vet immediately."
+            f"🚨 CRITICAL WARNING ({risk_level}): Suspected {disease}.\n"
+            f"1. Isolate sick animals immediately.\n"
+            f"2. Call local veterinarian.\n"
+            f"3. Disinfect entry points with bleach water."
         )
         used_provider = "Static Fallback"
 
