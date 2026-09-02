@@ -1,15 +1,12 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routes import health, predict, iot
+from app.routes import health, predict, iot, analytics, master, advisory
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description=(
-        "Backend AI/ML & Early Warning Decision-Support API for "
-        "SIH Problem Statement 128 (Livestock Disease Early Detection & Prevention)."
-    ),
+    description="Backend AI/ML Engine for SIH Problem Statement 128.",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -22,10 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers
 app.include_router(health.router, prefix=settings.API_V1_STR)
 app.include_router(predict.router, prefix=settings.API_V1_STR)
 app.include_router(iot.router, prefix=settings.API_V1_STR)
+app.include_router(analytics.router, prefix=settings.API_V1_STR)
+app.include_router(master.router, prefix=settings.API_V1_STR)
+app.include_router(advisory.router, prefix=settings.API_V1_STR)
 
 @app.get("/", include_in_schema=False)
 async def root():
