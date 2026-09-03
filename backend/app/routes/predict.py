@@ -1,18 +1,21 @@
-﻿from fastapi import APIRouter, HTTPException
-from app.schemas.predict import SymptomPredictionRequest, SymptomPredictionResponse
-from app.services.ml_service import predictor
+﻿from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from app.services.vision_service import vision_engine
 
-router = APIRouter()
+router = APIRouter(tags=["AI Assessment"])
 
-@router.post("/predict", response_model=SymptomPredictionResponse, tags=["AI Assessment"])
-async def predict_disease_risk(payload: SymptomPredictionRequest):
+@router.post("/predict")
+async def predict_disease(
+    file: UploadFile = File(...),
+    category: str = Form(..., description="Animal category: 'pet' or 'cow'"),
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
+
     try:
-        res = predictor.predict(
-            symptoms=payload.symptoms,
-            duration_days=payload.duration_days,
-            animal=payload.animal,
-            herd_size=payload.herd_size
-        )
-        return res
+        image_bytes = await file.read()
+        prediction = vision_engine.predict(image_bytes, animal_type=category)
+        return {"success": True, "data": prediction}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")

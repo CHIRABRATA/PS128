@@ -3,28 +3,23 @@ import logging
 from app.services.ml_service import predictor
 from app.services.weather_service import fetch_weather_risk
 from app.services.iot_simulator import generate_simulated_telemetry
+from app.services.vision_service import vision_engine
 from app.services.advisory_service import generate_farmer_advisory
 
 logger = logging.getLogger(__name__)
 
 class MasterAnalysisEngine:
     def analyze_livestock_health(self, payload: dict) -> dict:
-        """
-        Automated Orchestration Engine:
-        Executes IoT, Weather, ML, and Outbreak Analytics concurrently,
-        compiles a composite data stream, and feeds it into GenAI.
-        """
-        
-        # -------------------------------------------------------------
-        # STEP 1: Weather Service (Automatic live fetch via Open-Meteo)
-        # -------------------------------------------------------------
+        # STEP 1: Optional YOLO Vision Inspection
+        image_input = payload.get("image_data") or payload.get("image_url")
+        vision_res = vision_engine.predict_image_lesions(image_input)
+
+        # STEP 2: Weather Service (Open-Meteo)
         lat = payload.get("latitude", 28.6139)
         lon = payload.get("longitude", 77.2090)
         weather_res = fetch_weather_risk(latitude=lat, longitude=lon)
 
-        # -------------------------------------------------------------
-        # STEP 2: IoT Sensor Processing (Real data or auto-simulation)
-        # -------------------------------------------------------------
+        # STEP 3: IoT Sensor Telemetry
         iot_input = payload.get("iot_telemetry", {})
         animal_id = iot_input.get("animal_id", "ESP32-SIM-01") if iot_input else "ESP32-SIM-01"
         
@@ -45,9 +40,7 @@ class MasterAnalysisEngine:
         if iot_act < 30:
             iot_anomalies.append(f"Lethargy: Activity index {iot_act}")
 
-        # -------------------------------------------------------------
-        # STEP 3: Machine Learning Model Inference
-        # -------------------------------------------------------------
+        # STEP 4: Machine Learning Model Inference
         health_report = payload.get("health_report", {})
         species = health_report.get("animal", "Cow")
         symptoms = health_report.get("symptoms", ["Fever"])
@@ -62,9 +55,7 @@ class MasterAnalysisEngine:
             mortality_count=health_report.get("mortality_count", 0)
         )
 
-        # -------------------------------------------------------------
-        # STEP 4: Outbreak Surge & Historical Analytics (Z-Score)
-        # -------------------------------------------------------------
+        # STEP 5: Outbreak Surge & Historical Analytics
         history = payload.get("historical_weekly_cases", [10, 12, 11, 13, 12, 14])
         mean_val = float(np.mean(history[:-1])) if len(history) > 1 else float(history[0])
         std_val = float(np.std(history[:-1])) if len(history) > 1 and np.std(history[:-1]) > 0 else 1.0
@@ -72,27 +63,28 @@ class MasterAnalysisEngine:
         z_score = round((latest_cases - mean_val) / std_val, 2)
         is_spike = z_score > 2.5
 
-        # -------------------------------------------------------------
-        # STEP 5: Composite Multi-Stream Risk Aggregation
-        # -------------------------------------------------------------
+        # STEP 6: Multi-Stream Risk Aggregation
         risk_score = 15
         if ml_res.get("confidence", 0) > 0.20:
-            risk_score += 25
+            risk_score += 20
+        if vision_res and vision_res.get("visual_anomaly_detected"):
+            risk_score += 25  # Increased risk for confirmed visual lesions
         if len(iot_anomalies) > 0:
-            risk_score += 30
+            risk_score += 25
         if weather_res.get("vector_breeding_risk") == "HIGH":
-            risk_score += 15
+            risk_score += 10
         if is_spike:
-            risk_score += 15
+            risk_score += 10
 
         risk_score = min(risk_score, 100)
         risk_level = "CRITICAL" if risk_score >= 75 else "ELEVATED" if risk_score >= 45 else "LOW"
 
-        # Combine all stream results into a unified structure
+        # Combine all streams into a unified object
         analysis_summary = {
             "overall_risk_score": risk_score,
             "overall_risk_level": risk_level,
             "disease_prediction": ml_res,
+            "yolo_vision_analysis": vision_res,  # Will be null/None if skipped
             "iot_telemetry_analysis": {
                 "animal_id": animal_id,
                 "temperature": iot_temp,
@@ -109,10 +101,7 @@ class MasterAnalysisEngine:
             }
         }
 
-        # -------------------------------------------------------------
-        # STEP 6: Automatic GenAI Advisory Ingestion
-        # Passes the complete analysis_summary payload directly to GenAI
-        # -------------------------------------------------------------
+        # STEP 7: Automatic GenAI Ingestion
         preferred_lang = payload.get("language", "English")
         advisory_res = generate_farmer_advisory(analysis_summary, language=preferred_lang)
         analysis_summary["farmer_advisory"] = advisory_res
