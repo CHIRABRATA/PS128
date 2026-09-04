@@ -6,12 +6,12 @@ class WeatherRequest(BaseModel):
     longitude: float = Field(..., example=88.3639)
 
 class WeatherRiskResponse(BaseModel):
-    temperature_c: float
-    relative_humidity_pct: float
-    precipitation_mm: float
+    temperature: float
+    humidity: float
+    precipitation: float
     vector_breeding_risk: str = Field(..., description="LOW, MODERATE, HIGH")
-    heat_stress_index: str = Field(..., description="NORMAL, CAUTION, HIGH_STRESS")
-    risk_factor_reasons: List[str]
+    weather_advisory: str
+    source: str
 
 class HistoricalTrendRequest(BaseModel):
     region_id: str

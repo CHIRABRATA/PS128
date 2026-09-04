@@ -61,15 +61,22 @@ def generate_farmer_advisory(analysis_data: Dict[str, Any], language: str = "Eng
     prompt = f"""
     Create a VERY SHORT emergency advisory for a farmer in language: {language}.
     Maximum length: 150 words total. Use plain bullet points only. No long paragraphs, no markdown tables.
+    Never use the words "DIAGNOSIS" or "DIAGNOSED".
+    Use terms such as:
+    - preliminary assessment
+    - possible condition
+    - suspected condition
+    - model signal
+    Do not present the ML prediction as a confirmed veterinary diagnosis.
 
-    DIAGNOSIS & CONTEXT:
+    PRELIMINARY ASSESSMENT & CONTEXT:
     - Disease: {disease} (Risk Level: {risk_level}, Score: {risk_score}/100)
     - IoT Anomalies: {', '.join(iot_anomalies) if iot_anomalies else 'None'}
     - Environmental Risk: Mosquito/Vector Breeding Risk is {weather_risk}
     - Local Area Spike: {'YES (Regional Surge Active)' if is_outbreak else 'No'}
 
     FORMAT EXACTLY AS:
-    🚨 **DIAGNOSIS:** 1-sentence warning in simple language.
+    🚨 **PRELIMINARY ASSESSMENT:** 1-sentence warning using "suspected condition" or "possible condition" in simple language.
     ⚡ **3 IMMEDIATE ACTIONS:**
     1. Action 1 (Isolation / Treatment)
       2. Action 2 (Contact Vet)

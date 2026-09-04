@@ -1,4 +1,5 @@
 ﻿import io
+import base64
 from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
@@ -27,6 +28,32 @@ class VisionService:
 
         self.pet_model = YOLO(pet_path)
         self.cow_model = YOLO(cow_path)
+
+    def predict_image_lesions(
+        self,
+        image_input: str | bytes | None,
+        animal_type: str = "cow",
+    ) -> dict | None:
+        if not image_input:
+            return None
+
+        if isinstance(image_input, bytes):
+            image_bytes = image_input
+        elif isinstance(image_input, str):
+            encoded_image = image_input.split(",", 1)[-1]
+            try:
+                image_bytes = base64.b64decode(encoded_image)
+            except (ValueError, base64.binascii.Error) as exc:
+                raise ValueError("image_data must be valid base64 image data") from exc
+        else:
+            raise ValueError("image_data must be base64 image data or bytes")
+
+        prediction = self.predict(image_bytes, animal_type=animal_type)
+        prediction["visual_anomaly_detected"] = (
+            prediction.get("primary_prediction") != "Healthy"
+            and prediction.get("primary_prediction") != "No disease detected"
+        )
+        return prediction
 
     def predict(self, image_bytes: bytes, animal_type: str) -> dict:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")

@@ -15,7 +15,7 @@ The recommended frontend workflow is:
 1. Collect the animal health form data.
 2. Collect location and optional IoT data.
 3. Optionally provide an animal image for YOLO visual inspection.
-4. Send the complete payload to `POST /api/analyze`.
+4. Send the complete payload to `POST /api/analyze`, including the `yolo_vision_analysis` result from the image step.
 5. Render the returned risk score, disease prediction, sensor anomalies, weather risk, outbreak status, and farmer advisory.
 
 The individual endpoints can also be used for separate dashboard cards or independent tests.
@@ -91,6 +91,11 @@ This is the main endpoint for the frontend dashboard. It accepts JSON and return
     "activity": 22,
     "simulate_fever": false
   },
+  "yolo_vision_analysis": {
+    "visual_anomaly_detected": true,
+    "primary_prediction": "Lumpy Skin Disease",
+    "confidence": 98.5
+  },
   "historical_weekly_cases": [12, 14, 11, 15, 13, 48]
 }
 ```
@@ -115,6 +120,7 @@ This is the main endpoint for the frontend dashboard. It accepts JSON and return
 | `iot_telemetry.temperature` | number | No | Core temperature in Celsius. If omitted, the backend simulates telemetry. |
 | `iot_telemetry.activity` | integer | No | Activity index. Values below `30` are treated as lethargy. |
 | `iot_telemetry.simulate_fever` | boolean | No | Requests fever simulation when temperature is omitted. |
+| `yolo_vision_analysis` | object | No | YOLO result returned by `/api/predict`; pass it here to avoid running image inference again. |
 | `historical_weekly_cases` | integer[] | No | Weekly case counts. Defaults to `[10, 12, 11, 13, 12, 14]`. |
 
 ### Unified response shape
@@ -234,7 +240,19 @@ Successful response:
 ```json
 {
   "success": true,
+  "yolo_result": {
+    "visual_anomaly_detected": true,
+    "primary_prediction": "Lumpy Skin Disease",
+    "confidence": 92.4,
+    "top_predictions": [
+      {
+        "condition": "Lumpy Skin Disease",
+        "confidence": 92.4
+      }
+    ]
+  },
   "data": {
+    "visual_anomaly_detected": true,
     "primary_prediction": "Lumpy Skin Disease",
     "confidence": 92.4,
     "top_predictions": [
@@ -496,11 +514,12 @@ For `500` responses, show a retry state and preserve the user-entered form. Do n
 
 These items should be resolved or confirmed before production frontend integration:
 
-1. The master service calls `vision_engine.predict_image_lesions(image_input)`, but the current `VisionService` exposes `predict(image_bytes, animal_type)` and does not currently expose `predict_image_lesions`. The frontend should not assume that image input through `/api/analyze` works until this method is implemented or the master service is updated.
-2. `/api/analyze` currently receives JSON. The standalone `/api/predict` endpoint receives an image as multipart form data. A frontend cannot send a browser `File` directly inside the current `/api/analyze` JSON contract.
-3. The weather service returns `temperature`, `humidity`, and `precipitation`. The analytics route imports a response schema using `temperature_c`, `relative_humidity_pct`, and `precipitation_mm`. The backend schema and route should be aligned before relying on `/api/weather/risk` response validation.
-4. The main application registers the routes from `app/routes`, so the active paths include `/api/health`, `/api/predict`, `/api/iot/data`, `/api/weather/risk`, `/api/trends/analyze`, `/api/analyze`, and `/api/advisory/generate`.
-5. Disease and advisory results are decision-support outputs. The frontend should display confidence and risk context and should direct the farmer to a veterinarian for treatment decisions.
+1. The recommended image flow is two-stage: call `/api/predict`, then pass its `yolo_result` object as `yolo_vision_analysis` in `/api/analyze`.
+2. `/api/analyze` receives JSON, while `/api/predict` receives the image as multipart form data. A browser `File` cannot be placed directly inside the `/api/analyze` JSON body.
+3. If `yolo_vision_analysis` is omitted, `/api/analyze` can still process an `image_data` or `image_url` value when the backend vision method is used.
+4. The weather service returns `temperature`, `humidity`, and `precipitation`. The analytics route imports a response schema using `temperature_c`, `relative_humidity_pct`, and `precipitation_mm`. The backend schema and route should be aligned before relying on `/api/weather/risk` response validation.
+5. The main application registers the routes from `app/routes`, so the active paths include `/api/health`, `/api/predict`, `/api/iot/data`, `/api/weather/risk`, `/api/trends/analyze`, `/api/analyze`, and `/api/advisory/generate`.
+6. Disease and advisory results are decision-support outputs. The frontend should display confidence and risk context and should direct the farmer to a veterinarian for treatment decisions.
 
 ## 13. Minimal Frontend Integration Example
 

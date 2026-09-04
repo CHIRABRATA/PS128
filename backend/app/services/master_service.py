@@ -10,9 +10,17 @@ logger = logging.getLogger(__name__)
 
 class MasterAnalysisEngine:
     def analyze_livestock_health(self, payload: dict) -> dict:
-        # STEP 1: Optional YOLO Vision Inspection
-        image_input = payload.get("image_data") or payload.get("image_url")
-        vision_res = vision_engine.predict_image_lesions(image_input)
+        health_report = payload.get("health_report", {})
+        species = health_report.get("animal", "Cow")
+
+        # STEP 1: Use the uploaded-image result when the frontend already ran YOLO.
+        vision_res = payload.get("yolo_vision_analysis")
+        if vision_res is None:
+            image_input = payload.get("image_data") or payload.get("image_url")
+            vision_res = vision_engine.predict_image_lesions(
+                image_input,
+                animal_type=species if isinstance(species, str) else "Cow",
+            )
 
         # STEP 2: Weather Service (Open-Meteo)
         lat = payload.get("latitude", 28.6139)
@@ -41,8 +49,6 @@ class MasterAnalysisEngine:
             iot_anomalies.append(f"Lethargy: Activity index {iot_act}")
 
         # STEP 4: Machine Learning Model Inference
-        health_report = payload.get("health_report", {})
-        species = health_report.get("animal", "Cow")
         symptoms = health_report.get("symptoms", ["Fever"])
 
         ml_res = predictor.predict(
@@ -55,6 +61,10 @@ class MasterAnalysisEngine:
             mortality_count=health_report.get("mortality_count", 0)
         )
 
+        ml_confidence = float(ml_res.get("confidence", 0) or 0)
+        if ml_confidence < 0.30:
+            ml_res["suspected_condition"] = "No strong disease signal"
+
         # STEP 5: Outbreak Surge & Historical Analytics
         history = payload.get("historical_weekly_cases", [10, 12, 11, 13, 12, 14])
         mean_val = float(np.mean(history[:-1])) if len(history) > 1 else float(history[0])
@@ -65,7 +75,7 @@ class MasterAnalysisEngine:
 
         # STEP 6: Multi-Stream Risk Aggregation
         risk_score = 15
-        if ml_res.get("confidence", 0) > 0.20:
+        if ml_confidence > 0.20:
             risk_score += 20
         if vision_res and vision_res.get("visual_anomaly_detected"):
             risk_score += 25  # Increased risk for confirmed visual lesions

@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/weather/risk", response_model=WeatherRiskResponse, tags=["Environmental & Trends"])
 async def get_weather_risk_assessment(payload: WeatherRequest):
     try:
-        return await fetch_weather_risk(payload.latitude, payload.longitude)
+        return fetch_weather_risk(payload.latitude, payload.longitude)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

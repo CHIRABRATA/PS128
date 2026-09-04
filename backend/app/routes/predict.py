@@ -14,7 +14,10 @@ async def predict_disease(
     try:
         image_bytes = await file.read()
         prediction = vision_engine.predict(image_bytes, animal_type=category)
-        return {"success": True, "data": prediction}
+        prediction["visual_anomaly_detected"] = (
+            prediction.get("primary_prediction") not in {"Healthy", "No disease detected"}
+        )
+        return {"success": True, "yolo_result": prediction}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

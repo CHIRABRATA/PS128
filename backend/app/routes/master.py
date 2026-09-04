@@ -25,6 +25,10 @@ class MasterAnalysisRequest(BaseModel):
             "activity": 22
         }
     )
+    yolo_vision_analysis: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional YOLO result from POST /api/predict"
+    )
     historical_weekly_cases: Optional[List[int]] = Field(
         default=[12, 14, 11, 15, 13, 48]
     )
