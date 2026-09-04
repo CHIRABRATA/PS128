@@ -47,26 +47,33 @@ def _call_groq(api_key: str, model_name: str, prompt: str) -> str:
     return data["choices"][0]["message"]["content"]
 
 def generate_farmer_advisory(analysis_data: Dict[str, Any], language: str = "English") -> Dict[str, Any]:
-    disease = analysis_data.get("disease_prediction", {}).get("suspected_condition", "Unknown Disease")
+    yolo_res = analysis_data.get("yolo_vision_analysis") or {}
+    yolo_condition = yolo_res.get("primary_prediction")
+    ml_condition = analysis_data.get("disease_prediction", {}).get("suspected_condition")
+    disease = yolo_condition if yolo_condition else (ml_condition or "Unknown Condition")
     risk_level = analysis_data.get("overall_risk_level", "ELEVATED")
     risk_score = analysis_data.get("overall_risk_score", 50)
     iot_anomalies = analysis_data.get("iot_telemetry_analysis", {}).get("anomalies", [])
+    weather_risk = analysis_data.get("weather_analysis", {}).get("vector_breeding_risk", "NORMAL")
+    is_outbreak = analysis_data.get("outbreak_surge_analysis", {}).get("is_outbreak_spike", False)
 
     # CONCISE MOBILE-FRIENDLY PROMPT (< 150 words)
     prompt = f"""
     Create a VERY SHORT emergency advisory for a farmer in language: {language}.
     Maximum length: 150 words total. Use plain bullet points only. No long paragraphs, no markdown tables.
 
-    DIAGNOSIS:
+    DIAGNOSIS & CONTEXT:
     - Disease: {disease} (Risk Level: {risk_level}, Score: {risk_score}/100)
-    - Key Issue: High Fever ({', '.join(iot_anomalies) if iot_anomalies else 'None'})
+    - IoT Anomalies: {', '.join(iot_anomalies) if iot_anomalies else 'None'}
+    - Environmental Risk: Mosquito/Vector Breeding Risk is {weather_risk}
+    - Local Area Spike: {'YES (Regional Surge Active)' if is_outbreak else 'No'}
 
     FORMAT EXACTLY AS:
     🚨 **DIAGNOSIS:** 1-sentence warning in simple language.
     ⚡ **3 IMMEDIATE ACTIONS:**
-      1. Action 1 (Isolation)
+    1. Action 1 (Isolation / Treatment)
       2. Action 2 (Contact Vet)
-      3. Action 3 (Biosecurity / Disinfection)
+    3. Action 3 (Vector Control / Disinfection)
     📞 **EMERGENCY VET:** Call local officer immediately.
     """
 

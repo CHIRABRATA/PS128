@@ -3,6 +3,17 @@ from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
 
+LABEL_MAP = {
+    "lumpy": "Lumpy Skin Disease",
+    "foot-and-mouth": "Foot and Mouth Disease",
+    "healthy": "Healthy",
+}
+
+
+def format_label(label: str) -> str:
+    return LABEL_MAP.get(label.lower(), label)
+
+
 class VisionService:
     def __init__(self, models_dir: str | None = None):
         if models_dir is None:
@@ -36,14 +47,14 @@ class VisionService:
         if hasattr(result, "probs") and result.probs is not None:
             top_idx = result.probs.top1
             top_conf = float(result.probs.top1conf)
-            class_name = result.names[top_idx]
+            class_name = format_label(result.names[top_idx])
 
             return {
                 "primary_prediction": class_name,
                 "confidence": round(top_conf * 100, 2),
                 "top_predictions": [
                     {
-                        "condition": result.names[idx],
+                        "condition": format_label(result.names[idx]),
                         "confidence": round(float(conf) * 100, 2)
                     }
                     for idx, conf in zip(result.probs.top5, result.probs.top5conf)
@@ -57,7 +68,7 @@ class VisionService:
                 cls_id = int(box.cls[0].item())
                 conf = float(box.conf[0].item())
                 detections.append({
-                    "condition": result.names[cls_id],
+                    "condition": format_label(result.names[cls_id]),
                     "confidence": round(conf * 100, 2)
                 })
 
