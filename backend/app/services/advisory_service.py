@@ -48,9 +48,13 @@ def _call_groq(api_key: str, model_name: str, prompt: str) -> str:
 
 def generate_farmer_advisory(analysis_data: Dict[str, Any], language: str = "English") -> Dict[str, Any]:
     yolo_res = analysis_data.get("yolo_vision_analysis") or {}
-    yolo_condition = yolo_res.get("primary_prediction")
+    yolo_condition = (
+        yolo_res.get("primary_prediction")
+        if yolo_res.get("visual_anomaly_detected")
+        else None
+    )
     ml_condition = analysis_data.get("disease_prediction", {}).get("suspected_condition")
-    disease = yolo_condition if yolo_condition else (ml_condition or "Unknown Condition")
+    disease = yolo_condition if yolo_condition else (ml_condition or "Unspecified Condition")
     risk_level = analysis_data.get("overall_risk_level", "ELEVATED")
     risk_score = analysis_data.get("overall_risk_score", 50)
     iot_anomalies = analysis_data.get("iot_telemetry_analysis", {}).get("anomalies", [])
