@@ -10,9 +10,78 @@ LABEL_MAP = {
     "healthy": "Healthy",
 }
 
+CATTLE_MODEL_LABELS = {"foot-and-mouth", "healthy", "lumpy"}
+
+PET_DISEASE_MAP = {
+    "Dermatitis": {
+        "severity": "MODERATE",
+        "description": "Inflammation of the skin, causing redness, itchiness, and irritation.",
+        "contagious": False,
+    },
+    "Fungal_infections": {
+        "severity": "MODERATE",
+        "description": "Fungal growth causing skin irritation, hair loss, and scaly patches.",
+        "contagious": True,
+    },
+    "Healthy": {
+        "severity": "LOW",
+        "description": "Skin and coat appear healthy with no visible lesions or parasites.",
+        "contagious": False,
+    },
+    "Hypersensitivity": {
+        "severity": "MODERATE",
+        "description": "Allergic reaction leading to localized swelling, redness, or hives.",
+        "contagious": False,
+    },
+    "demodicosis": {
+        "severity": "HIGH",
+        "description": "Mite infestation causing localized or generalized hair loss and skin scaling.",
+        "contagious": False,
+    },
+    "ringworm": {
+        "severity": "HIGH",
+        "description": "Highly contagious fungal skin infection causing circular lesions and hair loss.",
+        "contagious": True,
+    },
+}
+
+COW_DISEASE_MAP = {
+    "foot-and-mouth": {
+        "severity": "CRITICAL",
+        "description": "Highly contagious viral disease causing fever, blisters, and lesions on the feet and mouth.",
+        "contagious": True,
+    },
+    "healthy": {
+        "severity": "LOW",
+        "description": "Skin and coat appear healthy with no visible lesions or systemic anomalies.",
+        "contagious": False,
+    },
+    "lumpy": {
+        "severity": "HIGH",
+        "description": "Lumpy Skin Disease (LSD) characterized by fever and prominent cutaneous nodules across the body.",
+        "contagious": True,
+    },
+}
+
 
 def format_label(label: str) -> str:
     return LABEL_MAP.get(label.lower(), label)
+
+
+def pet_metadata(label: str) -> dict:
+    normalized_label = str(label).strip().lower()
+    return next(
+        (metadata for name, metadata in PET_DISEASE_MAP.items() if name.lower() == normalized_label),
+        {},
+    )
+
+
+def disease_metadata(label: str, animal_lower: str) -> dict:
+    if animal_lower in ["pet", "dog", "cat"]:
+        return pet_metadata(label)
+    if animal_lower in ["cow", "cattle", "livestock"]:
+        return COW_DISEASE_MAP.get(str(label).strip().lower(), {})
+    return {}
 
 
 class VisionService:
@@ -58,13 +127,21 @@ class VisionService:
     def predict(self, image_bytes: bytes, animal_type: str) -> dict:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-        # Select model based on animal type
-        if animal_type.lower() in ["pet", "dog", "cat"]:
+        animal_lower = str(animal_type).strip().lower()
+
+        # Select the requested model explicitly; never use the cow model as a fallback.
+        if animal_lower in ["pet", "dog", "cat"] and self.pet_model is not None:
+            pet_labels = {str(label).strip().lower() for label in self.pet_model.names.values()}
+            if pet_labels == CATTLE_MODEL_LABELS:
+                raise ValueError(
+                    "The pet model contains cattle disease classes. "
+                    "Replace app/ml_artifacts/model_pet.pt with a pet-trained model."
+                )
             model = self.pet_model
-        elif animal_type.lower() in ["cow", "cattle"]:
+        elif animal_lower in ["cow", "cattle", "livestock"] and self.cow_model is not None:
             model = self.cow_model
         else:
-            raise ValueError(f"Unsupported animal category: {animal_type}")
+            raise ValueError(f"No valid model available for animal category: '{animal_type}'")
 
         # Perform inference
         results = model(image)
@@ -79,6 +156,7 @@ class VisionService:
             return {
                 "primary_prediction": class_name,
                 "confidence": round(top_conf * 100, 2),
+                **disease_metadata(result.names[top_idx], animal_lower),
                 "top_predictions": [
                     {
                         "condition": format_label(result.names[idx]),
@@ -99,10 +177,15 @@ class VisionService:
                     "confidence": round(conf * 100, 2)
                 })
 
-        return {
-            "primary_prediction": detections[0]["condition"] if detections else "No disease detected",
+        primary_prediction = detections[0]["condition"] if detections else "No disease detected"
+        response = {
+            "primary_prediction": primary_prediction,
             "confidence": detections[0]["confidence"] if detections else 0.0,
-            "all_detections": detections
+            "all_detections": detections,
         }
+        if animal_lower in ["pet", "dog", "cat"]:
+            response.update(disease_metadata(primary_prediction, animal_lower))
+        return response
+    
 
 vision_engine = VisionService()
