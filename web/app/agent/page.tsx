@@ -22,20 +22,20 @@ export default async function FieldAgentPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">पशुसखी डायरी | Field Notebook</h1>
+            <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">Field Agent Notebook</h1>
             <Badge className="text-[10px] bg-amber-50 text-amber-900 border-amber-200">
-              क्षेत्रीय कार्यकक्षा: {jurisdictionName}
+              Field Jurisdiction: {jurisdictionName}
             </Badge>
           </div>
           <p className="text-stone-600 text-xs mt-1">
-            गावनिहाय गोठा भेटी, जनावरांचे शारीरिक निरीक्षण, फोटो संकलन व ऑफलाइन अहवाल व्यवस्थापन.
+            Village shed visits, physical livestock inspections, clinical photo collection, and offline report management.
           </p>
         </div>
 
         <Link href="/agent/report">
           <Button size="sm" className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-sm min-h-[40px] rounded-xl cursor-pointer">
             <FilePlus2 className="h-4 w-4" />
-            <span>नवीन क्षेत्रीय तपासणी नोंदवा</span>
+            <span>Record Field Inspection</span>
           </Button>
         </Link>
       </div>
@@ -49,7 +49,7 @@ export default async function FieldAgentPage() {
           <div>
             <span className="font-bold text-purple-900">OFFLINE FIELD SYNC READY:</span>
             <span className="ml-1.5 text-purple-900">
-              नेटवर्क नसतानाही अहवाल नोंदवा. इंटरनेट उपलब्ध होताच सर्व नोंदी सुरक्षितपणे सिंक होतील.
+              Record health inspections even without network. All records will securely sync once back online.
             </span>
           </div>
         </div>
@@ -66,10 +66,10 @@ export default async function FieldAgentPage() {
           <div>
             <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
               <Clock className="h-4 w-4 text-emerald-700" />
-              <span>TODAY&apos;S VISITS (आजच्या नियोजित गोठा भेटी)</span>
+              <span>TODAY&apos;S SCHEDULED VISITS</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              गावनिहाय जनावरांची शारीरिक तपासणी व लसीकरण पडताळणी वेळापत्रक
+              Village-wise livestock physical inspection and vaccination verification schedule
             </CardDescription>
           </div>
           <Link href="/agent/report">
@@ -85,13 +85,13 @@ export default async function FieldAgentPage() {
               <div className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover-lift hover:border-emerald-600 transition-all">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#191F1C] text-sm">Wagholi (वाघोली) • 09:30 AM</span>
+                    <span className="font-bold text-[#191F1C] text-sm">Wagholi • 09:30 AM</span>
                     <Badge className="bg-amber-50 text-amber-900 border-amber-200 text-[10px]">
-                      गाठी व ताप (Skin Lesions)
+                      Skin Lesions & Fever
                     </Badge>
                   </div>
                   <p className="text-xs text-stone-600">
-                    शेतकरी: <strong className="text-stone-800">तुकाराम शिंदे</strong> • गाय (टॅग: MH-12-8492) • फोटो व GPS आवश्यक
+                    Farmer: <strong className="text-stone-800">Tukaram Shinde</strong> • Cow (Tag: MH-12-8492) • Photo & GPS Required
                   </p>
                 </div>
                 <div className="flex items-center gap-2 self-end sm:self-center">
@@ -110,13 +110,13 @@ export default async function FieldAgentPage() {
               <div className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover-lift hover:border-emerald-600 transition-all">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#191F1C] text-sm">Kesnand (केसनंद) • 11:15 AM</span>
+                    <span className="font-bold text-[#191F1C] text-sm">Kesnand • 11:15 AM</span>
                     <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px]">
-                      नियमित लसीकरण तपासणी
+                      Routine Vaccination Inspection
                     </Badge>
                   </div>
                   <p className="text-xs text-stone-600">
-                    शेतकरी: <strong className="text-stone-800">बाळू जगताप</strong> • म्हैस (टॅग: MH-12-3341) • FMD बूस्टर तारीख
+                    Farmer: <strong className="text-stone-800">Balu Jagtap</strong> • Buffalo (Tag: MH-12-3341) • FMD Booster Due
                   </p>
                 </div>
                 <div className="flex items-center gap-2 self-end sm:self-center">
@@ -140,15 +140,15 @@ export default async function FieldAgentPage() {
             <ShieldCheck className="h-5 w-5 text-amber-700" />
           </div>
           <div>
-            <h4 className="font-bold text-[#191F1C] text-sm">पशुसखी मार्गदर्शक सूचना (Field Examination Protocol)</h4>
+            <h4 className="font-bold text-[#191F1C] text-sm">Field Examination Protocol</h4>
             <p className="text-stone-500 text-xs">
-              कोणत्याही जनावरामध्ये तीव्र ताप किंवा अंगावर गाठी आढळल्यास इतर जनावरांपासून तात्काळ वेगळे (Isolate) करण्याचा सल्ला द्या.
+              If any animal exhibits high fever or cutaneous nodules, immediately advise the farmer to isolate it from the rest of the herd.
             </p>
           </div>
         </div>
         <Link href="/agent/report">
           <Button size="sm" className="bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs whitespace-nowrap rounded-xl min-h-[36px]">
-            नवीन नोंद करा
+            Record Inspection
           </Button>
         </Link>
       </div>

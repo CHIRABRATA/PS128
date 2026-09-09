@@ -1,7 +1,15 @@
 import { SignUp } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { Activity } from "lucide-react";
 
-export default function SignUpPage() {
+export default async function SignUpPage() {
+  const { userId } = await auth();
+
+  if (userId) {
+    const { redirect } = await import("next/navigation");
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 sm:p-6 lg:p-8 bg-zinc-950">
       <div className="w-full max-w-md space-y-6 flex flex-col items-center">

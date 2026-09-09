@@ -74,13 +74,13 @@ export default async function FarmerPortalPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-6">
         <div>
           <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">
-            पशुपालक नोंदवही • FARMER PORTAL
+            FARMER HEALTH REGISTER • LIVESTOCK PORTAL
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191F1C] tracking-tight mt-1">
             {greetingTime}, {farmerDisplayName}.
           </h1>
           <p className="text-stone-600 text-xs sm:text-sm mt-1">
-            नोंदणीकृत जनावरे, दैनंदिन आरोग्य तपासणी, पशुवैद्यकीय सल्ला व लसीकरण व्यवस्थापन.
+            Registered livestock, daily health monitoring, veterinary advisory, and vaccination records.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default async function FarmerPortalPage() {
           <Link href="/farmer/talk">
             <Button variant="outline" size="sm" className="gap-2 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50">
               <MessageSquare className="h-4 w-4 text-emerald-700" />
-              <span>पशु संवाद (Health Talk)</span>
+              <span>Farmer Talk (AI)</span>
             </Button>
           </Link>
           <Link href="/farmer/report">
@@ -107,7 +107,7 @@ export default async function FarmerPortalPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">My animals.</h2>
-            <span className="text-xs text-stone-500">माझी नोंदणीकृत जनावरे ({allAnimals.length} Total)</span>
+            <span className="text-xs text-stone-500">Registered livestock ({allAnimals.length} Total)</span>
           </div>
           <Link href="/farmer/talk" className="text-xs font-semibold text-emerald-800 hover:underline">
             All animals &rarr;
@@ -117,9 +117,9 @@ export default async function FarmerPortalPage() {
         {allAnimals.length === 0 ? (
           <div className="p-8 rounded-2xl bg-white border border-[#E5E0D8] text-center space-y-2">
             <HeartPulse className="h-8 w-8 text-emerald-700 mx-auto" />
-            <p className="font-bold text-stone-900 text-sm">कोणतेही नोंदणीकृत जनावर आढळले नाही</p>
+            <p className="font-bold text-stone-900 text-sm">No registered animals found</p>
             <p className="text-xs text-stone-500 max-w-sm mx-auto">
-              आपल्या खात्यावर नोंदणीकृत जनावरे नाहीत. जनावरांच्या कान-टॅग नोंदणीसाठी कृपया स्थानिक पशुसखी किंवा पशुवैद्यकीय अधिकाऱ्यांशी संपर्क साधा.
+              No livestock are currently registered under your account. Please contact your local field agent or veterinary dispensary for ear-tag registration.
             </p>
           </div>
         ) : (
@@ -143,12 +143,12 @@ export default async function FarmerPortalPage() {
                         {isUnderCare ? (
                           <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[11px] font-semibold flex items-center gap-1.5 shadow-xs">
                             <span className="h-2 w-2 rounded-full bg-amber-600 animate-pulse shrink-0" />
-                            <span>काळजी सुरू • {recentCase.status}</span>
+                            <span>Under Care • {recentCase.status}</span>
                           </Badge>
                         ) : (
                           <Badge className="bg-emerald-50 text-emerald-900 border-emerald-200 text-[11px] font-semibold flex items-center gap-1.5 shadow-xs">
                             <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
-                            <span>Stable • निरोगी</span>
+                            <span>Stable</span>
                           </Badge>
                         )}
                       </div>
@@ -163,13 +163,13 @@ export default async function FarmerPortalPage() {
                           </span>
                         </div>
                         <p className="text-xs text-stone-500 mt-0.5">
-                          जात: {animal.breed || "Standard"} • वय: {animal.ageMonths ? `${animal.ageMonths} महिने` : "नोंद नाही"}
+                          Breed: {animal.breed || "Standard"} • Age: {animal.ageMonths ? `${animal.ageMonths} Months` : "Not recorded"}
                         </p>
                       </div>
 
                       <div className="pt-2 border-t border-[#E5E0D8] flex items-center justify-between">
                         <span className="text-[11px] text-stone-500">
-                          {isUnderCare ? "तपासणी सुरू" : "नियमित देखरेख"}
+                          {isUnderCare ? "Under Examination" : "Routine Care"}
                         </span>
                         <Link href={`/farmer/talk/${animal.id}`}>
                           <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl cursor-pointer">
@@ -195,7 +195,7 @@ export default async function FarmerPortalPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">Health timeline.</h2>
-              <span className="text-xs text-stone-500">लसीकरण, तपासणी व आरोग्य नोंदी</span>
+              <span className="text-xs text-stone-500">Vaccinations, examinations, and health records</span>
             </div>
           </div>
 
@@ -205,7 +205,7 @@ export default async function FarmerPortalPage() {
               <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2 hover-lift">
                 <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase">
                   <Syringe className="h-4 w-4 text-amber-700" />
-                  <span>1. Vaccinations (लसीकरण)</span>
+                  <span>1. Vaccinations</span>
                 </div>
                 <div className="text-xs text-stone-700 space-y-1">
                   <div className="font-bold text-stone-900">FMD & HS Boosters</div>
@@ -220,7 +220,7 @@ export default async function FarmerPortalPage() {
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2 hover-lift">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs uppercase">
                   <CalendarCheck className="h-4 w-4 text-emerald-700" />
-                  <span>2. Field Visits (गोठा भेट)</span>
+                  <span>2. Field Visits</span>
                 </div>
                 <div className="text-xs text-stone-700 space-y-1">
                   <div className="font-bold text-stone-900">Pashusakhi Inspection</div>
@@ -235,7 +235,7 @@ export default async function FarmerPortalPage() {
               <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200 space-y-2 hover-lift">
                 <div className="flex items-center gap-2 text-sky-900 font-bold text-xs uppercase">
                   <Activity className="h-4 w-4 text-sky-700" />
-                  <span>3. Health Reports (तक्रारी)</span>
+                  <span>3. Health Reports</span>
                 </div>
                 <div className="text-xs text-stone-700 space-y-1">
                   <div className="font-bold text-stone-900">{activeCases.length} Active Concern(s)</div>
@@ -254,7 +254,7 @@ export default async function FarmerPortalPage() {
               <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-2 hover-lift">
                 <div className="flex items-center gap-2 text-purple-900 font-bold text-xs uppercase">
                   <Stethoscope className="h-4 w-4 text-purple-700" />
-                  <span>4. Treatments (वैद्यकीय उपचार)</span>
+                  <span>4. Treatments</span>
                 </div>
                 <div className="text-xs text-stone-700 space-y-1">
                   <div className="font-bold text-stone-900">Veterinary Care</div>
@@ -276,15 +276,15 @@ export default async function FarmerPortalPage() {
             <PhoneCall className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="font-bold text-[#191F1C] text-sm">तातडीची पशुवैद्यकीय मदत (Livestock Health Helpline)</h4>
+            <h4 className="font-bold text-[#191F1C] text-sm">Livestock Emergency & Disease Helpline: 1962</h4>
             <p className="text-stone-500 text-xs">
-              जनावरास अचानक तीव्र ताप, लाळ गळणे किंवा अंगावर गाठी आढळल्यास तात्काळ 1962 वर संपर्क साधा.
+              If any animal exhibits sudden high fever, excessive salivation, or skin nodules, immediately contact veterinary helpline 1962.
             </p>
           </div>
         </div>
         <Link href="/farmer/report">
           <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs whitespace-nowrap rounded-xl">
-            अहवाल सादर करा
+            Report Health Concern
           </Button>
         </Link>
       </div>

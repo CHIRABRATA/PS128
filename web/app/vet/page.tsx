@@ -26,13 +26,13 @@ export default async function VetDashboardPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-4">
         <div>
           <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono">
-            नैदानिक प्राथमिकता कक्ष (Clinical Priority Queue)
+            Clinical Priority Queue
           </Badge>
           <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight mt-1">
-            पशुवैद्यकीय प्राथमिक तपासणी टेबल (Triage Queue)
+            Veterinary Triage Queue
           </h1>
           <p className="text-xs text-stone-500">
-            रोग तीव्रतेनुसार (CRITICAL &gt; HIGH &gt; ELEVATED &gt; MEDIUM &gt; LOW) आणि अहवाल वेळेनुसार क्रमवारी.
+            Prioritized by clinical severity (CRITICAL &gt; HIGH &gt; ELEVATED &gt; MEDIUM &gt; LOW) and reporting time.
           </p>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default async function VetDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MotionFadeIn delay={0} direction="up">
           <div className="p-4 rounded-2xl border border-red-200 bg-red-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
-            <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider">अति-गंभीर प्रकरणे (Critical)</span>
+            <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider">Critical Cases</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="text-2xl font-bold text-red-900">{criticalCount}</span>
               <AlertTriangle className="h-5 w-5 text-red-600 animate-pulse" />
@@ -51,7 +51,7 @@ export default async function VetDashboardPage() {
 
         <MotionFadeIn delay={80} direction="up">
           <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
-            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">समीक्षा प्रलंबित (Pending)</span>
+            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">Pending Review</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="text-2xl font-bold text-amber-950">{pendingCount}</span>
               <Clock className="h-5 w-5 text-amber-700" />
@@ -61,7 +61,7 @@ export default async function VetDashboardPage() {
 
         <MotionFadeIn delay={160} direction="up">
           <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
-            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">तपासणी सुरू (Under Exam)</span>
+            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Under Examination</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="text-2xl font-bold text-emerald-950">{underExamCount}</span>
               <Activity className="h-5 w-5 text-emerald-700" />
@@ -71,7 +71,7 @@ export default async function VetDashboardPage() {
 
         <MotionFadeIn delay={240} direction="up">
           <div className="p-4 rounded-2xl border border-sky-200 bg-sky-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
-            <span className="text-[11px] font-bold text-sky-900 uppercase tracking-wider">लॅब तपासणी पाठवले (Lab Referrals)</span>
+            <span className="text-[11px] font-bold text-sky-900 uppercase tracking-wider">Lab Referrals</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="text-2xl font-bold text-sky-950">{labRefCount}</span>
               <ShieldCheck className="h-5 w-5 text-sky-700" />
@@ -85,9 +85,9 @@ export default async function VetDashboardPage() {
         <CardHeader className="border-b border-[#E5E0D8] pb-3">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-base font-bold text-[#191F1C]">सक्रिय तपासणी यादी (Active Triage Register)</CardTitle>
+              <CardTitle className="text-base font-bold text-[#191F1C]">Active Triage Register</CardTitle>
               <CardDescription className="text-xs text-stone-500">
-                {queue.length} प्रकरणे पशुवैद्यकीय डॉक्टरांच्या निर्णयासाठी प्रलंबित आहेत
+                {queue.length} cases awaiting clinical veterinary action
               </CardDescription>
             </div>
           </div>
@@ -97,8 +97,8 @@ export default async function VetDashboardPage() {
           {queue.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 space-y-2">
               <ShieldCheck className="h-8 w-8 text-emerald-700 mx-auto" />
-              <p className="font-bold text-stone-900">तपासणी रांग पूर्णपणे मोकळी आहे</p>
-              <p>आपल्या कार्यकक्षेत सध्या कोणतीही प्रलंबित आरोग्य तक्रार नाही.</p>
+              <p className="font-bold text-stone-900">Triage Queue is Clear</p>
+              <p>No pending health cases currently require veterinary action.</p>
             </div>
           ) : (
             <>
@@ -115,22 +115,22 @@ export default async function VetDashboardPage() {
                         <div>
                           <span className="text-xs font-bold text-[#191F1C]">#{item.caseNumber}</span>
                           <p className="text-[11px] text-stone-500 mt-0.5">
-                            टॅग: <strong className="text-stone-800 font-mono">{item.animal.tag}</strong> ({item.animal.species})
+                            Tag: <strong className="text-stone-800 font-mono">{item.animal.tag}</strong> ({item.animal.species})
                           </p>
                         </div>
                         <RiskBadge level={level} />
                       </div>
 
                       <div className="text-xs text-stone-600 space-y-1">
-                        <div>शेत: <span className="text-stone-900 font-medium">{item.animal.herd.farm.name}</span></div>
-                        <div>गाव: <span className="text-stone-900 font-medium">{item.animal.herd.farm.village.name}</span></div>
-                        <div>नोंदणी वेळ: <span className="text-stone-500">{new Date(item.reportedAt).toLocaleString()}</span></div>
+                        <div>Farm: <span className="text-stone-900 font-medium">{item.animal.herd.farm.name}</span></div>
+                        <div>Village: <span className="text-stone-900 font-medium">{item.animal.herd.farm.village.name}</span></div>
+                        <div>Reported: <span className="text-stone-500">{new Date(item.reportedAt).toLocaleString()}</span></div>
                       </div>
 
                       <div className="flex items-center gap-1.5 pt-1">
                         {item.photoUrl && (
                           <Badge className="text-[10px] border-emerald-200 text-emerald-800 bg-emerald-50 flex items-center gap-1">
-                            <Camera className="h-3 w-3" /> छायाचित्र
+                            <Camera className="h-3 w-3" /> Photo
                           </Badge>
                         )}
                         {item.iotTelemetry && (
@@ -147,7 +147,7 @@ export default async function VetDashboardPage() {
 
                       <Link href={`/vet/cases/${item.id}`}>
                         <Button type="button" size="sm" className="w-full text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold mt-2 min-h-[40px] rounded-xl">
-                          <span>तपासणी सुरू करा</span>
+                          <span>Start Examination</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
@@ -161,13 +161,13 @@ export default async function VetDashboardPage() {
                 <table className="w-full text-left text-xs text-stone-600 border-collapse">
                   <thead className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-[11px] font-bold text-stone-800 uppercase tracking-wider">
                     <tr>
-                      <th className="py-3 px-3">केस क्र. (Case #)</th>
-                      <th className="py-3 px-3">धोका (Risk)</th>
-                      <th className="py-3 px-3">जनावर (Animal)</th>
-                      <th className="py-3 px-3">शेतकरी व गाव (Location)</th>
-                      <th className="py-3 px-3">वेळ (Reported)</th>
-                      <th className="py-3 px-3">स्थिती (Status)</th>
-                      <th className="py-3 px-3 text-right">कृती (Action)</th>
+                      <th className="py-3 px-3">Case #</th>
+                      <th className="py-3 px-3">Risk</th>
+                      <th className="py-3 px-3">Animal</th>
+                      <th className="py-3 px-3">Location</th>
+                      <th className="py-3 px-3">Reported</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E5E0D8]">
@@ -207,7 +207,7 @@ export default async function VetDashboardPage() {
                           <td className="py-3 px-3 text-right">
                             <Link href={`/vet/cases/${item.id}`}>
                               <Button type="button" size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl">
-                                <span>तपासा</span>
+                                <span>Review</span>
                                 <ArrowRight className="h-3 w-3" />
                               </Button>
                             </Link>

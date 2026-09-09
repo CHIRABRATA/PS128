@@ -18,7 +18,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
             </div>
             <div>
               <span className="font-bold text-base tracking-tight text-[#191F1C] flex items-center gap-2">
-                MAITRI CLINICAL <span className="text-emerald-800 font-semibold text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">पशुवैद्यक दवाखाना</span>
+                MAITRI CLINICAL <span className="text-emerald-800 font-semibold text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">Veterinary Clinic</span>
               </span>
               <p className="text-[11px] text-stone-500 hidden sm:block">
                 Clinical Health Triage & Outbreak Surveillance Desk
@@ -45,7 +45,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <Activity className="h-4 w-4 text-emerald-700" />
-              <span>प्राथमिक तपासणी (Triage Queue)</span>
+              <span>Triage Queue</span>
             </Link>
 
             <Link
@@ -53,7 +53,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <ClipboardList className="h-4 w-4 text-stone-500" />
-              <span>सर्व प्रकरणे (All Cases)</span>
+              <span>All Cases</span>
             </Link>
 
             <Link
@@ -61,7 +61,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <FlaskConical className="h-4 w-4 text-amber-600" />
-              <span>लॅब नमुने (Lab Samples)</span>
+              <span>Lab Samples</span>
             </Link>
 
             <Link
@@ -69,7 +69,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <Calendar className="h-4 w-4 text-purple-600" />
-              <span>भेटी व वेळापत्रक (Visits)</span>
+              <span>Visits & Schedule</span>
             </Link>
           </div>
         </div>

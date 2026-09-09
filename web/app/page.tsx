@@ -83,11 +83,11 @@ export default async function Home() {
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-emerald-600 shrink-0 animate-subtle-pulse" />
             <span className="font-semibold text-[#191F1C]">
-              महाराष्ट्र राज्य पशुधन आरोग्य नेटवर्क | Maharashtra Livestock Health & Surveillance
+              Maharashtra Livestock Health & Disease Surveillance Network
             </span>
           </div>
           <div className="flex items-center gap-4 text-[11px] font-medium text-stone-600">
-            <span>पशुसंवर्धन विभाग, महाराष्ट्र शासन</span>
+            <span>Department of Animal Husbandry, Government of Maharashtra</span>
             <span className="hidden md:inline text-stone-300">•</span>
             <span className="flex items-center gap-1.5 font-mono text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               <PhoneCall className="w-3 h-3 text-emerald-700" />
@@ -256,14 +256,14 @@ export default async function Home() {
                   />
                   <div className="absolute top-3 right-3">
                     <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-semibold">
-                      Stable • स्थिर
+                      Stable
                     </Badge>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
                     <div className="flex items-baseline justify-between">
-                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">GAURI (गौरी)</h3>
+                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">GAURI</h3>
                       <span className="text-xs font-mono text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
                         MH-12-8492
                       </span>
@@ -290,14 +290,14 @@ export default async function Home() {
                   />
                   <div className="absolute top-3 right-3">
                     <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-semibold">
-                      Healthy • निरोगी
+                      Healthy
                     </Badge>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
                     <div className="flex items-baseline justify-between">
-                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">BHARAT (भारत)</h3>
+                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">BHARAT</h3>
                       <span className="text-xs font-mono text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
                         MH-12-9012
                       </span>
@@ -324,14 +324,14 @@ export default async function Home() {
                   />
                   <div className="absolute top-3 right-3">
                     <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-semibold">
-                      Stable • स्थिर
+                      Stable
                     </Badge>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
                     <div className="flex items-baseline justify-between">
-                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">RANI (राणी)</h3>
+                      <h3 className="text-xl font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">RANI</h3>
                       <span className="text-xs font-mono text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
                         MH-14-3104
                       </span>
@@ -544,7 +544,7 @@ export default async function Home() {
                 <Show when="signed-out">
                   <SignUpButton mode="modal">
                     <Button size="lg" className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-7 h-12 shadow-sm rounded-xl hover-lift cursor-pointer">
-                      <span>Get started / खाते बनवा</span>
+                      <span>Get started</span>
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </SignUpButton>

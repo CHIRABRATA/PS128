@@ -1,13 +1,15 @@
 import en from "./dictionaries/en.json";
 import hi from "./dictionaries/hi.json";
 import mr from "./dictionaries/mr.json";
+import bn from "./dictionaries/bn.json";
 
-export type Locale = "en" | "hi" | "mr";
+export type Locale = "en" | "bn" | "hi" | "mr";
 
 export const defaultLocale: Locale = "en";
 
 export const dictionaries = {
   en,
+  bn,
   hi,
   mr,
 };

@@ -47,7 +47,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
   const openUpdateModal = (sample: SampleItem) => {
     setActiveSample(sample);
     setNewStatus(sample.status);
-    setLabName(sample.labName || "जिल्हा पशुवैद्यकीय रोग अन्वेषण प्रयोगशाळा");
+    setLabName(sample.labName || "District Veterinary Disease Investigation Laboratory");
     setResultSummary(sample.resultSummary || "");
     setError(null);
   };
@@ -68,7 +68,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
       });
 
       if (!res.success) {
-        setError(res.error || "नमुना स्थिती बदलण्यात त्रुटी आली.");
+        setError(res.error || "Failed to update sample status.");
       } else {
         setActiveSample(null);
         window.location.reload();
@@ -83,13 +83,13 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
   const getStatusBadge = (status: SampleStatus) => {
     switch (status) {
       case "COLLECTED":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">नमुना संकलित</Badge>;
+        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">Sample Collected</Badge>;
       case "SENT":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">लॅबकडे पाठवला</Badge>;
+        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">Sent to Lab</Badge>;
       case "RESULT_PENDING":
-        return <Badge variant="outline" className="bg-stone-100 text-stone-700 border-stone-200">तपासणी अहवाल प्रलंबित</Badge>;
+        return <Badge variant="outline" className="bg-stone-100 text-stone-700 border-stone-200">Result Pending</Badge>;
       case "RESULT_RECEIVED":
-        return <Badge variant="success" className="bg-emerald-50 text-emerald-800 border-emerald-200">अहवाल प्राप्त</Badge>;
+        return <Badge variant="success" className="bg-emerald-50 text-emerald-800 border-emerald-200">Result Received</Badge>;
     }
   };
 
@@ -99,9 +99,9 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
         <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mx-auto">
           <FlaskConical className="h-6 w-6" />
         </div>
-        <p className="text-sm font-semibold text-[#191F1C]">कोणतेही लॅब नमुने नोंदवलेले नाहीत</p>
+        <p className="text-sm font-semibold text-[#191F1C]">No lab samples registered</p>
         <p className="text-xs text-stone-500 max-w-sm mx-auto">
-          प्रकरणांमध्ये प्रयोगशाळा तपासणीची शिफारस केल्यास नमुने येथे दिसतील.
+          Samples referred to diagnostic laboratories during case examination will appear here.
         </p>
       </div>
     );
@@ -114,19 +114,19 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
         {samples.map((sample) => (
           <div key={sample.id} className="p-4 rounded-2xl border border-[#E5E0D8] bg-white space-y-2.5 shadow-xs">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#191F1C]">प्रकरण #{sample.case.caseNumber}</span>
+              <span className="text-xs font-bold text-[#191F1C]">Case #{sample.case.caseNumber}</span>
               {getStatusBadge(sample.status)}
             </div>
 
             <div className="text-xs text-stone-600 space-y-1">
-              <div>जनावर: <strong className="text-[#191F1C]">{sample.case.animal.tag} ({sample.case.animal.species})</strong></div>
-              <div>लॅब: <span className="text-stone-700">{sample.labName || "नोंद नाही"}</span></div>
-              <div>संकलक: <span className="text-stone-700">{sample.collectedByUser.name}</span></div>
+              <div>Animal: <strong className="text-[#191F1C]">{sample.case.animal.tag} ({sample.case.animal.species})</strong></div>
+              <div>Lab: <span className="text-stone-700">{sample.labName || "Not recorded"}</span></div>
+              <div>Collector: <span className="text-stone-700">{sample.collectedByUser.name}</span></div>
             </div>
 
             {sample.resultSummary && (
               <div className="p-2.5 rounded-xl bg-[#FAF8F3] text-xs text-stone-700 border border-[#E5E0D8]">
-                <strong>तपासणी निष्कर्ष:</strong> {sample.resultSummary}
+                <strong>Diagnostic Finding:</strong> {sample.resultSummary}
               </div>
             )}
 
@@ -137,7 +137,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
               onClick={() => openUpdateModal(sample)}
               className="w-full text-xs gap-1.5 border-[#D9D3C7] text-stone-700 hover:bg-[#FAF8F3] min-h-[36px]"
             >
-              नमुना स्थिती बदला
+              Update Sample Status
             </Button>
           </div>
         ))}
@@ -148,13 +148,13 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
         <table className="w-full text-xs text-left text-stone-700">
           <thead className="bg-[#FAF8F3] text-stone-600 font-semibold uppercase tracking-wider border-b border-[#E5E0D8]">
             <tr>
-              <th className="p-3">प्रकरण क्रमांक</th>
-              <th className="p-3">जनावर (Tag)</th>
-              <th className="p-3">प्रयोगशाळा नाव</th>
-              <th className="p-3">स्थिती</th>
-              <th className="p-3">संकलन तारीख</th>
-              <th className="p-3">तपासणी निष्कर्ष</th>
-              <th className="p-3 text-right">कारवाई</th>
+              <th className="p-3">Case Number</th>
+              <th className="p-3">Animal (Tag)</th>
+              <th className="p-3">Laboratory Name</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Collection Date</th>
+              <th className="p-3">Lab Finding</th>
+              <th className="p-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E0D8]">
@@ -162,10 +162,10 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
               <tr key={sample.id} className="hover:bg-[#FAF8F3]/50">
                 <td className="p-3 font-bold text-[#191F1C]">#{sample.case.caseNumber}</td>
                 <td className="p-3">{sample.case.animal.tag} ({sample.case.animal.species})</td>
-                <td className="p-3 text-stone-700">{sample.labName || "नोंद नाही"}</td>
+                <td className="p-3 text-stone-700">{sample.labName || "Not recorded"}</td>
                 <td className="p-3">{getStatusBadge(sample.status)}</td>
                 <td className="p-3 text-stone-500">{new Date(sample.collectedAt).toLocaleDateString()}</td>
-                <td className="p-3 truncate max-w-xs text-stone-600">{sample.resultSummary || "प्रलंबित"}</td>
+                <td className="p-3 truncate max-w-xs text-stone-600">{sample.resultSummary || "Pending"}</td>
                 <td className="p-3 text-right">
                   <Button
                     type="button"
@@ -174,7 +174,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
                     onClick={() => openUpdateModal(sample)}
                     className="text-xs h-7 border-[#D9D3C7] text-stone-700 hover:bg-[#FAF8F3]"
                   >
-                    बदला
+                    Update
                   </Button>
                 </td>
               </tr>
@@ -190,7 +190,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
             <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-3">
               <h4 className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
                 <FlaskConical className="h-4 w-4 text-amber-600" />
-                <span>लॅब नमुना स्थिती बदला — #{activeSample.case.caseNumber}</span>
+                <span>Update Lab Sample Status — #{activeSample.case.caseNumber}</span>
               </h4>
               <Button type="button" variant="ghost" size="sm" onClick={() => setActiveSample(null)} className="h-7 w-7 p-0 text-stone-500 cursor-pointer rounded-xl">✕</Button>
             </div>
@@ -198,16 +198,16 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
             {/* Progressive 4-stage visual timeline */}
             <div className="grid grid-cols-4 gap-1 p-2 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] text-[10px] text-center font-medium">
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "COLLECTED" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                १. संकलित
+                1. Collected
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "SENT" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                २. पाठवले
+                2. Sent to Lab
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "RESULT_PENDING" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                ३. प्रलंबित
+                3. Pending
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "RESULT_RECEIVED" ? "bg-emerald-100 text-emerald-900 font-bold" : "text-stone-500"}`}>
-                ४. अहवाल प्राप्त
+                4. Received
               </div>
             </div>
 
@@ -220,36 +220,36 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-stone-700 font-semibold mb-1 block">नमुना स्थिती (Sample Status)</label>
+                <label className="text-stone-700 font-semibold mb-1 block">Sample Status</label>
                 <select
                   value={newStatus}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewStatus(e.target.value as SampleStatus)}
                   className="w-full bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 min-h-[44px] focus:border-emerald-700"
                 >
-                  <option value="COLLECTED">नमुना संकलित (COLLECTED)</option>
-                  <option value="SENT">लॅबकडे पाठवला (SENT TO LAB)</option>
-                  <option value="RESULT_PENDING">अहवाल प्रलंबित (RESULT PENDING)</option>
-                  <option value="RESULT_RECEIVED">अहवाल प्राप्त (RESULT RECEIVED)</option>
+                  <option value="COLLECTED">Sample Collected (COLLECTED)</option>
+                  <option value="SENT">Sent to Lab (SENT TO LAB)</option>
+                  <option value="RESULT_PENDING">Result Pending (RESULT PENDING)</option>
+                  <option value="RESULT_RECEIVED">Result Received (RESULT RECEIVED)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-stone-700 font-semibold mb-1 block">प्रयोगशाळेचे नाव</label>
+                <label className="text-stone-700 font-semibold mb-1 block">Laboratory Name</label>
                 <Input
                   value={labName}
                   onChange={(e) => setLabName(e.target.value)}
-                  placeholder="उदा. प्रादेशिक पशु रोग अन्वेषण प्रयोगशाळा"
+                  placeholder="e.g. Regional Animal Disease Investigation Laboratory"
                   className="bg-[#FAF8F3] border-[#D9D3C7] text-xs text-[#191F1C]"
                 />
               </div>
 
               {newStatus === "RESULT_RECEIVED" && (
                 <div>
-                  <label className="text-stone-700 font-semibold mb-1 block">तपासणी निकाल व रोग निदान</label>
+                  <label className="text-stone-700 font-semibold mb-1 block">Diagnostic Result & Summary</label>
                   <Textarea
                     value={resultSummary}
                     onChange={(e) => setResultSummary(e.target.value)}
-                    placeholder="उदा. PCR चाचणीत लंपी त्वचा रोग विषाणू पॉझिटिव्ह आढळला"
+                    placeholder="e.g. PCR confirmed positive for Lumpy Skin Disease virus"
                     rows={3}
                     className="bg-[#FAF8F3] border-[#D9D3C7] text-xs text-[#191F1C]"
                   />
@@ -259,11 +259,11 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E0D8]">
               <Button type="button" variant="outline" size="sm" onClick={() => setActiveSample(null)} disabled={submitting} className="text-xs border-[#D9D3C7] text-stone-700">
-                रद्द करा
+                Cancel
               </Button>
               <Button type="button" size="sm" onClick={handleUpdateSample} disabled={submitting} className="text-xs bg-[#047857] hover:bg-[#065f46] text-white font-semibold gap-1.5 min-h-[36px]">
                 {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                <span>नमुना नोंद जतन करा</span>
+                <span>Save Sample Record</span>
               </Button>
             </div>
           </div>

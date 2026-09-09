@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, User, ShieldCheck, Stethoscope, Building2 } from "lucide-react";
+import { useLocale } from "@/components/layout/LocaleProvider";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { dictionary } = useLocale();
 
   const navItems = [
-    { href: "/", label: "Home", sublabel: "मुख्य", icon: Home },
-    { href: "/farmer", label: "Farmer", sublabel: "पशू नोंद", icon: User },
-    { href: "/agent", label: "Agent", sublabel: "पशुसखी", icon: ShieldCheck },
-    { href: "/vet", label: "Vet", sublabel: "डॉक्टर", icon: Stethoscope },
-    { href: "/authority", label: "Control", sublabel: "नियंत्रण", icon: Building2 },
+    { href: "/", label: dictionary.nav.home, icon: Home },
+    { href: "/farmer", label: dictionary.nav.farmer, icon: User },
+    { href: "/agent", label: dictionary.nav.agent, icon: ShieldCheck },
+    { href: "/vet", label: dictionary.nav.vet, icon: Stethoscope },
+    { href: "/authority", label: dictionary.nav.authority, icon: Building2 },
   ];
 
   return (
