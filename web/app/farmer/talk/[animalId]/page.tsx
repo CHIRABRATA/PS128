@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireFarmer, assertFarmerOwnsAnimal } from "@/lib/auth/permissions";
 import { getFarmerAnimalTalkContextAction } from "@/lib/actions/farmer-talk";
 import { getDictionary, Locale } from "@/lib/i18n";
+import { cookies } from "next/headers";
 import { FarmerChatBox } from "@/components/farmer/FarmerChatBox";
 
 interface PageProps {
@@ -25,7 +26,10 @@ export default async function ScopedFarmerTalkPage({ params }: PageProps) {
     notFound();
   }
 
-  const locale = (farmer.preferredLanguage === "hi" ? "hi" : farmer.preferredLanguage === "mr" ? "mr" : "en") as Locale;
+  const localeCookie = (await cookies()).get("maitri-locale")?.value;
+  const locale = (localeCookie === "bn" || localeCookie === "hi" || localeCookie === "mr" || localeCookie === "en"
+    ? localeCookie
+    : farmer.preferredLanguage) as Locale;
   const dict = getDictionary(locale);
 
   return (

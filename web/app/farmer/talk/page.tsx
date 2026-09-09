@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireFarmer } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/db/prisma";
 import { getDictionary, Locale } from "@/lib/i18n";
+import { cookies } from "next/headers";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,10 @@ import { MessageSquare, ChevronRight, ArrowLeft } from "lucide-react";
 
 export default async function FarmerTalkAnimalSelectorPage() {
   const farmer = await requireFarmer();
-  const locale = (farmer.preferredLanguage === "hi" ? "hi" : farmer.preferredLanguage === "mr" ? "mr" : "en") as Locale;
+  const localeCookie = (await cookies()).get("maitri-locale")?.value;
+  const locale = (localeCookie === "bn" || localeCookie === "hi" || localeCookie === "mr" || localeCookie === "en"
+    ? localeCookie
+    : farmer.preferredLanguage) as Locale;
   const dict = getDictionary(locale);
 
   // Fetch all animals owned by farmer across their farms
@@ -43,7 +47,7 @@ export default async function FarmerTalkAnimalSelectorPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">{dict.farmerTalk.title}</h1>
             <Badge className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200">
-              पशु आरोग्य संवाद
+              Livestock Health Talk
             </Badge>
           </div>
           <p className="text-stone-600 text-xs mt-1">
@@ -54,7 +58,7 @@ export default async function FarmerTalkAnimalSelectorPage() {
         <Link href="/farmer">
           <Button variant="outline" size="sm" className="text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 gap-1.5 rounded-xl">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>पशु नोंदवहीत परत जा</span>
+            <span>Back to Farmer Portal</span>
           </Button>
         </Link>
       </div>
@@ -62,9 +66,9 @@ export default async function FarmerTalkAnimalSelectorPage() {
       {animals.length === 0 ? (
         <Card className="border-[#E5E0D8] bg-white p-8 text-center rounded-3xl shadow-xs">
           <MessageSquare className="w-12 h-12 text-stone-400 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-stone-900">कोणतेही नोंदणीकृत जनावर आढळले नाही</h3>
+          <h3 className="text-lg font-bold text-stone-900">No registered animals found</h3>
           <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-            आपल्या खात्यावर नोंदणीकृत जनावरे नाहीत. जनावरांच्या कान-टॅग नोंदणीसाठी कृपया स्थानिक पशुसखी किंवा पशुवैद्यकीय अधिकाऱ्यांशी संपर्क साधा.
+            No livestock are currently registered under your account. Please contact your local field agent or veterinary dispensary for ear-tag registration.
           </p>
         </Card>
       ) : (
@@ -80,13 +84,13 @@ export default async function FarmerTalkAnimalSelectorPage() {
                 <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-[#E5E0D8]">
                   <div>
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-base text-[#191F1C]">टॅग: {animal.tag}</CardTitle>
+                      <CardTitle className="text-base text-[#191F1C]">Tag: {animal.tag}</CardTitle>
                       <Badge className="text-[10px] bg-stone-100 text-stone-700 border-stone-200">
                         {animal.species}
                       </Badge>
                     </div>
                     <CardDescription className="text-xs text-stone-500 mt-1">
-                      {animal.herd.farm.name} • जात: {animal.breed || "Standard"} • वय: {animal.ageMonths ? `${animal.ageMonths} महिने` : "नोंद नाही"}
+                      {animal.herd.farm.name} • Breed: {animal.breed || "Standard"} • Age: {animal.ageMonths ? `${animal.ageMonths} Months` : "Not recorded"}
                     </CardDescription>
                   </div>
 
@@ -106,15 +110,15 @@ export default async function FarmerTalkAnimalSelectorPage() {
                 <CardContent className="flex items-center justify-between pt-4">
                   <div className="text-xs text-stone-500">
                     {recentCase ? (
-                      <span>शेवटची नोंद: <strong className="text-stone-800">{recentCase.status}</strong></span>
+                      <span>Last Record: <strong className="text-stone-800">{recentCase.status}</strong></span>
                     ) : (
-                      <span>नियमित देखरेख</span>
+                      <span>Routine Care</span>
                     )}
                   </div>
 
                   <Link href={`/farmer/talk/${animal.id}`}>
                     <Button size="sm" className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm font-semibold rounded-xl">
-                      <span>आरोग्य चर्चा सुरू करा</span>
+                      <span>Start Health Talk</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Button>
                   </Link>

@@ -38,7 +38,7 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-emerald-800 transition-colors">
-                    1. Farmer / पशुपालक
+                    1. Farmer
                   </h3>
                   <span className="text-[11px] text-emerald-700 font-semibold">Animal Owner & First Responder</span>
                 </div>
@@ -74,7 +74,7 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-amber-800 transition-colors">
-                    2. Pashusakhi / पशुसखी
+                    2. Pashusakhi / Field Agent
                   </h3>
                   <span className="text-[11px] text-amber-700 font-semibold">Village Field Worker</span>
                 </div>
@@ -147,7 +147,7 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-blue-800 transition-colors">
-                    3. Veterinarian / पशुवैद्यकीय
+                    3. Veterinarian
                   </h3>
                   <span className="text-[11px] text-blue-700 font-semibold">Clinical Decision Authority</span>
                 </div>
@@ -183,7 +183,7 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-purple-800 transition-colors">
-                    4. District Officer / जिल्हा अधिकारी
+                    4. District Officer
                   </h3>
                   <span className="text-[11px] text-purple-700 font-semibold">Surveillance & Containment</span>
                 </div>

@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, UserCheck, Stethoscope, Building2, CheckCircle2, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { completeOnboardingAction } from "@/lib/actions/auth";
 import { getDistricts, getBlocks, getVillages } from "@/lib/actions/geo";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { Locale } from "@/lib/i18n";
 
 interface GeoItem {
   id: string;
@@ -18,11 +20,12 @@ interface GeoItem {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { locale, setLocale } = useLocale();
 
   const [selectedRole, setSelectedRole] = useState<"FARMER" | "FIELD_AGENT" | "VETERINARIAN" | "DISTRICT_AUTHORITY">("FARMER");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [language, setLanguage] = useState("mr");
+  const [language, setLanguage] = useState<Locale>(locale);
 
   const [districts, setDistricts] = useState<GeoItem[]>([]);
   const [blocks, setBlocks] = useState<GeoItem[]>([]);
@@ -239,7 +242,11 @@ export default function OnboardingPage() {
                 <select
                   id="language"
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+                  onChange={(e) => {
+                    const nextLocale = e.target.value as Locale;
+                    setLanguage(nextLocale);
+                    setLocale(nextLocale);
+                  }}
                   className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
                 >
                       <option value="mr">मराठी (Maharashtra / Marathi)</option>

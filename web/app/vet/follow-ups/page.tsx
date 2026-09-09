@@ -15,13 +15,13 @@ export default async function VetFollowUpsPage() {
       <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-4">
         <div>
           <Badge variant="outline" className="border-emerald-300 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono">
-            पुनर्तपासणी दिनदर्शिका (Clinical Calendar)
+            Clinical Calendar
           </Badge>
           <h1 className="text-2xl font-black text-[#191F1C] tracking-tight mt-1">
-            पशुवैद्यकीय पुनर्तपासणी ट्रॅकर
+            Veterinary Follow-up Tracker
           </h1>
           <p className="text-xs text-stone-500">
-            ज्या जनावरांना औषधोपचारानंतर फेरतपासणीची तारीख दिली आहे त्यांची यादी.
+            Scheduled follow-up appointments and post-treatment clinical checkups.
           </p>
         </div>
       </div>
@@ -30,15 +30,15 @@ export default async function VetFollowUpsPage() {
         <CardHeader className="border-b border-[#E5E0D8] pb-3 bg-[#FAF8F3]">
           <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
             <Calendar className="h-5 w-5 text-amber-600" />
-            <span>नियोजित फेरतपासण्या ({followUps.length})</span>
+            <span>Scheduled Follow-ups ({followUps.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           {followUps.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 space-y-2">
               <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
-              <p className="font-semibold text-[#191F1C]">कोणतीही प्रलंबित पुनर्तपासणी नाही</p>
-              <p>सध्या कोणत्याही जनावरासाठी फेरतपासणी नियोजित नाही.</p>
+              <p className="font-semibold text-[#191F1C]">No Pending Follow-ups</p>
+              <p>There are currently no follow-up visits scheduled.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -57,31 +57,31 @@ export default async function VetFollowUpsPage() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#191F1C]">प्रकरण #{item.caseNumber}</span>
+                        <span className="text-sm font-bold text-[#191F1C]">Case #{item.caseNumber}</span>
                         <Badge variant="outline" className="text-[10px] border-[#D9D3C7] text-stone-700">
                           {item.status}
                         </Badge>
                         {isOverdue && (
                           <Badge variant="destructive" className="text-[10px] bg-red-100 text-red-800 border-red-200 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" /> मुदत संपली (OVERDUE)
+                            <AlertCircle className="h-3 w-3" /> OVERDUE
                           </Badge>
                         )}
                       </div>
 
                       <p className="text-xs text-stone-600">
-                        जनावर: <strong className="text-[#191F1C] font-mono">{item.animal.tag} ({item.animal.species})</strong> • शेत: <strong className="text-[#191F1C]">{item.animal.herd.farm.name}</strong> ({item.animal.herd.farm.village.name})
+                        Animal: <strong className="text-[#191F1C] font-mono">{item.animal.tag} ({item.animal.species})</strong> • Farm: <strong className="text-[#191F1C]">{item.animal.herd.farm.name}</strong> ({item.animal.herd.farm.village.name})
                       </p>
 
                       {item.vetDiagnosis && (
                         <p className="text-xs text-emerald-800 font-medium pt-0.5">
-                          निदान: {item.vetDiagnosis}
+                          Diagnosis: {item.vetDiagnosis}
                         </p>
                       )}
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                       <div className="text-right">
-                        <span className="text-[10px] text-stone-500 uppercase font-semibold block">तपासणी तारीख</span>
+                        <span className="text-[10px] text-stone-500 uppercase font-semibold block">Scheduled Date</span>
                         <span className={`text-xs font-bold font-mono ${isOverdue ? "text-red-700" : "text-amber-800"}`}>
                           {dueDate.toLocaleDateString()}
                         </span>
@@ -89,7 +89,7 @@ export default async function VetFollowUpsPage() {
 
                       <Link href={`/vet/cases/${item.id}`}>
                         <Button type="button" size="sm" className="text-xs h-8 bg-[#047857] hover:bg-[#065f46] text-white font-semibold gap-1 min-h-[32px]">
-                          <span>पुनर्तपासणी करा</span>
+                          <span>Perform Follow-up</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </Link>

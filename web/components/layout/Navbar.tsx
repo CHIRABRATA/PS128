@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { ShieldCheck, Stethoscope, Building2, User, Home, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getDictionary, Locale } from "@/lib/i18n";
+import { Locale } from "@/lib/i18n";
+import { useLocale } from "@/components/layout/LocaleProvider";
 
 const languageOptions: { value: Locale; label: string }[] = [
   { value: "en", label: "English" },
@@ -17,24 +17,7 @@ const languageOptions: { value: Locale; label: string }[] = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const [locale, setLocale] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "en";
-    const savedLocale = window.localStorage.getItem("maitri-locale") as Locale | null;
-    return savedLocale && languageOptions.some((option) => option.value === savedLocale) ? savedLocale : "en";
-  });
-
-  useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
-
-  const dictionary = getDictionary(locale);
-
-  const handleLocaleChange = (nextLocale: Locale) => {
-    setLocale(nextLocale);
-    window.localStorage.setItem("maitri-locale", nextLocale);
-    document.documentElement.lang = nextLocale;
-    window.dispatchEvent(new CustomEvent("maitri-locale-change", { detail: nextLocale }));
-  };
+  const { locale, dictionary, setLocale } = useLocale();
 
   const navLinks = [
     { href: "/farmer", label: dictionary.nav.farmer, icon: User },
@@ -48,13 +31,13 @@ export function Navbar() {
       {/* Brand Logo & Identity */}
       <Link href="/" className="flex items-center gap-3 group">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-800 text-white font-extrabold shadow-sm group-hover:bg-emerald-700 transition-colors">
-          <span className="text-base tracking-tight font-serif">पशु</span>
+          <span className="text-lg tracking-tight font-serif font-black">M</span>
         </div>
         <div className="flex flex-col text-left">
           <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
             MAITRI • Livestock Health
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-              पशु आरोग्य सेवा
+              Livestock Health Services
             </span>
           </span>
           <span className="text-[11px] text-stone-500 hidden sm:inline leading-tight">
@@ -93,7 +76,7 @@ export function Navbar() {
           <select
             aria-label="Choose language"
             value={locale}
-            onChange={(event) => handleLocaleChange(event.target.value as Locale)}
+            onChange={(event) => setLocale(event.target.value as Locale)}
             className="max-w-[92px] cursor-pointer bg-transparent font-semibold outline-none"
           >
             {languageOptions.map((option) => (
@@ -121,7 +104,7 @@ export function Navbar() {
             <Link href="/dashboard">
               <Button size="sm" variant="outline" className="text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 flex items-center gap-1.5">
                 <Home className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Dashboard</span>
+                <span>{dictionary.nav.dashboard}</span>
               </Button>
             </Link>
             <UserButton
