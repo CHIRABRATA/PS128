@@ -74,9 +74,9 @@ export function IoTAnalysisCard({ telemetrySignals }: IoTAnalysisCardProps) {
         {heartRateElevated && (
           <div className="flex justify-between items-center text-red-700">
             <span className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> हृदय गती:
+              <AlertCircle className="h-3 w-3" /> Heart rate:
             </span>
-            <span className="font-bold">वाढलेली (Elevated BPM)</span>
+            <span className="font-bold">Elevated BPM</span>
           </div>
         )}
       </div>

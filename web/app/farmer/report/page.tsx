@@ -3,17 +3,12 @@ import { HealthReportForm } from "@/components/reporting/HealthReportForm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { cookies } from "next/headers";
-import { defaultLocale, Locale } from "@/lib/i18n";
 import { getReportCopy } from "@/lib/i18n/report";
+import { LocaleProvider } from "@/components/layout/LocaleProvider";
 
 export default async function FarmerReportPage() {
   await requireFarmer();
-  const cookieLocale = (await cookies()).get("maitri-locale")?.value;
-  const locale = ["en", "bn", "hi", "mr"].includes(cookieLocale || "")
-    ? (cookieLocale as Locale)
-    : defaultLocale;
-  const copy = getReportCopy(locale);
+  const copy = getReportCopy("en");
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-4xl mx-auto w-full gap-6 bg-[#FAF8F3] text-[#191F1C]">
@@ -33,7 +28,9 @@ export default async function FarmerReportPage() {
         </Link>
       </div>
 
-      <HealthReportForm mode="farmer" />
+      <LocaleProvider initialLocale="en">
+        <HealthReportForm mode="farmer" />
+      </LocaleProvider>
     </div>
   );
 }

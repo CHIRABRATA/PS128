@@ -9,18 +9,18 @@ interface SymptomSelectorProps {
 }
 
 const AVAILABLE_SYMPTOMS = [
-  { id: "Fever", label: "High Fever (तीव्र ताप)" },
-  { id: "Skin Lesions", label: "Skin Nodules / Lumps (अंगावर गाठी व फोड)" },
-  { id: "Nasal Discharge", label: "Nasal Discharge (नाकातून स्त्राव)" },
-  { id: "Salivation", label: "Excessive Salivation (तोंडातून लाळ गळणे)" },
-  { id: "Reduced Milk Yield", label: "Drop in Milk Yield (दूध उत्पादनात घट)" },
-  { id: "Coughing", label: "Coughing / Sneezing (खोकला / शिंका)" },
-  { id: "Labored Breathing", label: "Rapid Breathing (धाप लागणे)" },
-  { id: "Difficulty Walking", label: "Lameness / Limping (लंगडणे / चालण्यास त्रास)" },
-  { id: "Reduced Eating", label: "Loss of Appetite (चारा न खाणे)" },
-  { id: "Diarrhea", label: "Diarrhea (हगवण / पातळ शेण)" },
-  { id: "Weakness", label: "Lethargy / Weakness (सुस्ती / अशक्तपणा)" },
-  { id: "Other", label: "Other Symptoms (इतर लक्षणे)" },
+  { id: "Fever", label: "High Fever" },
+  { id: "Skin Lesions", label: "Skin Nodules / Lumps" },
+  { id: "Nasal Discharge", label: "Nasal Discharge" },
+  { id: "Salivation", label: "Excessive Salivation" },
+  { id: "Reduced Milk Yield", label: "Drop in Milk Yield" },
+  { id: "Coughing", label: "Coughing / Sneezing" },
+  { id: "Labored Breathing", label: "Rapid Breathing" },
+  { id: "Difficulty Walking", label: "Lameness / Limping" },
+  { id: "Reduced Eating", label: "Loss of Appetite" },
+  { id: "Diarrhea", label: "Diarrhea" },
+  { id: "Weakness", label: "Lethargy / Weakness" },
+  { id: "Other", label: "Other Symptoms" },
 ];
 
 export function SymptomSelector({ selectedSymptoms, onChangeSymptoms }: SymptomSelectorProps) {
@@ -36,10 +36,10 @@ export function SymptomSelector({ selectedSymptoms, onChangeSymptoms }: SymptomS
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-          दिसणारी लक्षणे निवडा | Observed Symptoms (Select All) *
+          Observed Symptoms (Select All) *
         </label>
         <span className="text-[11px] text-emerald-800 font-bold font-mono">
-          {selectedSymptoms.length} निवडले
+          {selectedSymptoms.length} selected
         </span>
       </div>
 

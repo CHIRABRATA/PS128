@@ -33,7 +33,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
   const [step, setStep] = useState(1);
 
   // Form State
-  const [submissionId] = useState(() => `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+  const [submissionId, setSubmissionId] = useState("pending-submission");
   const [selectedAnimal, setSelectedAnimal] = useState<PrintableAnimalOption | null>(null);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState<number>(1);
@@ -79,19 +79,39 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
     setFormError("");
   };
 
+  const resetReport = () => {
+    setSubmissionId("pending-submission");
+    setSelectedAnimal(null);
+    setSymptoms([]);
+    setDurationDays(1);
+    setAffectedCount(1);
+    setHerdSize(1);
+    setMortalityCount(0);
+    setHeartRate(null);
+    setPhotoUrl(null);
+    setGpsLat(null);
+    setGpsLng(null);
+    setTemperature(null);
+    setActivity(null);
+    setSubmitResult(null);
+    setAiState(null);
+    setFormError("");
+    setStep(1);
+  };
+
   const handleNextStep = () => {
     setFormError("");
     if (step === 1 && !selectedAnimal) {
-      setFormError("कृपया पुढे जाण्यापूर्वी जनावराचा कान-टॅग निवडा.");
+      setFormError("Select an animal ear tag before continuing.");
       return;
     }
     if (step === 2 && symptoms.length === 0) {
-      setFormError("कृपया किमान एक दिसणारे लक्षण निवडा.");
+      setFormError("Select at least one observed symptom.");
       return;
     }
     if (step === 3) {
       if (affectedCount > herdSize) {
-        setFormError(`बाधित जनावरांची संख्या (${affectedCount}) एकूण कळपापेक्षा (${herdSize}) जास्त असू शकत नाही.`);
+        setFormError(`Affected animals (${affectedCount}) cannot exceed the herd size (${herdSize}).`);
         return;
       }
     }
@@ -105,19 +125,24 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
 
   const handleSubmitReport = async () => {
     if (!selectedAnimal) {
-      setFormError("जनावर निवडणे आवश्यक आहे.");
+      setFormError("Animal selection is required.");
       return;
     }
     if (symptoms.length === 0) {
-      setFormError("किमान एक लक्षण निवडणे आवश्यक आहे.");
+      setFormError("At least one symptom is required.");
       return;
     }
+
+    const reportSubmissionId = submissionId === "pending-submission"
+      ? `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+      : submissionId;
+    setSubmissionId(reportSubmissionId);
 
     setSubmitting(true);
     setFormError("");
 
     const reportPayload = {
-      submissionId,
+      submissionId: reportSubmissionId,
       animalId: selectedAnimal.id,
       symptoms,
       durationDays,
@@ -144,8 +169,8 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
 
       if (!isOnline) {
         await enqueueReport({
-          id: submissionId,
-          submissionId,
+          id: reportSubmissionId,
+          submissionId: reportSubmissionId,
           clerkUserId: "local_user",
           animalId: selectedAnimal.id,
           symptoms,
@@ -170,7 +195,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         setSubmitResult({
           success: true,
           offlineQueued: true,
-          submissionId,
+          submissionId: reportSubmissionId,
         });
         setSubmitting(false);
         return;
@@ -180,7 +205,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
       if (res.success) {
         setSubmitResult(res);
       } else {
-        setFormError(res.error || "अहवाल सादर करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
+        setFormError(res.error || "Report submission failed. Please try again.");
       }
     } catch (err: unknown) {
       const isNetworkError =
@@ -189,8 +214,8 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
       if (isNetworkError) {
         try {
           await enqueueReport({
-            id: submissionId,
-            submissionId,
+            id: reportSubmissionId,
+            submissionId: reportSubmissionId,
             clerkUserId: "local_user",
             animalId: selectedAnimal.id,
             symptoms,
@@ -215,7 +240,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           setSubmitResult({
             success: true,
             offlineQueued: true,
-            submissionId,
+            submissionId: reportSubmissionId,
           });
           return;
         } catch {
@@ -223,7 +248,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         }
       }
 
-      setFormError(err instanceof Error ? err.message : "सर्व्हरशी संपर्क होऊ शकला नाही.");
+      setFormError(err instanceof Error ? err.message : "Unable to contact the server.");
     } finally {
       setSubmitting(false);
     }
@@ -239,29 +264,29 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           </div>
 
           <Badge className="text-xs px-3 py-1 bg-amber-100 text-amber-900 border-amber-300 font-semibold">
-            ऑफलाइन जतन केले (Queued Locally)
+            Saved offline (Queued Locally)
           </Badge>
 
           <CardTitle className="text-xl font-bold text-[#191F1C]">
-            अहवाल स्थानिक साठ्यात सुरक्षित आहे
+            Report saved locally
           </CardTitle>
 
           <CardDescription className="text-xs text-stone-600 max-w-sm">
-            आपला अहवाल <strong className="text-stone-900">{selectedAnimal?.tag}</strong> साठी सुरक्षितपणे फोनमध्ये नोंदवला गेला आहे. नेटवर्क उपलब्ध होताच तो स्वयंचलितपणे सिंक होईल.
+            Your report for <strong className="text-stone-900">{selectedAnimal?.tag}</strong> is safely stored on this device and will sync automatically when the network is available.
           </CardDescription>
         </div>
 
         <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs text-left space-y-2 text-stone-700">
           <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-            <span className="text-stone-500">जनावर टॅग:</span>
+            <span className="text-stone-500">Animal tag:</span>
             <span className="font-bold text-stone-900">{selectedAnimal?.tag} ({selectedAnimal?.species})</span>
           </div>
           <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-            <span className="text-stone-500">नोंदवलेली लक्षणे:</span>
+            <span className="text-stone-500">Recorded symptoms:</span>
             <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-stone-500">नोंदणी क्रमांक:</span>
+            <span className="text-stone-500">Submission ID:</span>
             <span className="font-mono text-stone-600">{submissionId}</span>
           </div>
         </div>
@@ -276,7 +301,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           }}
           className="w-full text-xs bg-amber-700 hover:bg-amber-800 text-white font-semibold rounded-xl min-h-[44px]"
         >
-          आणखी एक अहवाल नोंदवा
+            Create another report
         </Button>
       </Card>
     );
@@ -376,7 +401,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
       <CardHeader className="border-b border-[#E5E0D8] pb-4">
         <div className="flex items-center justify-between">
           <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono">
-            टप्पा {step} / ७ — {mode === "farmer" ? "पशुपालक नोंदणी" : "पशुसखी क्षेत्रीय तपासणी"}
+            Step {step} / 7 — {mode === "farmer" ? "Farmer report" : "Field inspection"}
           </Badge>
           <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5, 6, 7].map((s) => (
@@ -395,23 +420,23 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         </div>
 
         <CardTitle className="text-xl font-bold text-[#191F1C] tracking-tight mt-1">
-          {step === 1 && "१. आजारी जनावर निवडा (Animal Tag)"}
-          {step === 2 && "२. दिसणारी लक्षणे (Observed Symptoms)"}
-          {step === 3 && "३. कालावधी व बाधित जनावरांची संख्या"}
-          {step === 4 && "४. व्रण / गाठी छायाचित्र (Lesion Photo)"}
-          {step === 5 && "५. क्षेत्रीय GPS स्थान (Coordinates)"}
-          {step === 6 && "६. शारीरिक तापमान व IoT Vitals"}
-          {step === 7 && "७. अहवाल पुनरावलोकन व सादर करा"}
+          {step === 1 && "1. Select Sick Animal (Animal Tag)"}
+          {step === 2 && "2. Observed Symptoms"}
+          {step === 3 && "3. Duration and Affected Animals"}
+          {step === 4 && "4. Lesion Photo"}
+          {step === 5 && "5. GPS Location"}
+          {step === 6 && "6. Temperature and IoT Vitals"}
+          {step === 7 && "7. Review and Submit Report"}
         </CardTitle>
 
         <CardDescription className="text-xs text-stone-500">
-          {step === 1 && "ज्या जनावरामध्ये आजारपणाची लक्षणे दिसत आहेत ते निवडा."}
-          {step === 2 && "जनावरामध्ये दिसणाऱ्या सर्व लक्षणांची निवड करा."}
-          {step === 3 && "आजार किती दिवसांपासून आहे व एकूण बाधित जनावरांची नोंद करा."}
-          {step === 4 && "त्वचेवरील गाठी, तोंड, डोळे किंवा लाळेचा स्पष्ट फोटो जोडा."}
-          {step === 5 && "रोग नकाशामध्ये योग्य नोंद होण्यासाठी GPS स्थान जोडा."}
-          {step === 6 && "थर्मामीटरने मोजलेले तापमान किंवा सेन्सर माहिती नोंदवा."}
-          {step === 7 && "सर्व माहिती तपासून अहवाल मध्यवर्ती प्रणालीत सादर करा."}
+          {step === 1 && "Select the animal showing signs of illness."}
+          {step === 2 && "Select all symptoms observed in the animal."}
+          {step === 3 && "Record how long the illness has lasted and how many animals are affected."}
+          {step === 4 && "Add a clear photo of skin lesions, the mouth, eyes, or saliva."}
+          {step === 5 && "Add GPS coordinates for accurate disease mapping."}
+          {step === 6 && "Enter measured temperature or available sensor information."}
+          {step === 7 && "Review all information and submit the report."}
         </CardDescription>
       </CardHeader>
 
@@ -430,6 +455,11 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
               <FarmerAnimalSelector
                 selectedAnimal={selectedAnimal}
                 onSelectAnimal={handleAnimalSelected}
+                onRemoveAnimal={() => {
+                  setSelectedAnimal(null);
+                  setFormError("");
+                }}
+                onNewReport={resetReport}
               />
             ) : (
               <AgentAnimalSelector
@@ -456,24 +486,24 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Duration Days */}
               <div className="space-y-2">
-                <Label htmlFor="duration" className="text-xs text-stone-700 font-bold">लक्षणे किती दिवसांपासून आहेत? *</Label>
+                <Label htmlFor="duration" className="text-xs text-stone-700 font-bold">How long have symptoms been present? *</Label>
                 <select
                   id="duration"
                   value={durationDays}
                   onChange={(e) => setDurationDays(parseInt(e.target.value, 10))}
                   className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px] shadow-xs"
                 >
-                  <option value={1}>आजपासून (१ दिवस)</option>
-                  <option value={2}>२ दिवसांपासून</option>
-                  <option value={3}>३ दिवसांपासून</option>
-                  <option value={5}>४-५ दिवसांपासून</option>
-                  <option value={7}>आठवड्यापेक्षा जास्त कालावधी</option>
+                  <option value={1}>Today (1 day)</option>
+                  <option value={2}>2 days</option>
+                  <option value={3}>3 days</option>
+                  <option value={5}>4-5 days</option>
+                  <option value={7}>More than one week</option>
                 </select>
               </div>
 
               {/* Affected Count */}
               <div className="space-y-2">
-                <Label htmlFor="affected" className="text-xs text-stone-700 font-bold">बाधित जनावरांची संख्या *</Label>
+                <Label htmlFor="affected" className="text-xs text-stone-700 font-bold">Number of affected animals *</Label>
                 <Input
                   id="affected"
                   type="number"
@@ -486,7 +516,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
 
               {/* Herd Size */}
               <div className="space-y-2">
-                <Label htmlFor="herd" className="text-xs text-stone-700 font-bold">कळपातील एकूण जनावरे *</Label>
+                <Label htmlFor="herd" className="text-xs text-stone-700 font-bold">Total animals in herd *</Label>
                 <Input
                   id="herd"
                   type="number"
@@ -499,7 +529,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
 
               {/* Mortality Count */}
               <div className="space-y-2">
-                <Label htmlFor="mortality" className="text-xs text-stone-700 font-bold">मृत्यू संख्या (Mortality Deaths)</Label>
+                <Label htmlFor="mortality" className="text-xs text-stone-700 font-bold">Deaths (mortality)</Label>
                 <Input
                   id="mortality"
                   type="number"
@@ -551,39 +581,39 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         {step === 7 && (
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-              नोंदवलेल्या अहवालाचा सारांश | Report Summary
+              Report Summary
             </h4>
 
             <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2.5 text-stone-700">
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">निवडलेले जनावर:</span>
+                <span className="text-stone-500">Selected animal:</span>
                 <span className="font-bold text-stone-900">{selectedAnimal?.tag} ({selectedAnimal?.species})</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">शेत / गाव:</span>
+                <span className="text-stone-500">Farm / village:</span>
                 <span className="font-medium text-stone-900">{selectedAnimal?.farmName} ({selectedAnimal?.villageName})</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">निवडलेली लक्षणे:</span>
+                <span className="text-stone-500">Selected symptoms:</span>
                 <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">कालावधी व संख्या:</span>
-                <span>{durationDays} दिवस • {affectedCount} पैकी {herdSize} बाधित</span>
+                <span className="text-stone-500">Duration and count:</span>
+                <span>{durationDays} days • {affectedCount} of {herdSize} affected</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">मृत्यू:</span>
+                <span className="text-stone-500">Deaths:</span>
                 <span className={mortalityCount > 0 ? "font-bold text-red-700" : "text-stone-600"}>
-                  {mortalityCount} मृत्यू
+                  {mortalityCount}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">छायाचित्र:</span>
-                <span>{photoUrl ? "जोडले आहे (तपासणीसाठी तयार)" : "छायाचित्र जोडलेले नाही"}</span>
+                <span className="text-stone-500">Photo:</span>
+                <span>{photoUrl ? "Attached (ready for review)" : "No photo attached"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">GPS स्थान:</span>
-                <span>{gpsLat && gpsLng ? `${gpsLat.toFixed(4)}, ${gpsLng.toFixed(4)}` : "गावाचे डीफॉल्ट स्थान"}</span>
+                <span className="text-stone-500">GPS location:</span>
+                <span>{gpsLat && gpsLng ? `${gpsLat.toFixed(4)}, ${gpsLng.toFixed(4)}` : "Village default location"}</span>
               </div>
             </div>
           </div>
@@ -602,7 +632,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             className="gap-1 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 min-h-[40px] rounded-xl cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>मागे (Back)</span>
+            <span>Back</span>
           </Button>
         ) : (
           <div />
@@ -615,7 +645,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             onClick={handleNextStep}
             className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[40px] rounded-xl cursor-pointer shadow-sm"
           >
-            <span>पुढील टप्पा</span>
+            <span>Next step</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         ) : (
@@ -629,12 +659,12 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>अहवाल सादर होत आहे...</span>
+                <span>Submitting report...</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4" />
-                <span>अहवाल सादर करा</span>
+                <span>Submit report</span>
               </>
             )}
           </Button>

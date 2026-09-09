@@ -26,9 +26,9 @@ export function WeatherRiskCard({ weatherSignals }: WeatherRiskCardProps) {
   }
 
   const vectorRisk = String(weatherSignals.vector_breeding_risk || "UNKNOWN");
-  const temperature = weatherSignals.temperature;
-  const humidity = weatherSignals.humidity;
-  const precipitation = weatherSignals.precipitation;
+  const temperature = typeof weatherSignals.temperature === "number" ? weatherSignals.temperature : null;
+  const humidity = typeof weatherSignals.humidity === "number" ? weatherSignals.humidity : null;
+  const precipitation = typeof weatherSignals.precipitation === "number" ? weatherSignals.precipitation : null;
 
   return (
     <div className="p-3.5 rounded-2xl border border-[#E5E0D8] bg-white text-xs space-y-2.5 text-[#191F1C] shadow-xs">
