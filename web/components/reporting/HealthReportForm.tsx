@@ -20,12 +20,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Stethoscope, WifiOff } from "lucide-react";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { getReportCopy } from "@/lib/i18n/report";
 
 interface HealthReportFormProps {
   mode: "farmer" | "agent";
 }
 
 export function HealthReportForm({ mode }: HealthReportFormProps) {
+  const { locale } = useLocale();
+  const copy = getReportCopy(locale);
   const [step, setStep] = useState(1);
 
   // Form State
@@ -288,40 +292,40 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           </div>
 
           <Badge className="text-xs px-3 py-1 bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold">
-            प्रकरण यशस्वीरीत्या नोंदवले गेले
+            {copy.successBadge}
           </Badge>
 
           <CardTitle className="text-2xl font-bold text-[#191F1C]">
-            प्रकरण #{submitResult.caseNumber}
+            {copy.caseFor} #{submitResult.caseNumber}
           </CardTitle>
 
           <CardDescription className="text-xs text-stone-600 max-w-sm">
-            <strong className="text-stone-900">{selectedAnimal?.tag}</strong> साठी आरोग्य तक्रार नोंदवली असून तालुका पशुवैद्यकीय अधिकाऱ्यांकडे पाठवली आहे.
+            <strong className="text-stone-900">{selectedAnimal?.tag}</strong> {copy.submittedToVet}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4 text-left p-0">
           <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2 text-stone-700">
             <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">तक्रार स्थिती:</span>
+              <span className="text-stone-500">{copy.status}:</span>
               <Badge className="text-[10px] bg-amber-100 text-amber-900 border-amber-300 font-bold">
                 {submitResult.status || "PENDING_REVIEW"}
               </Badge>
             </div>
             <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">नोंदणी प्रकार:</span>
-              <span className="font-semibold text-stone-800">{mode === "farmer" ? "शेतकरी स्व-नोंदणी" : "पशुसखी क्षेत्रीय तपासणी"}</span>
+              <span className="text-stone-500">{copy.registrationType}:</span>
+              <span className="font-semibold text-stone-800">{mode === "farmer" ? copy.farmerSelf : "Field inspection"}</span>
             </div>
             <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">जनावर टॅग:</span>
+              <span className="text-stone-500">{copy.animalTag}:</span>
               <span className="font-bold text-emerald-800">{selectedAnimal?.tag} ({selectedAnimal?.species})</span>
             </div>
             <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">नोंदवलेली लक्षणे:</span>
+              <span className="text-stone-500">{copy.symptoms}:</span>
               <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stone-500">तक्रार वेळ:</span>
+              <span className="text-stone-500">{copy.reportedAt}:</span>
               <span className="text-stone-600">{submitResult.reportedAt ? new Date(submitResult.reportedAt).toLocaleString() : new Date().toLocaleString()}</span>
             </div>
           </div>
@@ -329,7 +333,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           <div className="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 text-xs text-emerald-950 flex items-start gap-2.5">
             <Stethoscope className="h-5 w-5 text-emerald-700 shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed">
-              आपली आरोग्य तक्रार मध्यवर्ती प्रणालीत नोंदवली आहे. पशुवैद्यकीय अधिकारी यावर योग्य उपचार व सल्ला देतील.
+              {copy.centralNotice}
             </p>
           </div>
 
@@ -352,7 +356,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             }}
             className="w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[44px] rounded-xl"
           >
-            दुसऱ्या जनावराची तक्रार नोंदवा
+            {copy.newReport}
           </Button>
         </CardFooter>
       </Card>
