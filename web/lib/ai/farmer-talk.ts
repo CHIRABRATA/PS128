@@ -90,7 +90,7 @@ function buildUserPrompt(
     .join("\n");
 
   return `
-REQUESTED LANGUAGE: ${preferredLanguage === "hi" ? "Hindi" : "English"}
+REQUESTED LANGUAGE: ${{ en: "English", bn: "Bengali", hi: "Hindi", mr: "Marathi" }[preferredLanguage] || preferredLanguage}
 
 ANIMAL CONTEXT PACKET (REAL VERIFIED RECORDS):
 ${JSON.stringify(animalContext, null, 2)}
@@ -103,6 +103,29 @@ FARMER'S NEW MESSAGE:
 
 Respond in JSON adhering strictly to the safety instructions.
 `;
+}
+
+function buildSafeHistoryFallback(animalContext: AnimalContextPacket, preferredLanguage: string, hasHighRisk: boolean): FarmerTalkResponse {
+  const latestCase = animalContext.recentCases[0];
+  const latestVaccination = animalContext.vaccinations[0];
+  const latestTreatment = animalContext.treatments[0];
+  const symptoms = latestCase?.symptoms.join(", ") || "none recorded";
+  const condition = latestCase?.suspectedCondition || "not recorded";
+  const risk = latestCase?.overallRiskLevel || "not recorded";
+
+  const summaries = {
+    en: `Animal ${animalContext.animalIdentity.tag}: ${animalContext.recentCases.length} recent health record(s). Latest symptoms: ${symptoms}. Suspected condition: ${condition}. Recorded risk: ${risk}. ${latestVaccination ? `Latest vaccination: ${latestVaccination.vaccineName} on ${latestVaccination.dateGiven}. ` : ""}${latestTreatment ? `Latest recorded treatment: ${latestTreatment.medication} on ${latestTreatment.dateGiven}. ` : ""}${hasHighRisk ? "A high or critical risk was recorded. Contact a veterinarian immediately." : "For examination or treatment guidance, contact your local veterinarian or field agent."}`,
+    bn: `${animalContext.animalIdentity.tag} পশুর ${animalContext.recentCases.length}টি সাম্প্রতিক স্বাস্থ্য রেকর্ড আছে। সর্বশেষ লক্ষণ: ${symptoms}। সন্দেহভাজন অবস্থা: ${condition}। নথিভুক্ত ঝুঁকি: ${risk}। ${latestVaccination ? `সর্বশেষ টিকা: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}। ` : ""}${latestTreatment ? `সর্বশেষ চিকিৎসা: ${latestTreatment.medication}, ${latestTreatment.dateGiven}। ` : ""}${hasHighRisk ? "উচ্চ বা গুরুতর ঝুঁকি নথিভুক্ত হয়েছে। অবিলম্বে পশুচিকিৎসকের সঙ্গে যোগাযোগ করুন।" : "পরীক্ষা বা চিকিৎসার পরামর্শের জন্য স্থানীয় পশুচিকিৎসক বা মাঠকর্মীর সঙ্গে যোগাযোগ করুন।"}`,
+    hi: `पशु ${animalContext.animalIdentity.tag} के ${animalContext.recentCases.length} हालिया स्वास्थ्य रिकॉर्ड हैं। नवीनतम लक्षण: ${symptoms}। संदिग्ध स्थिति: ${condition}। दर्ज जोखिम: ${risk}। ${latestVaccination ? `नवीनतम टीका: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}। ` : ""}${latestTreatment ? `नवीनतम दर्ज उपचार: ${latestTreatment.medication}, ${latestTreatment.dateGiven}। ` : ""}${hasHighRisk ? "उच्च या गंभीर जोखिम दर्ज है। तुरंत पशु चिकित्सक से संपर्क करें।" : "जांच या उपचार संबंधी सलाह के लिए स्थानीय पशु चिकित्सक या फील्ड एजेंट से संपर्क करें।"}`,
+    mr: `जनावर ${animalContext.animalIdentity.tag} चे ${animalContext.recentCases.length} अलीकडील आरोग्य नोंदी आहेत. नवीनतम लक्षणे: ${symptoms}. संशयित स्थिती: ${condition}. नोंदवलेला धोका: ${risk}. ${latestVaccination ? `नवीनतम लसीकरण: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}. ` : ""}${latestTreatment ? `नवीनतम नोंदवलेला उपचार: ${latestTreatment.medication}, ${latestTreatment.dateGiven}. ` : ""}${hasHighRisk ? "उच्च किंवा गंभीर धोका नोंदवला आहे. त्वरित पशुवैद्यकाशी संपर्क साधा." : "तपासणी किंवा उपचाराच्या मार्गदर्शनासाठी स्थानिक पशुवैद्यक किंवा पशुसखीशी संपर्क साधा."}`,
+  };
+
+  return {
+    answer: summaries[preferredLanguage as keyof typeof summaries] || summaries.en,
+    needs_veterinarian: hasHighRisk,
+    risk_notice: hasHighRisk ? summaries[preferredLanguage as keyof typeof summaries] || summaries.en : null,
+    suggested_next_step: { bn: "পশুচিকিৎসকের সঙ্গে যোগাযোগ করুন", hi: "पशु चिकित्सक से संपर्क करें", mr: "पशुवैद्यकाशी संपर्क साधा" }[preferredLanguage] || "Contact Veterinarian",
+  };
 }
 
 /**
@@ -290,21 +313,9 @@ export async function generateFarmerTalkResponse(
   }
 
   // Layer 5: Safe Fallback Response
-  const isHi = preferredLanguage === "hi";
   const hasHighRisk = animalContext.recentCases.some(
     (c) => c.overallRiskLevel === "HIGH" || c.overallRiskLevel === "CRITICAL"
   );
 
-  return {
-    answer: isHi
-      ? "मैं आपके पशु के दर्ज स्वास्थ्य रिकॉर्ड की जानकारी प्रदान कर सकता हूँ। कृपया किसी भी लक्षण की स्थिति में स्थानीय पशु चिकित्सक या फील्ड एजेंट से परामर्श लें।"
-      : "I can provide information regarding your animal's recorded health history. Please consult your local veterinarian or field agent for any clinical examination or treatment guidance.",
-    needs_veterinarian: hasHighRisk,
-    risk_notice: hasHighRisk
-      ? isHi
-        ? "⚠️ आपातकालीन सूचना: उच्च/गंभीर जोखिम दर्ज किया गया है। कृपया तुरंत डॉक्टर से संपर्क करें।"
-        : "⚠️ Escalation Notice: Recorded HIGH/CRITICAL risk assessment. Please contact a veterinarian immediately."
-      : null,
-    suggested_next_step: isHi ? "पशु चिकित्सक से संपर्क करें" : "Contact Veterinarian",
-  };
+  return buildSafeHistoryFallback(animalContext, preferredLanguage, hasHighRisk);
 }

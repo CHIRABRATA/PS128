@@ -112,7 +112,13 @@ class MasterAnalysisEngine:
         }
 
         # STEP 7: Automatic GenAI Ingestion
-        preferred_lang = payload.get("language", "English")
+        requested_language = payload.get("language", "English")
+        preferred_lang = {
+            "en": "English",
+            "bn": "Bengali",
+            "hi": "Hindi",
+            "mr": "Marathi",
+        }.get(str(requested_language).lower(), requested_language)
         advisory_res = generate_farmer_advisory(analysis_summary, language=preferred_lang)
         analysis_summary["farmer_advisory"] = advisory_res
 

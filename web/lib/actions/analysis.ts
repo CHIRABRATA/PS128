@@ -106,18 +106,9 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
     let updatedAnalysisResult: Prisma.JsonValue | null = healthCase.analysisResult;
     let updatedVisionResult: Prisma.JsonValue | null = healthCase.visionResult;
     let analyzeSuccess = false;
+    let yoloAnalysis: Record<string, unknown> | null = null;
 
-    // 7. Execute POST /api/analyze
-    try {
-      const analyzeRes = await analyzeCase(analyzePayload);
-      updatedAnalysisResult = analyzeRes as unknown as Prisma.JsonValue;
-      analyzeSuccess = true;
-    } catch (err: unknown) {
-      console.warn("[Case Analysis Execution Warning]:", err);
-      // Case remains valid (status = PENDING_REVIEW, analysisResult = null/existing)
-    }
-
-    // 8. Execute POST /api/predict if Case has a photo
+    // 7. Execute POST /api/predict first so the unified engine receives the vision result.
     if (healthCase.photoUrl) {
       try {
         let imageBuffer: Buffer | null = null;
@@ -146,10 +137,28 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
         if (imageBuffer) {
           const visionRes = await predictAnimalImage(imageBuffer, contentType, category);
           updatedVisionResult = visionRes as unknown as Prisma.JsonValue;
+          const visionPayload = visionRes as unknown as Record<string, unknown>;
+          const extractedVision = visionPayload.yolo_result || visionPayload.data || visionPayload;
+          if (extractedVision && typeof extractedVision === "object") {
+            yoloAnalysis = extractedVision as Record<string, unknown>;
+          }
         }
       } catch (err: unknown) {
         console.warn("[Case Vision Execution Warning]:", err);
       }
+    }
+
+    // 8. Execute POST /api/analyze with weather coordinates and optional YOLO output.
+    try {
+      const analyzeRes = await analyzeCase({
+        ...analyzePayload,
+        yolo_vision_analysis: yoloAnalysis,
+      });
+      updatedAnalysisResult = analyzeRes as unknown as Prisma.JsonValue;
+      analyzeSuccess = true;
+    } catch (err: unknown) {
+      console.warn("[Case Analysis Execution Warning]:", err);
+      // Case remains valid (status = PENDING_REVIEW, analysisResult = null/existing)
     }
 
     // 9. Update Prisma database record with results

@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { getReportCopy } from "@/lib/i18n/report";
 
 interface RiskGaugeProps {
   score: number;
@@ -8,6 +10,8 @@ interface RiskGaugeProps {
 }
 
 export function RiskGauge({ score, level }: RiskGaugeProps) {
+  const { locale } = useLocale();
+  const copy = getReportCopy(locale);
   const percentage = Math.min(Math.max(score, 0), 100);
 
   const getColor = (lvl: string) => {
@@ -69,7 +73,7 @@ export function RiskGauge({ score, level }: RiskGaugeProps) {
       </div>
 
       <span className="text-[11px] font-bold text-stone-300 mt-1 uppercase tracking-wider">
-        एकूण रोग धोका स्कोअर
+        {copy.riskScore}
       </span>
     </div>
   );

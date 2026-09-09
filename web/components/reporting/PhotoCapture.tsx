@@ -111,9 +111,9 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
       <div className="flex justify-between items-center">
         <label className="text-xs font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
           <Camera className="h-4 w-4 text-emerald-700" />
-          <span>लक्षण तपासणी छायाचित्र | Lesion Inspection Photo</span>
+          <span>Lesion Inspection Photo</span>
         </label>
-        <span className="text-[11px] text-stone-500 font-medium">ऐच्छिक (Optional)</span>
+        <span className="text-[11px] text-stone-500 font-medium">Optional</span>
       </div>
 
       <input
@@ -139,7 +139,7 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
               className="h-7 text-[11px] border-red-300 bg-white text-red-800 hover:bg-red-50 rounded-xl hover-lift-sm"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
-              पुन्हा प्रयत्न करा
+              Try again
             </Button>
           </div>
         </div>
@@ -151,7 +151,7 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
           {uploading && (
             <div className="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
               <Loader2 className="h-6 w-6 text-emerald-700 animate-spin" />
-              <span className="text-xs text-stone-700 font-medium">छायाचित्र सुरक्षित सर्व्हरवर पाठवले जात आहे...</span>
+              <span className="text-xs text-stone-700 font-medium">Uploading image securely...</span>
             </div>
           )}
 
@@ -192,19 +192,19 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
             <ImageIcon className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-stone-900">कॅमेऱ्याने फोटो काढा किंवा फाईल येथे ओढा (Drag & Drop)</p>
+            <p className="text-xs font-bold text-stone-900">Take a photo or drag and drop a file here</p>
             <p className="text-[11px] text-stone-500 max-w-xs mt-0.5">
-              त्वचेवरील गाठी, तोंडातून येणारी लाळ, किंवा डोळे व खुरांचे स्पष्ट फोटो डॉक्टरांना निदानासाठी उपयुक्त ठरतात.
+              Clear photos of skin lesions, saliva, eyes, or hooves help the veterinary team review the report.
             </p>
           </div>
           <div className="flex items-center gap-2 pt-1">
             <Button type="button" size="sm" variant="outline" className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 min-h-[36px] rounded-xl shadow-2xs hover-lift-sm">
               <Camera className="h-3.5 w-3.5 text-emerald-700" />
-              <span>कॅमेरा (Camera)</span>
+              <span>Camera</span>
             </Button>
             <Button type="button" size="sm" variant="outline" className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 min-h-[36px] rounded-xl shadow-2xs hover-lift-sm">
               <Upload className="h-3.5 w-3.5" />
-              <span>गॅलरी (Gallery)</span>
+              <span>Gallery</span>
             </Button>
           </div>
         </div>

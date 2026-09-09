@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { runCaseAnalysisAction } from "@/lib/actions/analysis";
 import { VisionPredictionCard } from "./VisionPredictionCard";
-import { FarmerAdvisoryCard } from "./FarmerAdvisoryCard";
 import { IoTAnalysisCard } from "./IoTAnalysisCard";
 import { WeatherRiskCard } from "./WeatherRiskCard";
 import { OutbreakTrendCard } from "./OutbreakTrendCard";
@@ -20,6 +19,8 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { getReportCopy } from "@/lib/i18n/report";
 
 interface AiAssessmentCardProps {
   caseId: string;
@@ -34,6 +35,8 @@ export function AiAssessmentCard({
   visionResult: initialVision,
   hasPhoto = false,
 }: AiAssessmentCardProps) {
+  const { locale } = useLocale();
+  const copy = getReportCopy(locale);
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(
     initialAnalysis || null
   );
@@ -52,10 +55,10 @@ export function AiAssessmentCard({
         setAnalysisResult((res.analysisResult as Record<string, unknown>) || null);
         setVisionResult((res.visionResult as Record<string, unknown>) || null);
       } else {
-        setError(res.error || "AI रोग विश्लेषण करण्यात त्रुटी आली.");
+        setError(res.error || "AI analysis failed.");
       }
     } catch {
-      setError("AI विश्लेषणासाठी सर्व्हरशी संपर्क होऊ शकला नाही.");
+      setError("Unable to contact the analysis server.");
     } finally {
       setAnalyzing(false);
     }
@@ -63,7 +66,10 @@ export function AiAssessmentCard({
 
   const riskScore = Number(analysisResult?.overall_risk_score || 0);
   const riskLevel = (analysisResult?.overall_risk_level as string) || "UNKNOWN";
-  const clinicalSummary = (analysisResult?.clinical_summary as string) || "";
+  const diseasePrediction = analysisResult?.disease_prediction as Record<string, unknown> | null;
+  const clinicalSummary = diseasePrediction
+    ? `${String(diseasePrediction.suspected_condition || "Unknown condition")} (${Math.round(Number(diseasePrediction.confidence || 0) * 100)}%)`
+    : "";
   const differentials = (analysisResult?.differential_diagnoses as Array<{
     disease_name: string;
     probability: number;
@@ -71,16 +77,10 @@ export function AiAssessmentCard({
     quarantine_protocol_summary: string;
   }>) || [];
 
-  const iotSignals = analysisResult?.iot_telemetry_signals as Record<string, unknown> | null;
-  const weatherSignals = analysisResult?.weather_signals as Record<string, unknown> | null;
-  const outbreakSignals = analysisResult?.outbreak_cluster_signals as Record<string, unknown> | null;
-  const farmerAdvisory = analysisResult?.farmer_advisory as {
-    immediate_actions: string[];
-    isolation_recommendation: boolean;
-    quarantine_days: number;
-    home_remedies_safe: string[];
-    vet_consultation_urgency: string;
-  } | null;
+  const iotSignals = analysisResult?.iot_telemetry_analysis as Record<string, unknown> | null;
+  const weatherSignals = analysisResult?.weather_analysis as Record<string, unknown> | null;
+  const outbreakSignals = analysisResult?.outbreak_surge_analysis as Record<string, unknown> | null;
+  const farmerAdvisory = analysisResult?.farmer_advisory as { advisory?: string } | null;
 
   return (
     <Card className="border-blue-200 bg-blue-50/40 rounded-3xl shadow-xs overflow-hidden text-[#191F1C]">
@@ -94,11 +94,11 @@ export function AiAssessmentCard({
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-bold text-blue-950 tracking-tight">
-                  पशु रोग नैदानिक निर्णय सहाय्य (Decision Support)
+                  {copy.decisionTitle}
                 </CardTitle>
               </div>
               <p className="text-xs text-blue-900/80">
-                लक्षणे, शारीरिक सेन्सर, हवामान व प्रादुर्भाव क्लस्टर यांचे बहुआयामी वैद्यकीय विश्लेषण.
+                {copy.decisionDescription}
               </p>
             </div>
           </div>
@@ -114,7 +114,7 @@ export function AiAssessmentCard({
               className="h-8 gap-1.5 text-xs border-blue-300 bg-white text-blue-900 hover:bg-blue-50 min-h-[32px] rounded-xl cursor-pointer"
             >
               <RefreshCw className={`h-3 w-3 text-blue-700 ${analyzing ? "animate-spin" : ""}`} />
-              <span>{analysisResult ? "पुन्हा तपासा" : "विश्लेषण सुरू करा"}</span>
+              <span>{analysisResult ? copy.retry : copy.startAnalysis}</span>
             </Button>
           </div>
         </div>
@@ -132,9 +132,9 @@ export function AiAssessmentCard({
           <div className="p-6 rounded-2xl border border-blue-200 bg-white text-center space-y-3 shadow-2xs">
             <Activity className="h-8 w-8 text-blue-400 mx-auto" />
             <div>
-              <p className="text-xs font-bold text-blue-950">या प्रकरणाचे बहुआयामी विश्लेषण प्रलंबित आहे</p>
+              <p className="text-xs font-bold text-blue-950">Multimodal analysis is pending for this case.</p>
               <p className="text-[11px] text-stone-500 max-w-sm mx-auto mt-0.5">
-                वरील &quot;विश्लेषण सुरू करा&quot; बटणावर क्लिक करून लक्षणे, हवामान आणि प्रादुर्भाव क्लस्टरचे एकत्रित विश्लेषण मिळवा.
+                Select &quot;Start analysis&quot; to combine symptoms, weather, sensor, and outbreak data.
               </p>
             </div>
             <Button
@@ -143,7 +143,7 @@ export function AiAssessmentCard({
               onClick={handleRunAnalysis}
               className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl"
             >
-              विश्लेषण सुरू करा
+              {copy.startAnalysis}
             </Button>
           </div>
         )}
@@ -152,7 +152,7 @@ export function AiAssessmentCard({
           <div className="p-8 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-blue-200">
             <RefreshCw className="h-6 w-6 animate-spin text-blue-700" />
             <span className="text-xs text-blue-950 font-medium">
-              लक्षणे, प्रतिमा व प्रादुर्भाव डेटाचे वैद्यकीय विश्लेषण सुरू आहे...
+              Clinical analysis of symptoms, images, and outbreak data is in progress...
             </span>
           </div>
         )}
@@ -168,10 +168,10 @@ export function AiAssessmentCard({
               <div className="md:col-span-2 space-y-2 flex flex-col justify-center">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-blue-950 uppercase tracking-wider">
                   <FileText className="h-3.5 w-3.5 text-blue-700" />
-                  <span>वैद्यकीय सारांश (Clinical Summary)</span>
+                  <span>{copy.clinicalSummary}</span>
                 </div>
                 <p className="text-xs text-stone-700 leading-relaxed bg-[#FAF8F3] p-3 rounded-xl border border-[#E5E0D8]">
-                  {clinicalSummary || "लक्षणे व क्षेत्रीय डेटाच्या आधारे प्राथमिक वैद्यकीय मूल्यांकन नोंदवले गेले."}
+                  {clinicalSummary || copy.noSummary}
                 </p>
               </div>
             </div>
@@ -182,9 +182,9 @@ export function AiAssessmentCard({
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="h-3.5 w-3.5 text-amber-600" />
-                    <span>संभाव्य रोग शक्यता (Differential Diagnoses Matrix)</span>
+                    <span>Differential diagnoses</span>
                   </span>
-                  <span className="text-[11px] text-stone-500 font-mono">{differentials.length} संभाव्य रोग</span>
+                  <span className="text-[11px] text-stone-500 font-mono">{differentials.length} possible conditions</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -204,20 +204,20 @@ export function AiAssessmentCard({
                               : "bg-stone-100 text-stone-700 border-stone-200"
                           }`}
                         >
-                          {Math.round(diff.probability * 100)}% संभाव्यता
+                          {Math.round(diff.probability * 100)}% likelihood
                         </Badge>
                       </div>
 
                       {diff.hallmark_symptoms_matched && diff.hallmark_symptoms_matched.length > 0 && (
                         <div className="text-[11px] text-stone-600">
-                          <span className="text-stone-500">मिळतीजुळती लक्षणे: </span>
+                          <span className="text-stone-500">Matching symptoms: </span>
                           <span className="text-stone-800 font-medium">{diff.hallmark_symptoms_matched.join(", ")}</span>
                         </div>
                       )}
 
                       {diff.quarantine_protocol_summary && (
                         <p className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-xl border border-amber-200">
-                          <strong>अलगीकरण:</strong> {diff.quarantine_protocol_summary}
+                          <strong>Isolation:</strong> {diff.quarantine_protocol_summary}
                         </p>
                       )}
                     </div>
@@ -243,7 +243,12 @@ export function AiAssessmentCard({
             </div>
 
             {/* 5. Farmer Advisory Guidelines */}
-            {farmerAdvisory && <FarmerAdvisoryCard advisory={farmerAdvisory} />}
+            {farmerAdvisory && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm leading-relaxed text-emerald-950">
+                          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider">{copy.advisoryTitle}</h3>
+                          <p className="whitespace-pre-wrap">{farmerAdvisory.advisory || copy.noAdvisory}</p>
+                        </div>
+                      )}
           </div>
         )}
       </CardContent>

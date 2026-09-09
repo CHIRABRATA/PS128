@@ -68,7 +68,7 @@ export interface AnalyzeRequestPayload {
 const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds timeout
 
 function getBackendBaseUrl(): string {
-  const url = process.env.AI_ENGINE_URL || "http://localhost:8000";
+  const url = process.env.NEXT_PUBLIC_API_URL || process.env.AI_ENGINE_URL || "http://localhost:8000";
   return url.replace(/\/$/, "");
 }
 
