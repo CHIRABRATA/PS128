@@ -1,0 +1,166 @@
+import {
+  MasterAnalysisPayload,
+  UnifiedAnalysisResponse,
+  YoloVisionAnalysis,
+} from "@/lib/types/livestock";
+
+const DEFAULT_API_URL = "http://localhost:8000";
+const REQUEST_TIMEOUT_MS = 15_000;
+
+export class LivestockApiError extends Error {
+  readonly status: number;
+  readonly details?: unknown;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = "LivestockApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+function getApiBaseUrl() {
+  return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+}
+
+async function readResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function getErrorMessage(status: number, body: unknown, operation: string) {
+  if (typeof body === "object" && body !== null && "detail" in body) {
+    const detail = (body as { detail?: unknown }).detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) return "Please check the highlighted form fields.";
+  }
+
+  if (status === 422) return "The health report contains invalid or missing values.";
+  if (status >= 500) return `${operation} service is temporarily unavailable. Please try again.`;
+  return `${operation} failed with HTTP ${status}.`;
+}
+
+async function request(url: string, init: RequestInit, operation: string) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const body = await readResponseBody(response);
+
+    if (!response.ok) {
+      throw new LivestockApiError(
+        getErrorMessage(response.status, body, operation),
+        response.status,
+        body,
+      );
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof LivestockApiError) throw error;
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new LivestockApiError(`${operation} timed out. Please try again.`, 408);
+    }
+    throw new LivestockApiError(
+      `Unable to reach the livestock analysis service. Please check your connection.`,
+      0,
+      error,
+    );
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function isVisionAnalysis(value: unknown): value is YoloVisionAnalysis {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.visual_anomaly_detected === "boolean" &&
+    typeof candidate.primary_prediction === "string" &&
+    typeof candidate.confidence === "number"
+  );
+}
+
+function extractVisionResult(value: unknown): YoloVisionAnalysis | null {
+  if (isVisionAnalysis(value)) return value;
+  if (typeof value !== "object" || value === null) return null;
+
+  const response = value as Record<string, unknown>;
+  if (isVisionAnalysis(response.yolo_result)) return response.yolo_result;
+  if (isVisionAnalysis(response.data)) return response.data;
+  return null;
+}
+
+function normalizeAnalysisResponse(value: unknown): UnifiedAnalysisResponse {
+  if (typeof value !== "object" || value === null) {
+    throw new LivestockApiError("The analysis service returned an invalid response.", 502, value);
+  }
+
+  const response = value as Partial<UnifiedAnalysisResponse>;
+  if (
+    typeof response.overall_risk_score !== "number" ||
+    !response.disease_prediction ||
+    !response.farmer_advisory
+  ) {
+    throw new LivestockApiError("The analysis service returned an incomplete response.", 502, value);
+  }
+
+  const level = response.overall_risk_level;
+  const overallRiskLevel = level === "LOW" || level === "ELEVATED" || level === "CRITICAL" ? level : "ELEVATED";
+
+  return {
+    ...response,
+    overall_risk_score: Math.min(100, Math.max(0, response.overall_risk_score)),
+    overall_risk_level: overallRiskLevel,
+    disease_prediction: response.disease_prediction,
+    farmer_advisory: response.farmer_advisory,
+  } as UnifiedAnalysisResponse;
+}
+
+export async function predictYoloImage(
+  file: File,
+  category: string,
+): Promise<YoloVisionAnalysis | null> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("category", category);
+
+  try {
+    const response = await request(
+      `${getApiBaseUrl()}/api/predict`,
+      { method: "POST", body: formData, headers: { Accept: "application/json" } },
+      "Image prediction",
+    );
+    return extractVisionResult(response);
+  } catch (error) {
+    console.warn("[Livestock image prediction skipped]", error);
+    return null;
+  }
+}
+
+export async function analyzeLivestockHealth(
+  payload: MasterAnalysisPayload,
+): Promise<UnifiedAnalysisResponse> {
+  const response = await request(
+    `${getApiBaseUrl()}/api/analyze`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+    },
+    "Livestock analysis",
+  );
+
+  return normalizeAnalysisResponse(response);
+}

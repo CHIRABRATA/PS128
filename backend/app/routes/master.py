@@ -8,6 +8,7 @@ router = APIRouter()
 class MasterAnalysisRequest(BaseModel):
     latitude: Optional[float] = Field(default=28.6139, example=28.6139)
     longitude: Optional[float] = Field(default=77.2090, example=77.2090)
+    language: str = Field(default="English", description="Language requested for the farmer advisory")
     health_report: Dict[str, Any] = Field(
         default={
             "animal": "Cow",

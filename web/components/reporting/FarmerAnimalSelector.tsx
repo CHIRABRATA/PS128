@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { PrintableAnimalOption, getFarmerAnimals } from "@/lib/actions/reporting_data";
+import { PrintableAnimalOption, getFarmerAnimals, getFarmerRegistrationVillages, registerFarmerAnimal } from "@/lib/actions/reporting_data";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Cpu, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Cpu, Loader2, AlertCircle, Plus } from "lucide-react";
 
 interface FarmerAnimalSelectorProps {
   selectedAnimal: PrintableAnimalOption | null;
@@ -14,6 +16,13 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal }: FarmerA
   const [animals, setAnimals] = useState<PrintableAnimalOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showRegister, setShowRegister] = useState(false);
+  const [tag, setTag] = useState("");
+  const [species, setSpecies] = useState<"COW" | "BUFFALO" | "SHEEP" | "GOAT" | "PET" | "OTHER">("COW");
+  const [breed, setBreed] = useState("");
+  const [registering, setRegistering] = useState(false);
+  const [villages, setVillages] = useState<Array<{ id: string; name: string; block: { name: string; district: { name: string } } }>>([]);
+  const [villageId, setVillageId] = useState("");
 
   useEffect(() => {
     getFarmerAnimals()
@@ -25,6 +34,7 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal }: FarmerA
         setError(err.message || "Failed to load your registered animals.");
         setLoading(false);
       });
+    getFarmerRegistrationVillages().then(setVillages).catch(() => setVillages([]));
   }, []);
 
   if (loading) {
@@ -47,11 +57,66 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal }: FarmerA
 
   if (animals.length === 0) {
     return (
-      <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/70 text-center space-y-2">
-        <p className="text-xs text-amber-900 font-bold">आपल्या शेतासाठी नोंदणीकृत जनावरे आढळली नाहीत.</p>
-        <p className="text-[11px] text-stone-600">
-          कृपया कान-टॅग नोंदणीसाठी आपल्या स्थानिक पशुसखी किंवा पशुवैद्यकीय दवाखान्याशी संपर्क साधा.
-        </p>
+      <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/70 space-y-4">
+        <div className="text-center space-y-2">
+          <p className="text-xs text-amber-900 font-bold">आपल्या शेतासाठी नोंदणीकृत जनावरे आढळली नाहीत.</p>
+          <p className="text-[11px] text-stone-600">अहवाल सुरू करण्यासाठी येथे जनावराचा कान-टॅग नोंदवा.</p>
+        </div>
+        {!showRegister ? (
+          <Button type="button" onClick={() => setShowRegister(true)} className="mx-auto flex gap-2 bg-emerald-700 text-xs text-white hover:bg-emerald-800">
+            <Plus className="h-3.5 w-3.5" /> जनावर नोंदवा
+          </Button>
+        ) : (
+          <div className="mx-auto max-w-md space-y-3 rounded-xl border border-amber-200 bg-white p-4 text-left">
+            <label className="text-xs font-semibold text-stone-700">कान-टॅग क्रमांक *</label>
+            <Input value={tag} onChange={(event) => setTag(event.target.value)} placeholder="उदा. COW-001" className="text-xs" />
+            <label className="text-xs font-semibold text-stone-700">प्राणी प्रकार *</label>
+            <select value={species} onChange={(event) => setSpecies(event.target.value as typeof species)} className="w-full rounded-xl border border-[#D9D3C7] p-2.5 text-xs">
+              <option value="COW">गाय</option>
+              <option value="BUFFALO">म्हैस</option>
+              <option value="GOAT">शेळी</option>
+              <option value="SHEEP">मेंढी</option>
+              <option value="PET">पाळीव प्राणी</option>
+              <option value="OTHER">इतर</option>
+            </select>
+            <label className="text-xs font-semibold text-stone-700">जात (ऐच्छिक)</label>
+            <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder="उदा. Gir" className="text-xs" />
+            {villages.length > 0 && (
+              <>
+                <label className="text-xs font-semibold text-stone-700">गाव *</label>
+                <select value={villageId} onChange={(event) => setVillageId(event.target.value)} className="w-full rounded-xl border border-[#D9D3C7] p-2.5 text-xs">
+                  <option value="">आपले गाव निवडा...</option>
+                  {villages.map((village) => (
+                    <option key={village.id} value={village.id}>
+                      {village.name} ({village.block.name}, {village.block.district.name})
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+            {error && <p className="text-xs text-red-700">{error}</p>}
+            <Button
+              type="button"
+              disabled={registering || !tag.trim() || (villages.length > 0 && !villageId)}
+              onClick={async () => {
+                setRegistering(true);
+                setError("");
+                const result = await registerFarmerAnimal({ tag, species, breed: breed || null, villageId: villageId || null });
+                if (result.success && result.animal) {
+                  setAnimals([result.animal]);
+                  onSelectAnimal(result.animal);
+                  setShowRegister(false);
+                } else {
+                  setError(result.error || "जनावर नोंदवता आले नाही.");
+                }
+                setRegistering(false);
+              }}
+              className="w-full bg-emerald-700 text-xs text-white hover:bg-emerald-800"
+            >
+              {registering ? "नोंदणी होत आहे..." : "नोंदणी जतन करा"}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

@@ -257,7 +257,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Geographic Hierarchy Selects */}
-              {selectedRole !== "FARMER" && (
+              {(
                 <div className="border-t border-[#E5E0D8] pt-4 space-y-4">
                   <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     नेमून दिलेली कार्यकक्षा (Assigned Scope)

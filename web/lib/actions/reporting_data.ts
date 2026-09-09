@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/db/prisma";
 import { requireFarmer, requireFieldAgent } from "@/lib/auth/permissions";
+import { z } from "zod";
 
 export interface PrintableAnimalOption {
   id: string;
@@ -13,6 +14,105 @@ export interface PrintableAnimalOption {
   villageName: string;
   iotDeviceId?: string | null;
   herdSize?: number;
+}
+
+const farmerAnimalSchema = z.object({
+  tag: z.string().trim().min(1, "कान-टॅग आवश्यक आहे.").max(40),
+  species: z.enum(["COW", "BUFFALO", "SHEEP", "GOAT", "PET", "OTHER"]),
+  breed: z.string().trim().max(80).optional().nullable(),
+  villageId: z.string().optional().nullable(),
+});
+
+export async function getFarmerRegistrationVillages() {
+  return await prisma.village.findMany({
+    include: { block: { include: { district: true } } },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function registerFarmerAnimal(input: {
+  tag: string;
+  species: "COW" | "BUFFALO" | "SHEEP" | "GOAT" | "PET" | "OTHER";
+  breed?: string | null;
+  villageId?: string | null;
+}): Promise<{ success: boolean; error?: string; animal?: PrintableAnimalOption }> {
+  const farmer = await requireFarmer();
+  const validation = farmerAnimalSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.issues[0]?.message || "अवैध जनावर माहिती." };
+  }
+
+  const data = validation.data;
+  const villageId = farmer.villageId || data.villageId;
+  if (!villageId) {
+    return { success: false, error: "जनावर नोंदवण्यापूर्वी गाव निवडा." };
+  }
+
+  const village = await prisma.village.findUnique({ where: { id: villageId } });
+  if (!village) return { success: false, error: "निवडलेले गाव उपलब्ध नाही." };
+
+  if (!farmer.villageId) {
+    await prisma.user.update({
+      where: { id: farmer.id },
+      data: { villageId, blockId: village.blockId },
+    });
+  }
+
+  const existingFarm = await prisma.farm.findFirst({
+    where: { farmerUserId: farmer.id, villageId },
+  });
+
+  const farm = existingFarm || await prisma.farm.create({
+    data: {
+      name: `${farmer.name} Farm`,
+      villageId,
+      farmerUserId: farmer.id,
+      latitude: 18.5793,
+      longitude: 73.9806,
+    },
+  });
+
+  const herd = await prisma.herd.upsert({
+    where: { id: `${farm.id}_${data.species.toLowerCase()}` },
+    update: {},
+    create: {
+      id: `${farm.id}_${data.species.toLowerCase()}`,
+      farmId: farm.id,
+      species: data.species,
+      name: `${data.species} Herd`,
+    },
+  });
+
+  try {
+    const animal = await prisma.animal.create({
+      data: {
+        herdId: herd.id,
+        tag: data.tag,
+        species: data.species,
+        breed: data.breed || null,
+      },
+    });
+
+    return {
+      success: true,
+      animal: {
+        id: animal.id,
+        tag: animal.tag,
+        species: animal.species,
+        breed: animal.breed,
+        farmId: farm.id,
+        farmName: farm.name,
+        villageName: village.name,
+        iotDeviceId: animal.iotDeviceId,
+        herdSize: await prisma.animal.count({ where: { herdId: herd.id } }),
+      },
+    };
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes("Unique constraint")) {
+      return { success: false, error: "हा कान-टॅग या कळपात आधीपासून नोंदणीकृत आहे." };
+    }
+    throw error;
+  }
 }
 
 /**
