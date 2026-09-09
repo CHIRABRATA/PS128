@@ -1,19 +1,46 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { ShieldCheck, Stethoscope, Building2, User, Home } from "lucide-react";
+import { ShieldCheck, Stethoscope, Building2, User, Home, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getDictionary, Locale } from "@/lib/i18n";
+
+const languageOptions: { value: Locale; label: string }[] = [
+  { value: "en", label: "English" },
+  { value: "bn", label: "বাংলা" },
+  { value: "hi", label: "हिन्दी" },
+  { value: "mr", label: "मराठी" },
+];
 
 export function Navbar() {
   const pathname = usePathname();
+  const [locale, setLocale] = useState<Locale>(() => {
+    if (typeof window === "undefined") return "en";
+    const savedLocale = window.localStorage.getItem("maitri-locale") as Locale | null;
+    return savedLocale && languageOptions.some((option) => option.value === savedLocale) ? savedLocale : "en";
+  });
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  const dictionary = getDictionary(locale);
+
+  const handleLocaleChange = (nextLocale: Locale) => {
+    setLocale(nextLocale);
+    window.localStorage.setItem("maitri-locale", nextLocale);
+    document.documentElement.lang = nextLocale;
+    window.dispatchEvent(new CustomEvent("maitri-locale-change", { detail: nextLocale }));
+  };
 
   const navLinks = [
-    { href: "/farmer", label: "Farmer Portal | पशु नोंदवही", icon: User },
-    { href: "/agent", label: "Field Agent | पशुसखी", icon: ShieldCheck },
-    { href: "/vet", label: "Veterinarian | पशुवैद्यक", icon: Stethoscope },
-    { href: "/authority", label: "Surveillance | नियंत्रण केंद्र", icon: Building2 },
+    { href: "/farmer", label: dictionary.nav.farmer, icon: User },
+    { href: "/agent", label: dictionary.nav.agent, icon: ShieldCheck },
+    { href: "/vet", label: dictionary.nav.vet, icon: Stethoscope },
+    { href: "/authority", label: dictionary.nav.authority, icon: Building2 },
   ];
 
   return (
@@ -60,15 +87,31 @@ export function Navbar() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
+        <label className="flex items-center gap-1.5 rounded-lg border border-[#D9D3C7] bg-white px-2 py-1.5 text-xs text-stone-700 shadow-xs">
+          <Languages className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+          <span className="sr-only">Choose language</span>
+          <select
+            aria-label="Choose language"
+            value={locale}
+            onChange={(event) => handleLocaleChange(event.target.value as Locale)}
+            className="max-w-[92px] cursor-pointer bg-transparent font-semibold outline-none"
+          >
+            {languageOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Show when="signed-out">
           <SignInButton mode="modal">
             <Button variant="outline" size="sm" className="text-xs border-[#D9D3C7] text-stone-800 hover:bg-stone-50">
-              Sign In | प्रवेश
+              {dictionary.nav.signIn}
             </Button>
           </SignInButton>
           <SignUpButton mode="modal">
             <Button size="sm" className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-sm">
-              Register | खाते बनवा
+              {dictionary.nav.signUp}
             </Button>
           </SignUpButton>
         </Show>

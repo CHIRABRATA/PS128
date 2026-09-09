@@ -242,7 +242,8 @@ export default function OnboardingPage() {
                   onChange={(e) => setLanguage(e.target.value)}
                   className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
                 >
-                  <option value="mr">मराठी (Marathi)</option>
+                      <option value="mr">मराठी (Maharashtra / Marathi)</option>
+                      <option value="bn">বাংলা (Bengali)</option>
                   <option value="hi">हिंदी (Hindi)</option>
                   <option value="en">English</option>
                 </select>
