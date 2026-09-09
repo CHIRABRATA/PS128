@@ -5,9 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, ShieldAlert, LogOut, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { defaultLocale, Locale } from "@/lib/i18n";
+import { getPendingCopy } from "@/lib/i18n/pending";
 
 export default async function PendingApprovalPage() {
   const appUser = await getCurrentAppUser();
+  const localeCookie = (await cookies()).get("maitri-locale")?.value;
+  const locale = ["en", "bn", "hi", "mr"].includes(localeCookie || "")
+    ? (localeCookie as Locale)
+    : defaultLocale;
+  const copy = getPendingCopy(locale);
+  const roleKey = appUser?.role || "";
+  const roleName = copy.roleNames[roleKey] || copy.professional;
+  const submittedText = copy.submitted.replace("{role}", roleName);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-[#FAF8F3] text-[#191F1C] min-h-screen">
@@ -18,13 +29,13 @@ export default async function PendingApprovalPage() {
           </div>
 
           <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-200 text-xs px-3 py-1">
-            पडताळणी प्रलंबित (Verification Pending)
+            {copy.badge}
           </Badge>
 
-          <CardTitle className="text-xl font-bold text-[#191F1C]">खाते मंजुरीची प्रतीक्षा आहे</CardTitle>
+          <CardTitle className="text-xl font-bold text-[#191F1C]">{copy.title}</CardTitle>
 
           <CardDescription className="text-xs text-stone-600">
-            आपली <strong className="text-[#191F1C]">{appUser?.role ? appUser.role.replace("_", " ") : "व्यावसायिक"}</strong> म्हणून नोंदणी पडताळणीसाठी जिल्हा पशुवैद्यकीय अधिकाऱ्यांकडे पाठवली आहे.
+            {submittedText}
           </CardDescription>
         </CardHeader>
 
@@ -32,17 +43,17 @@ export default async function PendingApprovalPage() {
           <CardContent className="space-y-3 text-left pt-5">
             <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2">
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">अर्जदाराचे नाव:</span>
+                <span className="text-stone-500">{copy.applicant}:</span>
                 <span className="font-semibold text-[#191F1C]">{appUser.name}</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">मोबाईल फोन:</span>
+                <span className="text-stone-500">{copy.phone}:</span>
                 <span className="font-medium text-stone-700">{appUser.phone}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">नेमून दिलेली कार्यकक्षा:</span>
+                <span className="text-stone-500">{copy.scope}:</span>
                 <span className="font-medium text-emerald-800">
-                  {appUser.district?.name || appUser.block?.name || appUser.village?.name || "Assigned District"}
+                  {appUser.district?.name || appUser.block?.name || appUser.village?.name || copy.assignedDistrict}
                 </span>
               </div>
             </div>
@@ -50,10 +61,10 @@ export default async function PendingApprovalPage() {
             <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-1">
               <div className="flex items-center gap-2 font-semibold text-amber-900">
                 <ShieldAlert className="h-4 w-4 text-amber-700" />
-                <span>मंजुरी का आवश्यक आहे?</span>
+                <span>{copy.whyTitle}</span>
               </div>
               <p className="text-[11px] leading-relaxed text-amber-800">
-                रोग प्रादुर्भाव डेटाच्या अचूकतेसाठी आणि सुरक्षिततेसाठी, पशुवैद्यकीय आणि फील्ड एजंट खात्यांची जिल्हा पशुसंवर्धन विभागाकडून पडताळणी केली जाते.
+                {copy.whyText}
               </p>
             </div>
           </CardContent>
@@ -63,14 +74,14 @@ export default async function PendingApprovalPage() {
           <Link href="/dashboard" className="w-full sm:w-auto flex-1">
             <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs border-[#D9D3C7] text-stone-700 hover:bg-[#FAF8F3] min-h-[40px]">
               <RefreshCw className="h-3.5 w-3.5" />
-              <span>स्थिती तपासा</span>
+              <span>{copy.checkStatus}</span>
             </Button>
           </Link>
 
           <SignOutButton>
             <Button variant="secondary" size="sm" className="w-full sm:w-auto flex-1 gap-1.5 text-xs bg-[#FAF8F3] hover:bg-stone-200 border border-[#E5E0D8] text-stone-700 min-h-[40px]">
               <LogOut className="h-3.5 w-3.5" />
-              <span>बाहेर पडा (Sign Out)</span>
+              <span>{copy.signOut}</span>
             </Button>
           </SignOutButton>
         </CardFooter>
