@@ -1,4 +1,4 @@
-import { SignUpButton } from "@clerk/nextjs";
+import { Show, SignUpButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from "next/image";
@@ -126,21 +126,22 @@ export default async function Home() {
 
             <MotionFadeIn delay={240} direction="up">
               <div className="flex flex-wrap items-center gap-3.5 pt-2">
-                {userId ? (
+                <Show when="signed-in">
                   <Link href="/farmer/report">
                     <Button size="lg" className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold gap-2 text-sm px-6 h-12 shadow-sm rounded-xl hover-lift cursor-pointer">
                       <span>Report a health concern</span>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                ) : (
+                </Show>
+                <Show when="signed-out">
                   <SignUpButton mode="modal">
                     <Button size="lg" className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold gap-2 text-sm px-6 h-12 shadow-sm rounded-xl hover-lift cursor-pointer">
                       <span>Report a health concern</span>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </SignUpButton>
-                )}
+                </Show>
 
                 <Link href={userId ? "/dashboard" : "/farmer"}>
                   <Button size="lg" variant="outline" className="border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 text-sm px-6 h-12 rounded-xl hover-lift cursor-pointer">
@@ -532,21 +533,22 @@ export default async function Home() {
               </div>
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                {userId ? (
+                <Show when="signed-in">
                   <Link href="/dashboard">
                     <Button size="lg" className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-7 h-12 shadow-sm rounded-xl hover-lift cursor-pointer">
                       <span>Open Dashboard & Workspaces</span>
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>
-                ) : (
+                </Show>
+                <Show when="signed-out">
                   <SignUpButton mode="modal">
                     <Button size="lg" className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-7 h-12 shadow-sm rounded-xl hover-lift cursor-pointer">
                       <span>Get started / खाते बनवा</span>
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </SignUpButton>
-                )}
+                </Show>
 
                 <a href="tel:1962" className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-200 hover:text-white transition-colors bg-emerald-900/60 px-4 py-3 rounded-xl border border-emerald-700/60 hover-lift">
                   <PhoneCall className="w-3.5 h-3.5 text-emerald-300" />

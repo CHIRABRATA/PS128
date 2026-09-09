@@ -40,6 +40,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#FAF8F3] text-[#191F1C] selection:bg-emerald-700 selection:text-white pb-16 lg:pb-0">
         <ClerkProvider>
