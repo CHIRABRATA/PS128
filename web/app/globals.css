@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAF8F3;
+  --foreground: #191F1C;
+  
+  --primary: #047857;
+  --primary-hover: #065F46;
+  --primary-light: #064E3B;
+  --primary-tint: #ECFDF5;
+  
+  --secondary: #92400E;
+  --secondary-hover: #78350F;
+  --accent: #D97706;
+  --accent-light: #FEF3C7;
+  
+  --surface: #FFFFFF;
+  --surface-hover: #F9F8F5;
+  --surface-subtle: #F3F0E7;
+  --surface-border: #E5E0D8;
+  --surface-border-light: #ECE8E1;
+  
+  --status-safe: #059669;
+  --status-warning: #D97706;
+  --status-serious: #EA580C;
+  --status-critical: #DC2626;
+  --status-info: #0284C7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), "Noto Sans Devanagari", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+body {
+  background-color: #FAF8F3;
+  color: #191F1C;
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Devanagari line height and rendering adjustments for Marathi & Hindi readability */
+[lang="hi"], [lang="mr"], .lang-devanagari {
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* Field Touch Targets for Outdoor Mobile Usability */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Custom scrollbars for clean field registers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F0E7;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1C9BE;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #047857;
+}
+
+/* Leaflet Custom Styling & Animations */
+.leaflet-pane img,
+.leaflet-tile-pane img,
+.leaflet-container img,
+.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto;
+  height: auto;
+  visibility: inherit !important;
+  display: block;
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #e5e3df;
+  outline: 0;
+}
+
+.leaflet-tile-pane {
+  z-index: 200;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.leaflet-marker-pane {
+  z-index: 600;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 650;
+}
+
+.leaflet-popup-pane {
+  z-index: 700;
+}
+
+.maitri-map-tooltip {
+  background: #FFFFFF !important;
+  color: #191F1C !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #E5E0D8 !important;
+  box-shadow: 0 8px 18px -4px rgba(0, 0, 0, 0.1) !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.maitri-map-tooltip::before {
+  border-top-color: #FFFFFF !important;
+}
+
+.maitri-custom-popup .leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: #191F1C !important;
+  border-radius: 1rem !important;
+  border: 1px solid #E5E0D8 !important;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+  padding: 0 !important;
+}
+
+.maitri-custom-popup .leaflet-popup-content {
+  margin: 8px 12px !important;
+  line-height: 1.4 !important;
+}
+
+.maitri-custom-popup .leaflet-popup-tip {
+  background: #FFFFFF !important;
+  border: 1px solid #E5E0D8 !important;
+}
+
+/* Motion & Interaction Utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes checkDraw {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+.animate-subtle-pulse {
+  animation: subtlePulse 2.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #F3F0E7 25%, #EBE6DA 50%, #F3F0E7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* Card Hover Elevation */
+.hover-lift {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -8px rgba(25, 31, 28, 0.08), 0 4px 6px -2px rgba(25, 31, 28, 0.03);
+}
+
+.hover-lift-sm {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift-sm:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 14px -4px rgba(25, 31, 28, 0.06);
+}
+
+/* Accessible prefers-reduced-motion override */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-float-gentle,
+  .animate-subtle-pulse,
+  .leaflet-alert-pulse,
+  .hover-lift:hover,
+  .hover-lift-sm:hover,
+  .animate-shimmer {
+    transform: none !important;
+    animation: none !important;
+  }
+}
+

@@ -1,0 +1,96 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { ShieldCheck, Stethoscope, Building2, User, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export function Navbar() {
+  const pathname = usePathname();
+
+  const navLinks = [
+    { href: "/farmer", label: "Farmer Portal | पशु नोंदवही", icon: User },
+    { href: "/agent", label: "Field Agent | पशुसखी", icon: ShieldCheck },
+    { href: "/vet", label: "Veterinarian | पशुवैद्यक", icon: Stethoscope },
+    { href: "/authority", label: "Surveillance | नियंत्रण केंद्र", icon: Building2 },
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#E5E0D8] bg-[#FAF8F3]/90 px-4 md:px-8 backdrop-blur-md">
+      {/* Brand Logo & Identity */}
+      <Link href="/" className="flex items-center gap-3 group">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-800 text-white font-extrabold shadow-sm group-hover:bg-emerald-700 transition-colors">
+          <span className="text-base tracking-tight font-serif">पशु</span>
+        </div>
+        <div className="flex flex-col text-left">
+          <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
+            MAITRI • Livestock Health
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+              पशु आरोग्य सेवा
+            </span>
+          </span>
+          <span className="text-[11px] text-stone-500 hidden sm:inline leading-tight">
+            Veterinary Field Care & District Surveillance Platform
+          </span>
+        </div>
+      </Link>
+
+      {/* Desktop Navigation Links */}
+      <nav className="hidden xl:flex items-center gap-1.5 bg-white border border-[#E5E0D8] px-2 py-1 rounded-xl shadow-xs">
+        {navLinks.map((link) => {
+          const Icon = link.icon;
+          const isActive = pathname.startsWith(link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                isActive
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:-translate-y-0.5"
+              }`}
+            >
+              <Icon className={`h-3.5 w-3.5 transition-transform duration-200 ${isActive ? "text-emerald-700 scale-110" : "text-stone-500"}`} />
+              <span>{link.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Right Controls */}
+      <div className="flex items-center gap-3">
+        <Show when="signed-out">
+          <SignInButton mode="modal">
+            <Button variant="outline" size="sm" className="text-xs border-[#D9D3C7] text-stone-800 hover:bg-stone-50">
+              Sign In | प्रवेश
+            </Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button size="sm" className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-sm">
+              Register | खाते बनवा
+            </Button>
+          </SignUpButton>
+        </Show>
+
+        <Show when="signed-in">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard">
+              <Button size="sm" variant="outline" className="text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 flex items-center gap-1.5">
+                <Home className="h-3.5 w-3.5 text-emerald-700" />
+                <span>Dashboard</span>
+              </Button>
+            </Link>
+            <UserButton
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "h-9 w-9 border-2 border-emerald-700/60 hover:border-emerald-700 transition-all rounded-full",
+                },
+              }}
+            />
+          </div>
+        </Show>
+      </div>
+    </header>
+  );
+}
