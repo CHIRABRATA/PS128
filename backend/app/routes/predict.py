@@ -18,7 +18,7 @@ async def predict_disease(
             prediction.get("primary_prediction") not in {"Healthy", "No disease detected"}
         )
         return {"success": True, "yolo_result": prediction}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (ValueError, OSError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid or unsupported image: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
