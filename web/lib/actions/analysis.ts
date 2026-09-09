@@ -121,10 +121,8 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
             imageBuffer = Buffer.from(matches[2], "base64");
           }
         } else if (healthCase.photoUrl.includes("mock-blob.vercel-storage.com")) {
-          // Mock image payload for local testing
-          const mockSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#18181b"/></svg>`;
-          imageBuffer = Buffer.from(mockSvg);
-          contentType = "image/svg+xml";
+          // Local storage has no image bytes, so continue without optional vision analysis.
+          console.warn("[Case Vision] Skipping mock storage URL; unified analysis will continue without image inference.");
         } else {
           const res = await fetch(healthCase.photoUrl);
           if (res.ok) {
