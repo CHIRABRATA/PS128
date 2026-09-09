@@ -156,6 +156,32 @@ export async function getFarmerAnimals(): Promise<PrintableAnimalOption[]> {
   return options;
 }
 
+export async function deleteFarmerAnimal(animalId: string): Promise<{ success: boolean; error?: string }> {
+  const farmer = await requireFarmer();
+  const animal = await prisma.animal.findUnique({
+    where: { id: animalId },
+    include: {
+      herd: { include: { farm: true } },
+      _count: { select: { cases: true, vaccinations: true, treatments: true, conversations: true } },
+    },
+  });
+
+  if (!animal || animal.herd.farm.farmerUserId !== farmer.id) {
+    return { success: false, error: "You can only delete animals registered under your account." };
+  }
+
+  const hasRecords = Object.values(animal._count).some((count) => count > 0);
+  if (hasRecords) {
+    return {
+      success: false,
+      error: "This animal cannot be deleted because it has health, vaccination, treatment, or conversation records.",
+    };
+  }
+
+  await prisma.animal.delete({ where: { id: animalId } });
+  return { success: true };
+}
+
 /**
  * Returns authorized farms and animals for the authenticated Field Agent.
  */

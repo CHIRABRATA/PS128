@@ -16,6 +16,7 @@ import {
   Activity,
   CalendarCheck,
 } from "lucide-react";
+import { DeleteAnimalButton } from "@/components/farmer/DeleteAnimalButton";
 
 export default async function FarmerPortalPage() {
   const farmer = await requireFarmer();
@@ -171,12 +172,15 @@ export default async function FarmerPortalPage() {
                         <span className="text-[11px] text-stone-500">
                           {isUnderCare ? "Under Examination" : "Routine Care"}
                         </span>
-                        <Link href={`/farmer/talk/${animal.id}`}>
-                          <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl cursor-pointer">
-                            <span>Health Talk</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/farmer/talk/${animal.id}`}>
+                            <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl cursor-pointer">
+                              <span>Health Talk</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Button>
+                          </Link>
+                          <DeleteAnimalButton animalId={animal.id} tag={animal.tag} />
+                        </div>
                       </div>
                     </div>
                   </div>
