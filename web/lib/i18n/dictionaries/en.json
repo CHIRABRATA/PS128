@@ -1,0 +1,78 @@
+{
+  "app": {
+    "title": "Maitri — Livestock Health Intelligence",
+    "subtitle": "Early Detection, Outbreak Surveillance & Clinical Decision Support",
+    "tagline": "AI-Powered Veterinary & Community Livestock Memory"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "farmer": "Farmer Portal",
+    "agent": "Field Agent",
+    "vet": "Veterinarian",
+    "authority": "District Authority",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "onboarding": "Onboarding"
+  },
+  "roles": {
+    "FARMER": "Farmer",
+    "FIELD_AGENT": "Field Agent",
+    "VETERINARIAN": "Veterinarian",
+    "DISTRICT_AUTHORITY": "District Authority"
+  },
+  "actions": {
+    "submit": "Submit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "createReport": "Create Health Report",
+    "isolate": "Isolate Animal",
+    "treat": "Administer Treatment",
+    "monitor": "Continuous Monitoring",
+    "referLab": "Refer to Lab",
+    "noAction": "No Action Needed"
+  },
+  "status": {
+    "pendingReview": "Pending Review",
+    "underExamination": "Under Examination",
+    "labReferral": "Lab Referral",
+    "confirmed": "Confirmed Outbreak",
+    "closedHarmless": "Closed / Harmless",
+    "pendingApproval": "Pending Approval",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "notifications": {
+    "outbreakAlertTitle": "⚠️ ALERT: Livestock Disease Outbreak Detected",
+    "district": "District",
+    "riskLevel": "Risk Level",
+    "qualifyingCases": "Qualifying Cases",
+    "recommendedActions": "Recommended Actions",
+    "linkSuccess": "Your Telegram account has been successfully linked to your Maitri profile!",
+    "linkExpired": "This Telegram linking token has expired or is invalid. Please request a new linking token from your Maitri settings."
+  },
+  "farmerTalk": {
+    "title": "Maitri Farmer Talk",
+    "subtitle": "Informational Livestock Health Assistant",
+    "selectAnimalPrompt": "Select an animal to start a health conversation",
+    "disclaimer": "AI guidance only — not a veterinary diagnosis or prescription.",
+    "escalationNotice": "⚠️ Escalation Notice: Recorded HIGH/CRITICAL risk assessment. Please contact your local veterinarian or field agent immediately.",
+    "typePlaceholder": "Ask a question about this animal...",
+    "send": "Send",
+    "quickPromptsTitle": "Quick Questions",
+    "prompt1": "Why is my animal at risk?",
+    "prompt2": "What was recorded in the last report?",
+    "prompt3": "What vaccinations are recorded?",
+    "prompt4": "Should I contact a veterinarian?"
+  },
+  "offline": {
+    "online": "Online",
+    "offline": "Offline Mode",
+    "syncing": "Syncing Reports...",
+    "queued": "Report Queued Locally",
+    "syncSuccess": "All queued reports synced successfully",
+    "syncError": "Synchronization failed, will retry when back online",
+    "offlineDisclaimer": "Report saved offline in local secure storage. It will synchronize automatically when connection is restored."
+  }
+}

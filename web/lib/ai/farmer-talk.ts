@@ -1,0 +1,310 @@
+import { z } from "zod";
+
+/**
+ * PHASE 10: MAITRI FARMER TALK AI SERVICE
+ *
+ * Clinical Safety Boundary & Layered Guardrails:
+ * Layer 1: System Prompt Injection
+ * Layer 2: Structured Output Schema (Zod)
+ * Layer 3: Application Semantic Safety Checks (Distinguishes historical vet summary vs new prescription instructions)
+ * Layer 4: Dual-language (English/Hindi) Secondary Heuristic Regex Scan
+ * Layer 5: Safe Fallback Override
+ */
+
+export const FarmerTalkResponseSchema = z.object({
+  answer: z.string(),
+  needs_veterinarian: z.boolean().default(false),
+  risk_notice: z.string().nullable().optional(),
+  suggested_next_step: z.string().optional(),
+});
+
+export type FarmerTalkResponse = z.infer<typeof FarmerTalkResponseSchema>;
+
+export interface AnimalContextPacket {
+  animalIdentity: {
+    tag: string;
+    species: string;
+    breed: string | null;
+    ageMonths: number | null;
+  };
+  location: {
+    farmName: string;
+    villageName: string;
+    blockName: string;
+    districtName: string;
+  };
+  recentCases: Array<{
+    caseNumber: string;
+    status: string;
+    reportedAt: string;
+    symptoms: string[];
+    durationDays: number;
+    affectedCount: number;
+    mortalityCount: number;
+    overallRiskLevel: string | null;
+    suspectedCondition: string | null;
+    vetDiagnosis: string | null;
+    vetAction: string | null;
+    sanitizedVetNotes: string | null;
+  }>;
+  vaccinations: Array<{
+    vaccineName: string;
+    dateGiven: string;
+    nextDueDate: string | null;
+  }>;
+  treatments: Array<{
+    medication: string;
+    dateGiven: string;
+    notes: string | null;
+  }>;
+  samples: Array<{
+    status: string;
+    collectedAt: string;
+    resultSummary: string | null;
+  }>;
+}
+
+const SYSTEM_PROMPT = `
+You are Maitri Farmer Talk, an informational livestock health support assistant for farmers.
+You assist farmers by explaining recorded health information about their specific animal.
+
+CRITICAL CLINICAL SAFETY RULES:
+1. You are NOT a veterinarian. You MUST NOT diagnose any disease as confirmed.
+2. You MUST NOT prescribe new medications, recommend drug dosages (e.g. mg, ml, pills), or instruct the farmer to administer drugs.
+3. You MAY summarize existing historical records (e.g. "Your veterinarian previously recorded a treatment of Antiseptic Wash on 2026-09-05").
+4. You MUST NOT override or contradict a veterinarian's recorded advice.
+5. Use ONLY the provided animal context packet. Never invent missing medical records or telemetry data.
+6. If recorded risk level is HIGH or CRITICAL, explicitly advise the farmer to contact a local veterinarian immediately.
+7. Respond in JSON format with fields: {"answer": "...", "needs_veterinarian": boolean, "risk_notice": string | null, "suggested_next_step": "..."}.
+8. Respond in the requested language (English or Hindi).
+`;
+
+function buildUserPrompt(
+  animalContext: AnimalContextPacket,
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
+  userMessage: string,
+  preferredLanguage: string
+): string {
+  const historyText = conversationHistory
+    .map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`)
+    .join("\n");
+
+  return `
+REQUESTED LANGUAGE: ${preferredLanguage === "hi" ? "Hindi" : "English"}
+
+ANIMAL CONTEXT PACKET (REAL VERIFIED RECORDS):
+${JSON.stringify(animalContext, null, 2)}
+
+RECENT CONVERSATION HISTORY:
+${historyText || "No previous messages in this conversation."}
+
+FARMER'S NEW MESSAGE:
+"${userMessage}"
+
+Respond in JSON adhering strictly to the safety instructions.
+`;
+}
+
+/**
+ * Primary LLM Call: Gemini REST API
+ */
+async function callGeminiProvider(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1;
+  if (!apiKey) {
+    throw new Error("CONFIG_ERROR: GEMINI_API_KEY is missing from environment");
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
+      generationConfig: { responseMimeType: "application/json" },
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`TRANSIENT_ERROR: Gemini HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error("TRANSIENT_ERROR: Empty response from Gemini");
+  }
+  return text;
+}
+
+/**
+ * Fallback LLM Call: Groq REST API
+ */
+async function callGroqProvider(prompt: string): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("CONFIG_ERROR: GROQ_API_KEY is missing from environment");
+  }
+
+  const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+  const url = "https://api.groq.com/openai/v1/chat/completions";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`TRANSIENT_ERROR: Groq HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error("TRANSIENT_ERROR: Empty response from Groq");
+  }
+  return text;
+}
+
+/**
+ * Layer 3 & Layer 4 Semantic Output Safety Inspection
+ */
+export function inspectOutputSafety(text: string): { isSafe: boolean; reason?: string } {
+  // Layer 3 Semantic check: Distinguish historical summaries vs new prescription instructions
+  const lower = text.toLowerCase();
+
+  // Allow historical mentions e.g. "previously recorded", "past record", "veterinarian administered"
+  const isHistoricalContext =
+    lower.includes("previously recorded") ||
+    lower.includes("past record") ||
+    lower.includes("veterinarian prescribed") ||
+    lower.includes("already administered") ||
+    lower.includes("दर्ज है") ||
+    lower.includes("पुराना रिकॉर्ड");
+
+  // Secondary English & Hindi Heuristic Patterns (Layer 4)
+  const unsafePrescriptionPatterns = [
+    /\bgive\s+\d+\s*(mg|ml|g|tablets|pills|shots|dose)\b/i,
+    /\badminister\s+\d+\s*(mg|ml|g)\b/i,
+    /\binject\s+\d+/i,
+    /\bprescribe\s+[a-z0-9]+/i,
+    /\b take \d+\s*(mg|ml)\b/i,
+    /\b\d+\s*mg\s+daily\b/i,
+    /खुराक\s+\d+/i,
+    /दवा\s+दें/i,
+    /सुई\s+लगाएं/i,
+  ];
+
+  for (const pattern of unsafePrescriptionPatterns) {
+    if (pattern.test(text) && !isHistoricalContext) {
+      return {
+        isSafe: false,
+        reason: `Flagged unsafe prescription/dosage instruction pattern: ${pattern}`,
+      };
+    }
+  }
+
+  // Check for definitive non-veterinary diagnosis claims
+  if (
+    (lower.includes("this animal definitely has") || lower.includes("i diagnose your cow with")) &&
+    !isHistoricalContext
+  ) {
+    return {
+      isSafe: false,
+      reason: "Flagged unauthorized definitive diagnosis claim",
+    };
+  }
+
+  return { isSafe: true };
+}
+
+/**
+ * Main Executable GenAI Service for Farmer Talk with Fallback & Safety Layers
+ */
+export async function generateFarmerTalkResponse(
+  animalContext: AnimalContextPacket,
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
+  userMessage: string,
+  preferredLanguage: string = "en"
+): Promise<FarmerTalkResponse> {
+  const prompt = buildUserPrompt(animalContext, conversationHistory, userMessage, preferredLanguage);
+
+  let rawJsonText: string | null = null;
+  let providerUsed: string = "Static Fallback";
+
+  // Attempt 1: Gemini
+  try {
+    rawJsonText = await callGeminiProvider(prompt);
+    providerUsed = "Gemini";
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (errorMsg.startsWith("CONFIG_ERROR")) {
+      console.error("[Farmer Talk] Configuration error in primary provider:", errorMsg);
+      // Permanent config error: Do NOT fallback silently, attempt Groq only if configured
+    } else {
+      console.warn("[Farmer Talk] Gemini transient failure, failing over to Groq:", errorMsg);
+    }
+
+    // Attempt 2: Groq Fallback
+    try {
+      rawJsonText = await callGroqProvider(prompt);
+      providerUsed = "Groq";
+    } catch (groqErr: unknown) {
+      const groqMsg = groqErr instanceof Error ? groqErr.message : String(groqErr);
+      console.warn("[Farmer Talk] Groq fallback failed:", groqMsg);
+    }
+  }
+
+  // Parse & Validate Response through Layered Architecture
+  if (rawJsonText) {
+    try {
+      // Clean JSON formatting if wrapped in code blocks
+      const cleanJson = rawJsonText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+
+      // Layer 2: Zod Schema Validation
+      const validated = FarmerTalkResponseSchema.parse(parsed);
+
+      // Layer 3 & 4: Application & Heuristic Safety Checks
+      const safetyCheck = inspectOutputSafety(validated.answer);
+      if (safetyCheck.isSafe) {
+        return validated;
+      } else {
+        console.warn(`[Farmer Talk Guardrail] AI response failed safety check (${providerUsed}):`, safetyCheck.reason);
+      }
+    } catch (e: unknown) {
+      console.warn(`[Farmer Talk] Failed parsing structured response from ${providerUsed}:`, e);
+    }
+  }
+
+  // Layer 5: Safe Fallback Response
+  const isHi = preferredLanguage === "hi";
+  const hasHighRisk = animalContext.recentCases.some(
+    (c) => c.overallRiskLevel === "HIGH" || c.overallRiskLevel === "CRITICAL"
+  );
+
+  return {
+    answer: isHi
+      ? "मैं आपके पशु के दर्ज स्वास्थ्य रिकॉर्ड की जानकारी प्रदान कर सकता हूँ। कृपया किसी भी लक्षण की स्थिति में स्थानीय पशु चिकित्सक या फील्ड एजेंट से परामर्श लें।"
+      : "I can provide information regarding your animal's recorded health history. Please consult your local veterinarian or field agent for any clinical examination or treatment guidance.",
+    needs_veterinarian: hasHighRisk,
+    risk_notice: hasHighRisk
+      ? isHi
+        ? "⚠️ आपातकालीन सूचना: उच्च/गंभीर जोखिम दर्ज किया गया है। कृपया तुरंत डॉक्टर से संपर्क करें।"
+        : "⚠️ Escalation Notice: Recorded HIGH/CRITICAL risk assessment. Please contact a veterinarian immediately."
+      : null,
+    suggested_next_step: isHi ? "पशु चिकित्सक से संपर्क करें" : "Contact Veterinarian",
+  };
+}

@@ -1,0 +1,384 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  FARMER
+  FIELD_AGENT
+  VETERINARIAN
+  DISTRICT_AUTHORITY
+}
+
+enum UserStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+}
+
+enum Species {
+  COW
+  BUFFALO
+  SHEEP
+  GOAT
+  PET
+  OTHER
+}
+
+enum ReportSource {
+  FIELD_AGENT
+  FARMER
+  IVR
+}
+
+enum CaseStatus {
+  PENDING_REVIEW
+  UNDER_EXAMINATION
+  LAB_REFERRAL
+  CONFIRMED
+  CLOSED_HARMLESS
+}
+
+enum VetAction {
+  ISOLATE
+  TREAT
+  MONITOR
+  REFER_LAB
+  NONE
+}
+
+enum SampleStatus {
+  COLLECTED
+  SENT
+  RESULT_PENDING
+  RESULT_RECEIVED
+}
+
+enum ChatMessageRole {
+  user
+  assistant
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  SMS
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id                String     @id @default(cuid())
+  clerkId           String     @unique
+  role              UserRole
+  status            UserStatus @default(ACTIVE)
+  name              String
+  phone             String
+  preferredLanguage         String     @default("en")
+  telegramChatId            String?
+  telegramLinkToken         String?
+  telegramLinkTokenCreatedAt DateTime?
+  districtId        String?
+  blockId           String?
+  villageId         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  district District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  block    Block?    @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  village  Village?  @relation(fields: [villageId], references: [id], onDelete: SetNull)
+
+  ownedFarms             Farm[]                 @relation("FarmOwner")
+  assignedFarms          Farm[]                 @relation("FarmAgent")
+  createdCases           Case[]                 @relation("CaseCreatedBy")
+  reviewedCases          Case[]                 @relation("CaseReviewedBy")
+  givenVaccinations      VaccinationRecord[]    @relation("VaccinationAdministeredBy")
+  givenTreatments        TreatmentRecord[]      @relation("TreatmentAdministeredBy")
+  collectedSamples       Sample[]               @relation("SampleCollectedBy")
+  chatConversations      ChatConversation[]
+  notificationDeliveries NotificationDelivery[]
+
+  @@index([clerkId])
+  @@index([role])
+  @@index([status])
+  @@index([districtId])
+  @@index([blockId])
+  @@index([villageId])
+}
+
+model District {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  blocks Block[]
+  users  User[]
+}
+
+model Block {
+  id         String   @id @default(cuid())
+  districtId String
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  district District  @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  villages Village[]
+  users    User[]
+
+  @@unique([districtId, name])
+  @@index([districtId])
+}
+
+model Village {
+  id        String   @id @default(cuid())
+  blockId   String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  block  Block   @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  farms  Farm[]
+  users  User[]
+  alerts Alert[]
+
+  @@unique([blockId, name])
+  @@index([blockId])
+}
+
+model Farm {
+  id               String   @id @default(cuid())
+  villageId        String
+  farmerUserId     String?
+  fieldAgentUserId String?
+  name             String
+  latitude         Float
+  longitude        Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  village        Village @relation(fields: [villageId], references: [id], onDelete: Restrict)
+  farmerUser     User?   @relation("FarmOwner", fields: [farmerUserId], references: [id], onDelete: SetNull)
+  fieldAgentUser User?   @relation("FarmAgent", fields: [fieldAgentUserId], references: [id], onDelete: SetNull)
+  herds          Herd[]
+
+  @@index([villageId])
+  @@index([farmerUserId])
+  @@index([fieldAgentUserId])
+}
+
+model Herd {
+  id        String   @id @default(cuid())
+  farmId    String
+  species   Species
+  name      String   @default("Default Herd")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm    Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animals Animal[]
+
+  @@index([farmId])
+}
+
+model Animal {
+  id          String   @id @default(cuid())
+  herdId      String
+  tag         String
+  species     Species
+  iotDeviceId String?
+  breed       String?
+  ageMonths   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  herd          Herd                @relation(fields: [herdId], references: [id], onDelete: Restrict)
+  cases         Case[]
+  vaccinations  VaccinationRecord[]
+  treatments    TreatmentRecord[]
+  conversations ChatConversation[]
+
+  @@unique([herdId, tag])
+  @@index([herdId])
+  @@index([iotDeviceId])
+}
+
+model Case {
+  id                   String       @id @default(cuid())
+  caseNumber           String       @unique
+  submissionId         String?      @unique
+  animalId             String
+  createdByUserId      String
+  reviewedByUserId     String?
+  reportSource         ReportSource
+  status               CaseStatus   @default(PENDING_REVIEW)
+  symptoms             String[]
+  durationDays         Int
+  affectedCount        Int          @default(1)
+  mortalityCount       Int          @default(0)
+  photoUrl             String?
+  gpsLat               Float?
+  gpsLng               Float?
+  iotTelemetry         Json?
+  analysisResult       Json?
+  visionResult         Json?
+  vetDiagnosis         String?
+  vetRecommendedAction VetAction?
+
+  vetFollowUpDate DateTime?
+  vetNotes        String?
+  reportedAt      DateTime  @default(now())
+  reviewedAt      DateTime?
+  confirmedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  animal         Animal            @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  createdByUser  User              @relation("CaseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  reviewedByUser User?             @relation("CaseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  treatments     TreatmentRecord[]
+  samples        Sample[]
+
+  @@index([animalId])
+  @@index([createdByUserId])
+  @@index([status])
+  @@index([reportedAt])
+  @@index([reviewedAt])
+  @@index([confirmedAt])
+}
+
+model VaccinationRecord {
+  id                   String    @id @default(cuid())
+  animalId             String
+  vaccineName          String
+  dateGiven            DateTime
+  nextDueDate          DateTime?
+  administeredByUserId String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  animal             Animal @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  administeredByUser User   @relation("VaccinationAdministeredBy", fields: [administeredByUserId], references: [id], onDelete: Restrict)
+
+  @@index([animalId])
+  @@index([administeredByUserId])
+}
+
+model TreatmentRecord {
+  id                   String   @id @default(cuid())
+  animalId             String
+  caseId               String?
+  medication           String
+  dateGiven            DateTime @default(now())
+  notes                String?
+  administeredByUserId String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  animal             Animal @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  case               Case?  @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  administeredByUser User   @relation("TreatmentAdministeredBy", fields: [administeredByUserId], references: [id], onDelete: Restrict)
+
+  @@index([animalId])
+  @@index([caseId])
+  @@index([administeredByUserId])
+}
+
+model Sample {
+  id                String       @id @default(cuid())
+  caseId            String
+  collectedByUserId String
+  collectedAt       DateTime     @default(now())
+  labName           String?
+  sentAt            DateTime?
+  resultReceivedAt  DateTime?
+  resultSummary     String?
+  status            SampleStatus @default(COLLECTED)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  case            Case @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  collectedByUser User @relation("SampleCollectedBy", fields: [collectedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([collectedByUserId])
+}
+
+model Alert {
+  id          String    @id @default(cuid())
+  villageId   String
+  diseaseName String?
+  caseCount   Int       @default(1)
+  windowStart DateTime
+  windowEnd   DateTime
+  active      Boolean   @default(true)
+  notifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  village Village @relation(fields: [villageId], references: [id], onDelete: Restrict)
+  notificationDeliveries NotificationDelivery[]
+
+  @@index([villageId])
+  @@index([active])
+  @@index([windowStart, windowEnd])
+}
+
+model NotificationDelivery {
+  id           String              @id @default(cuid())
+  alertId      String
+  userId       String
+  channel      NotificationChannel @default(TELEGRAM)
+  status       NotificationStatus  @default(PENDING)
+  attemptCount Int                 @default(0)
+  sentAt       DateTime?
+  lastError    String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([alertId, userId, channel])
+  @@index([alertId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ChatConversation {
+  id        String   @id @default(cuid())
+  animalId  String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  animal   Animal        @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([animalId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id             String          @id @default(cuid())
+  conversationId String
+  role           ChatMessageRole
+  content        String
+  createdAt      DateTime        @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
