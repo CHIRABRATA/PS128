@@ -31,6 +31,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
   const { locale } = useLocale();
   const copy = getReportCopy(locale);
   const [step, setStep] = useState(1);
+  const [animalSelectorKey, setAnimalSelectorKey] = useState(0);
 
   // Form State
   const [submissionId, setSubmissionId] = useState("pending-submission");
@@ -52,6 +53,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
   // Submission & AI Analysis Status
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [resetNotice, setResetNotice] = useState("");
   const [submitResult, setSubmitResult] = useState<(CaseReportResult & { offlineQueued?: boolean; submissionId?: string }) | null>(null);
   const [aiState, setAiState] = useState<{
     analysisResult?: Record<string, unknown> | null;
@@ -96,11 +98,14 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
     setSubmitResult(null);
     setAiState(null);
     setFormError("");
+    setResetNotice("New report started. Select an animal to continue.");
+    setAnimalSelectorKey((current) => current + 1);
     setStep(1);
   };
 
   const handleNextStep = () => {
     setFormError("");
+    setResetNotice("");
     if (step === 1 && !selectedAnimal) {
       setFormError("Select an animal ear tag before continuing.");
       return;
@@ -448,16 +453,24 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           </div>
         )}
 
+        {resetNotice && !formError && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800" role="status">
+            {resetNotice}
+          </div>
+        )}
+
         <div key={step} className="animate-fade-in space-y-4">
           {/* STEP 1: Animal Selector */}
           {step === 1 && (
             mode === "farmer" ? (
               <FarmerAnimalSelector
+                key={animalSelectorKey}
                 selectedAnimal={selectedAnimal}
                 onSelectAnimal={handleAnimalSelected}
                 onRemoveAnimal={() => {
                   setSelectedAnimal(null);
                   setFormError("");
+                  setResetNotice("Animal selection cleared. Select an animal to continue.");
                 }}
                 onNewReport={resetReport}
               />

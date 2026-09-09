@@ -26,6 +26,57 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
   const [villages, setVillages] = useState<Array<{ id: string; name: string; block: { name: string; district: { name: string } } }>>([]);
   const [villageId, setVillageId] = useState("");
 
+  const registerAnimal = async () => {
+    setRegistering(true);
+    setError("");
+    const result = await registerFarmerAnimal({ tag, species, breed: breed || null, villageId: villageId || null });
+    if (result.success && result.animal) {
+      setAnimals((current) => [...current, result.animal!]);
+      onSelectAnimal(result.animal);
+      setShowRegister(false);
+      setTag("");
+      setBreed("");
+    } else {
+      setError(result.error || "Unable to register animal.");
+    }
+    setRegistering(false);
+  };
+
+  const registrationForm = showRegister ? (
+    <div className="mx-auto max-w-md space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-left">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-bold text-emerald-950">Register a new animal</h4>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setShowRegister(false)} className="h-7 px-2 text-xs text-stone-600">Cancel</Button>
+      </div>
+      <label className="text-xs font-semibold text-stone-700">New ear tag number *</label>
+      <Input value={tag} onChange={(event) => setTag(event.target.value)} placeholder="e.g. COW-002" className="text-xs" />
+      <label className="text-xs font-semibold text-stone-700">Animal type *</label>
+      <select value={species} onChange={(event) => setSpecies(event.target.value as typeof species)} className="w-full rounded-xl border border-[#D9D3C7] bg-white p-2.5 text-xs">
+        <option value="COW">Cow</option>
+        <option value="BUFFALO">Buffalo</option>
+        <option value="GOAT">Goat</option>
+        <option value="SHEEP">Sheep</option>
+        <option value="PET">Pet</option>
+        <option value="OTHER">Other</option>
+      </select>
+      <label className="text-xs font-semibold text-stone-700">Breed (optional)</label>
+      <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder="e.g. Gir" className="text-xs" />
+      {villages.length > 0 && (
+        <>
+          <label className="text-xs font-semibold text-stone-700">Village *</label>
+          <select value={villageId} onChange={(event) => setVillageId(event.target.value)} className="w-full rounded-xl border border-[#D9D3C7] bg-white p-2.5 text-xs">
+            <option value="">Select your village...</option>
+            {villages.map((village) => <option key={village.id} value={village.id}>{village.name} ({village.block.name})</option>)}
+          </select>
+        </>
+      )}
+      {error && <p className="text-xs text-red-700">{error}</p>}
+      <Button type="button" disabled={registering || !tag.trim() || (villages.length > 0 && !villageId)} onClick={() => void registerAnimal()} className="w-full bg-emerald-700 text-xs text-white hover:bg-emerald-800">
+        {registering ? "Registering..." : "Create animal"}
+      </Button>
+    </div>
+  ) : null;
+
   useEffect(() => {
     getFarmerAnimals()
       .then((res) => {
@@ -65,60 +116,10 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
             <p className="text-[11px] text-stone-600">Register an animal ear tag here to start a report.</p>
         </div>
         {!showRegister ? (
-          <Button type="button" onClick={() => setShowRegister(true)} className="mx-auto flex gap-2 bg-emerald-700 text-xs text-white hover:bg-emerald-800">
+              <Button type="button" onClick={() => setShowRegister(true)} className="mx-auto flex gap-2 bg-emerald-700 text-xs text-white hover:bg-emerald-800">
             <Plus className="h-3.5 w-3.5" /> Register an animal
           </Button>
-        ) : (
-          <div className="mx-auto max-w-md space-y-3 rounded-xl border border-amber-200 bg-white p-4 text-left">
-            <label className="text-xs font-semibold text-stone-700">Ear tag number *</label>
-            <Input value={tag} onChange={(event) => setTag(event.target.value)} placeholder="e.g. COW-001" className="text-xs" />
-            <label className="text-xs font-semibold text-stone-700">Animal type *</label>
-            <select value={species} onChange={(event) => setSpecies(event.target.value as typeof species)} className="w-full rounded-xl border border-[#D9D3C7] p-2.5 text-xs">
-              <option value="COW">Cow</option>
-              <option value="BUFFALO">Buffalo</option>
-              <option value="GOAT">Goat</option>
-              <option value="SHEEP">Sheep</option>
-              <option value="PET">Pet</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <label className="text-xs font-semibold text-stone-700">Breed (optional)</label>
-            <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder="e.g. Gir" className="text-xs" />
-            {villages.length > 0 && (
-              <>
-                <label className="text-xs font-semibold text-stone-700">Village *</label>
-                <select value={villageId} onChange={(event) => setVillageId(event.target.value)} className="w-full rounded-xl border border-[#D9D3C7] p-2.5 text-xs">
-                  <option value="">Select your village...</option>
-                  {villages.map((village) => (
-                    <option key={village.id} value={village.id}>
-                      {village.name} ({village.block.name}, {village.block.district.name})
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-            {error && <p className="text-xs text-red-700">{error}</p>}
-            <Button
-              type="button"
-              disabled={registering || !tag.trim() || (villages.length > 0 && !villageId)}
-              onClick={async () => {
-                setRegistering(true);
-                setError("");
-                const result = await registerFarmerAnimal({ tag, species, breed: breed || null, villageId: villageId || null });
-                if (result.success && result.animal) {
-                  setAnimals([result.animal]);
-                  onSelectAnimal(result.animal);
-                  setShowRegister(false);
-                } else {
-                  setError(result.error || "Unable to register animal.");
-                }
-                setRegistering(false);
-              }}
-              className="w-full bg-emerald-700 text-xs text-white hover:bg-emerald-800"
-            >
-              {registering ? "Registering..." : "Save registration"}
-            </Button>
-          </div>
-        )}
+        ) : registrationForm}
       </div>
     );
   }
@@ -131,10 +132,29 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
         </label>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-emerald-800 font-mono font-bold">{animals.length} registered</span>
-          <Button type="button" size="sm" variant="outline" onClick={onNewReport} className="h-7 gap-1 px-2 text-[11px]">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onNewReport();
+            }}
+            className="h-7 gap-1 px-2 text-[11px]"
+          >
             <Plus className="h-3 w-3" /> New report
           </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setShowRegister((current) => !current)} className="h-7 gap-1 px-2 text-[11px]">
+            <Plus className="h-3 w-3" /> Register new animal
+          </Button>
         </div>
+      </div>
+
+      {registrationForm}
+
+      <div className={`rounded-xl border p-3 text-xs ${selectedAnimal ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`} role="status">
+        {selectedAnimal ? `Selected animal: ${selectedAnimal.tag}` : "No animal selected. Choose an animal card to start this report."}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
