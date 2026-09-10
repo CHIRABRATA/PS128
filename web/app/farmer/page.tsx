@@ -15,6 +15,8 @@ import {
   Activity,
   CalendarCheck,
   UserCheck,
+  User,
+  MapPin,
 } from "lucide-react";
 import { DeleteAnimalButton } from "@/components/farmer/DeleteAnimalButton";
 
@@ -52,27 +54,43 @@ export default async function FarmerPortalPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191F1C] tracking-tight mt-1">
             {greetingTime}, {farmerDisplayName}.
           </h1>
-          <p className="text-stone-600 text-xs sm:text-sm mt-1">
-            Registered livestock, daily health monitoring, veterinary advisory, and vaccination records.
+          <p className="text-stone-600 text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-1.5">
+            <span>Registered livestock, daily health monitoring, veterinary advisory, and vaccination records.</span>
+            {farmer.village?.name && (
+              <Link
+                href="/farmer/profile"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                title="View and edit registered location"
+              >
+                <MapPin className="h-3 w-3 text-emerald-700" />
+                <span>{farmer.village.name}, {farmer.block?.name || ""}, {farmer.district?.name || ""}</span>
+              </Link>
+            )}
           </p>
         </div>
 
-        {/* TWO PROMINENT ENTRY PATHS */}
+        {/* PROMINENT ENTRY PATHS */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/farmer/profile">
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 rounded-xl min-h-[40px] shadow-2xs hover-lift-sm">
+              <User className="h-4 w-4 text-emerald-700" />
+              <span>My Profile</span>
+            </Button>
+          </Link>
           <Link href="/farmer/talk">
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 rounded-xl min-h-[40px]">
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 rounded-xl min-h-[40px] shadow-2xs hover-lift-sm">
               <MessageSquare className="h-4 w-4 text-emerald-700" />
               <span>Farmer Talk (AI)</span>
             </Button>
           </Link>
           <Link href="/farmer/request-help">
-            <Button size="sm" variant="outline" className="gap-2 text-xs border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-semibold rounded-xl min-h-[40px] shadow-xs">
+            <Button size="sm" variant="outline" className="gap-2 text-xs border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-semibold rounded-xl min-h-[40px] shadow-xs hover-lift-sm">
               <UserCheck className="h-4 w-4 text-amber-700" />
               <span>Request Field Agent</span>
             </Button>
           </Link>
           <Link href="/farmer/report">
-            <Button size="sm" className="gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[40px] shadow-sm">
+            <Button size="sm" className="gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[40px] shadow-sm hover-lift-sm">
               <PlusCircle className="h-4 w-4" />
               <span>Report Health Concern</span>
             </Button>
