@@ -4,13 +4,14 @@ import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { predictYoloImage } from "@/lib/api/livestock";
+import type { YoloVisionAnalysis } from "@/lib/types/livestock";
 import { Badge } from "@/components/ui/badge";
 
 interface PhotoCaptureProps {
   photoUrl: string | null;
   onChangePhotoUrl?: (url: string | null) => void;
   onChangePhoto?: (url: string | null, blob: Blob | null) => void;
-  onVisionResult?: (result: any) => void;
+  onVisionResult?: (result: YoloVisionAnalysis | null) => void;
   submissionId: string;
   animalCategory?: string;
 }
@@ -27,7 +28,7 @@ export function PhotoCapture({
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
-  const [visionResult, setVisionResult] = useState<any>(null);
+  const [visionResult, setVisionResult] = useState<YoloVisionAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
