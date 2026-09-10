@@ -81,12 +81,13 @@ export function AssistanceRequestForm({
       });
 
       if (!res.success) {
-        setError(res.error || "Failed to submit assistance request.");
+        setError(res.error || "Unable to submit the assistance request right now. Please try again.");
       } else {
         setSubmitResult(res);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Submission error.");
+      console.error("[AssistanceRequestForm Submit Error]:", err);
+      setError("Unable to submit the assistance request right now. Please try again.");
     } finally {
       setSubmitting(false);
     }
