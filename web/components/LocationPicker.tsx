@@ -13,10 +13,25 @@ interface LocationPickerProps {
   onLocationSelect: (location: LocationData) => void;
 }
 
+interface NominatimSearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+interface NominatimReverseResult {
+  address?: {
+    village?: string;
+    town?: string;
+    suburb?: string;
+    city?: string;
+  };
+}
+
 export default function LocationPicker({ onLocationSelect }: LocationPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<NominatimSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 
   // 1. Fetch current live GPS location
@@ -37,23 +52,23 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
           );
-          const data = await res.json();
+          const data: NominatimReverseResult = await res.json();
           const villageName =
-            data.address.village ||
-            data.address.town ||
-            data.address.suburb ||
-            data.address.city ||
+            data.address?.village ||
+            data.address?.town ||
+            data.address?.suburb ||
+            data.address?.city ||
             "Current Location";
 
           setSearchQuery(villageName);
           onLocationSelect({ village: villageName, latitude: lat, longitude: lng });
-        } catch (error) {
+        } catch {
           onLocationSelect({ village: "Current Location", latitude: lat, longitude: lng });
         } finally {
           setGpsLoading(false);
         }
       },
-      (error) => {
+      () => {
         alert("Unable to retrieve your location. Please type manually.");
         setGpsLoading(false);
       }
@@ -70,23 +85,23 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
       return;
     }
 
-    setLoading(true);
+    setIsSearching(true);
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           value
         )}&countrycodes=in&limit=5`
       );
-      const data = await res.json();
+      const data: NominatimSearchResult[] = await res.json();
       setSuggestions(data);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const selectSuggestion = (item: any) => {
+  const selectSuggestion = (item: NominatimSearchResult) => {
     const displayName = item.display_name.split(",")[0];
     setSearchQuery(displayName);
     setSuggestions([]);
@@ -105,13 +120,20 @@ export default function LocationPicker({ onLocationSelect }: LocationPickerProps
       </label>
 
       <div className="flex gap-2">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          placeholder="Type to search (e.g. Merual, Burdwan)..."
-          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-black"
-        />
+        <div className="relative flex-1">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Type to search (e.g. Merual, Burdwan)..."
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-black"
+          />
+          {isSearching && (
+            <span className="absolute right-3 top-2.5 text-xs text-stone-400 animate-pulse">
+              Searching...
+            </span>
+          )}
+        </div>
 
         <button
           type="button"

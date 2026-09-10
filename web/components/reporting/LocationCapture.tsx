@@ -12,13 +12,28 @@ interface LocationCaptureProps {
   onChangeLocation: (lat: number | null, lng: number | null) => void;
 }
 
+interface NominatimSearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+interface NominatimReverseResult {
+  address?: {
+    village?: string;
+    town?: string;
+    suburb?: string;
+    city?: string;
+  };
+}
+
 export function LocationCapture({
   gpsLat,
   gpsLng,
   onChangeLocation,
 }: LocationCaptureProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<NominatimSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null);
@@ -42,12 +57,12 @@ export function LocationCapture({
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
           );
-          const data = await res.json();
+          const data: NominatimReverseResult = await res.json();
           const place =
-            data.address.village ||
-            data.address.town ||
-            data.address.suburb ||
-            data.address.city ||
+            data.address?.village ||
+            data.address?.town ||
+            data.address?.suburb ||
+            data.address?.city ||
             "Detected GPS Location";
           setSelectedPlaceName(place);
           setSearchQuery(place);
@@ -57,7 +72,7 @@ export function LocationCapture({
           setIsGpsLoading(false);
         }
       },
-      (error) => {
+      () => {
         alert("Unable to fetch GPS position. You can search for your village manually below.");
         setIsGpsLoading(false);
       },
@@ -82,7 +97,7 @@ export function LocationCapture({
           query
         )}&countrycodes=in&limit=5`
       );
-      const data = await res.json();
+      const data: NominatimSearchResult[] = await res.json();
       setSuggestions(data);
     } catch (err) {
       console.error("Geocoding lookup error:", err);
@@ -91,7 +106,7 @@ export function LocationCapture({
     }
   };
 
-  const handleSelectSuggestion = (item: any) => {
+  const handleSelectSuggestion = (item: NominatimSearchResult) => {
     const mainTitle = item.display_name.split(",")[0];
     const lat = parseFloat(item.lat);
     const lng = parseFloat(item.lon);
