@@ -294,6 +294,16 @@ export default async function FarmerPortalPage() {
                             <span className="text-amber-800 font-medium italic">Awaiting vet assignment</span>
                           )}
                         </div>
+
+                        {c.veterinaryReports && c.veterinaryReports.length > 0 ? (
+                          <div className="flex items-center justify-between text-[11px] pt-0.5">
+                            <span className="text-stone-500">Latest Vet Report:</span>
+                            <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px] font-semibold">
+                              {c.veterinaryReports[0].diagnosis} ({c.veterinaryReports[0].action})
+                            </Badge>
+                          </div>
+                        ) : null}
+
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-stone-500">Location:</span>
                           <span className="text-stone-700">{locText}</span>
@@ -308,11 +318,18 @@ export default async function FarmerPortalPage() {
                         <span className="text-[10px] font-mono text-stone-500">
                           {new Date(c.reportedAt).toLocaleDateString()}
                         </span>
-                        <Link href={`/farmer/animals/${c.animalId}`}>
-                          <Button size="sm" variant="outline" className="text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 rounded-xl h-7 px-3">
-                            View Case
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/farmer/animals/${c.animalId}`}>
+                            <Button size="sm" variant="outline" className="text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl h-7 px-2.5">
+                              Animal Profile
+                            </Button>
+                          </Link>
+                          <Link href={`/farmer/cases/${c.id}`}>
+                            <Button size="sm" className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl h-7 px-3">
+                              {c.veterinaryReports && c.veterinaryReports.length > 0 ? "View Vet Report" : "Case Details"}
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   );

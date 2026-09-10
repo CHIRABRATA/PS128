@@ -19,6 +19,7 @@ import {
   Clock,
   ShieldCheck,
   UserCheck,
+  ChevronRight,
 } from "lucide-react";
 
 export default async function AnimalDetailPage({
@@ -214,9 +215,18 @@ export default async function AnimalDetailPage({
                     </div>
                   )}
 
-                  <div className="flex justify-between text-stone-500 text-[11px] pt-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-stone-500 text-[11px] pt-1 border-t border-[#E5E0D8]">
                     <span>Clinician: Dr. {latestReport.vetUser.name} ({latestReport.vetUser.phone})</span>
-                    <span>Reported: {new Date(latestReport.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-3">
+                      <span>Reported: {new Date(latestReport.createdAt).toLocaleDateString()}</span>
+                      {latestReport.caseId && (
+                        <Link href={`/farmer/cases/${latestReport.caseId}`}>
+                          <Button size="sm" className="h-6 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg px-2.5">
+                            View Full Report &rarr;
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -304,6 +314,17 @@ export default async function AnimalDetailPage({
                     {event.type === "VET_REPORT" && typeof event.details?.notes === "string" && (
                       <div className="text-xs text-stone-700 bg-white p-2.5 rounded-xl border border-stone-200 mt-1">
                         <strong>Clinical Notes:</strong> {String(event.details.notes)}
+                      </div>
+                    )}
+
+                    {typeof event.details?.caseId === "string" && (
+                      <div className="pt-1.5 flex justify-end">
+                        <Link href={`/farmer/cases/${event.details.caseId}`}>
+                          <span className="text-[11px] font-semibold text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer">
+                            <span>View Case & Report</span>
+                            <ChevronRight className="h-3 w-3" />
+                          </span>
+                        </Link>
                       </div>
                     )}
                   </div>
