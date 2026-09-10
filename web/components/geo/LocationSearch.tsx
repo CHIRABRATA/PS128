@@ -61,6 +61,7 @@ export function LocationSearch({
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [userGps, setUserGps] = useState<UserGpsCoordinates | null>(null);
+  const [isGpsOrigin, setIsGpsOrigin] = useState(false);
   const [gpsErrorMessage, setGpsErrorMessage] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -129,7 +130,7 @@ export function LocationSearch({
   };
 
   // Explicit user selection (never silent auto-select)
-  const handleSelectResult = async (item: GeocodedLocationResult) => {
+  const handleSelectResult = async (item: GeocodedLocationResult, isGps = false) => {
     setIsResolving(true);
     setSearchError(null);
 
@@ -148,6 +149,7 @@ export function LocationSearch({
       };
 
       setInternalSelectedLocation(selected);
+      setIsGpsOrigin(isGps);
       setResults([]);
       setQuery("");
       setHasSearched(false);
@@ -187,7 +189,7 @@ export function LocationSearch({
         try {
           const reverseRes = await reverseGeocodeLocationAction(lat, lng);
           if (reverseRes) {
-            await handleSelectResult(reverseRes);
+            await handleSelectResult(reverseRes, true);
           } else {
             // Even if reverse geocoding has no place name, use actual coordinates
             const directHierarchy = await resolveLocationHierarchyAction({
@@ -200,6 +202,7 @@ export function LocationSearch({
               displayName: `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
             };
             setInternalSelectedLocation(selected);
+            setIsGpsOrigin(true);
             setMode("landing");
             onLocationSelect(selected);
           }
@@ -247,32 +250,98 @@ export function LocationSearch({
         {headingText && (
           <label className="text-xs font-bold text-stone-700 uppercase tracking-wide flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 text-emerald-700" />
-            <span>{headingText} {required && <span className="text-red-500">*</span>}</span>
+            <span>
+              {headingText} {required && <span className="text-red-500">*</span>}
+            </span>
           </label>
-        )}
 
+          {!selectedLocation && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUseCurrentLocation}
+              disabled={disabled || isGpsLoading}
+              className="h-7 px-2.5 text-[11px] gap-1.5 border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer transition-colors"
+            >
+              {isGpsLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
+              ) : (
+                <Navigation className="h-3 w-3 text-emerald-700" />
+              )}
+              <span>{isGpsLoading ? "Acquiring GPS..." : "Use My Location"}</span>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* GPS Denied Informative Banner */}
+      {gpsDenied && !selectedLocation && (
+        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2 animate-fade-in">
+          <Compass className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
+          <span>
+            Location access was not granted. Search results may be less precise. You can still search any village or district name.
+          </span>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {searchError && (
+        <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-[11px] flex items-start gap-2 animate-fade-in">
+          <AlertCircle className="h-3.5 w-3.5 text-red-600 shrink-0 mt-0.5" />
+          <span>{searchError}</span>
+        </div>
+      )}
+
+      {/* Confirmed Selected State */}
+      {selectedLocation ? (
         <div className="p-4 rounded-2xl border border-emerald-300 bg-emerald-50/50 space-y-3 animate-fade-in">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-1">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
-                <span className="min-w-0 font-bold text-sm text-stone-900 wrap-break-word">
+                <span className="font-bold text-sm text-stone-900">
                   {selectedLocation.displayName || selectedLocation.villageName || selectedLocation.districtName}
                 </span>
-                {selectedLocation.isUrban && <Badge className="bg-stone-200 text-stone-700 border-stone-300 text-[10px]">Urban / Town</Badge>}
+                {selectedLocation.isUrban && (
+                  <Badge className="bg-stone-200 text-stone-700 border-stone-300 text-[10px]">
+                    Urban / Town
+                  </Badge>
+                )}
               </div>
-              <div className="grid grid-cols-1 gap-2 pt-0.5 text-[11px] text-stone-600 sm:grid-cols-2 lg:grid-cols-3">
-                {selectedLocation.villageName && <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">Village: <strong className="text-stone-800">{selectedLocation.villageName}</strong></span>}
-                {selectedLocation.blockName && <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">Block: <strong className="text-stone-800">{selectedLocation.blockName}</strong></span>}
-                {selectedLocation.districtName && <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">District: <strong className="text-stone-800">{selectedLocation.districtName}</strong></span>}
+
+              <div className="flex flex-wrap gap-2 text-[11px] text-stone-600 pt-0.5">
+                {selectedLocation.villageName && (
+                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                    Village: <strong className="text-stone-800">{selectedLocation.villageName}</strong>
+                  </span>
+                )}
+                {selectedLocation.blockName && (
+                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                    Block: <strong className="text-stone-800">{selectedLocation.blockName}</strong>
+                  </span>
+                )}
+                {selectedLocation.districtName && (
+                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                    District: <strong className="text-stone-800">{selectedLocation.districtName}</strong>
+                  </span>
+                )}
               </div>
-              {hasCoordinates && <p className="text-[10px] font-mono text-emerald-900/80 pt-0.5">Coordinates: {selectedLocation.latitude?.toFixed(4)}° N, {selectedLocation.longitude?.toFixed(4)}° E</p>}
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={handleClearSelection} disabled={disabled} className="h-8 px-2.5 text-xs text-stone-700 border-[#D9D3C7] hover:bg-white rounded-xl shadow-xs">
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleClearSelection}
+              disabled={disabled}
+              className="h-8 px-2.5 text-xs text-stone-700 border-[#D9D3C7] hover:bg-white rounded-xl shadow-xs"
+            >
               Change location
             </Button>
           </div>
 
+          {/* Map Preview ONLY if valid coordinates exist */}
           {showMapPreview && hasCoordinates && selectedLocation.latitude !== null && selectedLocation.longitude !== null && (
             <div className="relative w-full h-36 rounded-xl overflow-hidden border border-emerald-200 bg-stone-100">
               <iframe
@@ -280,7 +349,9 @@ export function LocationSearch({
                 className="w-full h-full border-0 pointer-events-none"
                 src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedLocation.longitude - 0.01}%2C${selectedLocation.latitude - 0.01}%2C${selectedLocation.longitude + 0.01}%2C${selectedLocation.latitude + 0.01}&layer=mapnik&marker=${selectedLocation.latitude}%2C${selectedLocation.longitude}`}
               />
-              <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-stone-600 font-medium border border-stone-200 shadow-2xs">OpenStreetMap</div>
+              <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-stone-600 font-medium border border-stone-200 shadow-2xs">
+                OpenStreetMap
+              </div>
             </div>
           )}
         </div>
@@ -485,7 +556,7 @@ export function LocationSearch({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => handleSelectResult(item)}
+                onClick={() => handleSelectResult(item, false)}
                 disabled={isResolving}
                 className="w-full text-left p-3.5 hover:bg-emerald-50/60 transition-colors flex items-start gap-3 cursor-pointer group"
               >
