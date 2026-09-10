@@ -1,21 +1,38 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getQueuedReports, OfflineQueueRecord } from "@/lib/offline/db";
-import { triggerQueueSync, checkServerReachability } from "@/lib/offline/sync";
-import { RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { getQueuedReports, getAllQueuedReports, OfflineQueueRecord } from "@/lib/offline/db";
+import { triggerQueueSync, retryManualQueueItem, checkServerReachability } from "@/lib/offline/sync";
+import { RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle, Clock, ShieldAlert } from "lucide-react";
 
 export function SyncStatusBadge() {
+  const { user } = useUser();
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isReachable, setIsReachable] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [queuedItems, setQueuedItems] = useState<OfflineQueueRecord[]>([]);
+  const [otherUserCount, setOtherUserCount] = useState<number>(0);
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const refreshQueueState = useCallback(async () => {
-    const items = await getQueuedReports();
-    setQueuedItems(items);
-  }, []);
+    const currentUserId = user?.id;
+    if (currentUserId) {
+      const myItems = await getQueuedReports(currentUserId);
+      setQueuedItems(myItems);
+
+      const allItems = await getAllQueuedReports();
+      const otherCount = allItems.filter(
+        (item) => item.clerkUserId !== currentUserId && item.status !== "SYNCED"
+      ).length;
+      setOtherUserCount(otherCount);
+    } else {
+      const allItems = await getAllQueuedReports();
+      setQueuedItems(allItems);
+      setOtherUserCount(0);
+    }
+  }, [user?.id]);
 
   const checkConnectivity = useCallback(async () => {
     const online = typeof navigator !== "undefined" ? navigator.onLine : true;
@@ -29,14 +46,25 @@ export function SyncStatusBadge() {
   }, []);
 
   const handleManualSync = useCallback(async () => {
+    if (!user?.id) return;
     setSyncing(true);
     try {
-      await triggerQueueSync();
+      await triggerQueueSync(user.id);
       await refreshQueueState();
     } finally {
       setSyncing(false);
     }
-  }, [refreshQueueState]);
+  }, [user?.id, refreshQueueState]);
+
+  const handleSingleRetry = async (itemId: string) => {
+    setRetryingId(itemId);
+    try {
+      await retryManualQueueItem(itemId, user?.id);
+      await refreshQueueState();
+    } finally {
+      setRetryingId(null);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -86,7 +114,15 @@ export function SyncStatusBadge() {
   }, [checkConnectivity, refreshQueueState, handleManualSync]);
 
   const pendingCount = queuedItems.filter(
-    (item) => item.status === "QUEUED" || item.status === "SYNCING" || item.status === "FAILED"
+    (item) =>
+      item.status === "QUEUED" ||
+      item.status === "SYNCING" ||
+      item.status === "FAILED" ||
+      item.status === "NEEDS_MANUAL_RETRY"
+  ).length;
+
+  const manualRetryCount = queuedItems.filter(
+    (item) => item.status === "NEEDS_MANUAL_RETRY"
   ).length;
 
   return (
@@ -100,6 +136,8 @@ export function SyncStatusBadge() {
               ? "bg-red-50 text-red-800 border-red-200"
               : syncing
               ? "bg-amber-50 text-amber-900 border-amber-200 animate-pulse"
+              : manualRetryCount > 0
+              ? "bg-amber-50 text-amber-900 border-amber-300 ring-2 ring-amber-400/40"
               : pendingCount > 0
               ? "bg-amber-50 text-amber-900 border-amber-200"
               : "bg-white/95 text-emerald-800 border-emerald-200 hover:bg-emerald-50/50"
@@ -123,7 +161,13 @@ export function SyncStatusBadge() {
           )}
 
           {pendingCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-amber-200/80 text-amber-950 rounded-full border border-amber-300 font-mono">
+            <span
+              className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full font-mono ${
+                manualRetryCount > 0
+                  ? "bg-amber-300 text-amber-950 border border-amber-400"
+                  : "bg-amber-200/80 text-amber-950 border border-amber-300"
+              }`}
+            >
               {pendingCount}
             </span>
           )}
@@ -147,49 +191,84 @@ export function SyncStatusBadge() {
               </button>
             </div>
 
+            {/* Other User Isolation Safeguard Banner */}
+            {otherUserCount > 0 && (
+              <div className="p-3 bg-amber-50 border-b border-amber-200 flex items-start gap-2 text-xs text-amber-900">
+                <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">इतर खात्याचे प्रलंबित अहवाल (Other User Reports)</p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">
+                    {otherUserCount} अहवाल दुसऱ्या खात्याशी संबंधित आहेत. सुरक्षिततेसाठी ते सिंक करण्यासाठी त्या खात्याने लॉगिन करा.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-[#FAF8F3]/50">
               {queuedItems.length === 0 ? (
                 <div className="text-center py-8 text-stone-500 text-xs">
-                  फोनमध्ये सध्या कोणतेही प्रलंबित ऑफलाइन अहवाल नाहीत.
+                  सध्या कोणतेही प्रलंबित ऑफलाइन अहवाल नाहीत.
                 </div>
               ) : (
                 queuedItems.map((item) => (
                   <div
                     key={item.id}
-                    className="p-3 bg-white border border-[#E5E0D8] rounded-2xl flex items-center justify-between gap-3 text-xs shadow-xs"
+                    className="p-3 bg-white border border-[#E5E0D8] rounded-2xl flex flex-col gap-2 text-xs shadow-xs"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[#191F1C]">नोंद: {item.submissionId.substring(0, 12)}...</span>
-                        {item.photoBlob && <span className="text-[10px] text-emerald-700 font-medium">📷 फोटो जोडला</span>}
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-[#191F1C]">नोंद: {item.submissionId.substring(0, 12)}...</span>
+                          {item.photoBlob && <span className="text-[10px] text-emerald-700 font-medium">📷 फोटो जोडला</span>}
+                        </div>
+                        <p className="text-stone-600 text-[11px] mt-0.5">
+                          लक्षणे: {item.symptoms.slice(0, 2).join(", ")}
+                        </p>
                       </div>
-                      <p className="text-stone-600 text-[11px] mt-0.5">
-                        लक्षणे: {item.symptoms.slice(0, 2).join(", ")}
-                      </p>
-                      {item.lastError && (
-                        <p className="text-[10px] text-red-600 mt-1">{item.lastError}</p>
-                      )}
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.status === "SYNCED" ? (
+                          <span className="flex items-center gap-1 text-emerald-700 text-[10px] font-semibold">
+                            <CheckCircle className="w-3.5 h-3.5" /> सिंक झाले
+                          </span>
+                        ) : item.status === "SYNCING" ? (
+                          <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" /> सिंक सुरू
+                          </span>
+                        ) : item.status === "NEEDS_MANUAL_RETRY" ? (
+                          <span className="flex items-center gap-1 text-red-700 text-[10px] font-semibold">
+                            <AlertTriangle className="w-3.5 h-3.5" /> पुन्हा प्रयत्न आवश्यक
+                          </span>
+                        ) : item.status === "FAILED_AUTHORIZATION" ? (
+                          <span className="flex items-center gap-1 text-red-700 text-[10px] font-semibold">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Auth Failed
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
+                            <Clock className="w-3.5 h-3.5" /> स्थानिक जतन
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {item.status === "SYNCED" ? (
-                        <span className="flex items-center gap-1 text-emerald-700 text-[10px] font-semibold">
-                          <CheckCircle className="w-3.5 h-3.5" /> सिंक झाले
-                        </span>
-                      ) : item.status === "SYNCING" ? (
-                        <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" /> सिंक सुरू
-                        </span>
-                      ) : item.status === "FAILED_AUTHORIZATION" ? (
-                        <span className="flex items-center gap-1 text-red-700 text-[10px] font-semibold">
-                          <AlertTriangle className="w-3.5 h-3.5" /> Auth Failed
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
-                          <Clock className="w-3.5 h-3.5" /> स्थानिक जतन
-                        </span>
-                      )}
-                    </div>
+                    {item.lastError && (
+                      <p className="text-[10px] text-red-600 bg-red-50 p-1.5 rounded-lg border border-red-100">
+                        {item.lastError} (प्रयत्न: {item.retryCount || 0}/5)
+                      </p>
+                    )}
+
+                    {item.status === "NEEDS_MANUAL_RETRY" && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={() => handleSingleRetry(item.id)}
+                          disabled={retryingId === item.id || !isOnline || !isReachable}
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${retryingId === item.id ? "animate-spin" : ""}`} />
+                          <span>पुन्हा प्रयत्न करा (Retry)</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -201,7 +280,7 @@ export function SyncStatusBadge() {
               </span>
               <button
                 onClick={handleManualSync}
-                disabled={syncing || !isOnline || !isReachable}
+                disabled={syncing || !isOnline || !isReachable || !user?.id}
                 className="py-2 px-3.5 bg-[#047857] hover:bg-[#065f46] text-white rounded-xl text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1.5 min-h-[36px] shadow-xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />

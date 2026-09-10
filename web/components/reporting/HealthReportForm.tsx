@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 
+import { useUser } from "@clerk/nextjs";
 import { PrintableAnimalOption } from "@/lib/actions/reporting_data";
 import { FarmerAnimalSelector } from "./FarmerAnimalSelector";
 import { AgentAnimalSelector } from "./AgentAnimalSelector";
@@ -10,6 +11,7 @@ import { PhotoCapture } from "./PhotoCapture";
 import { LocationCapture } from "./LocationCapture";
 import { IoTInput } from "./IoTInput";
 import { createCaseReportAction, CaseReportResult } from "@/lib/actions/cases";
+import { completeAssistanceWithReportAction } from "@/lib/actions/assistance";
 import { runCaseAnalysisAction } from "@/lib/actions/analysis";
 import { enqueueReport } from "@/lib/offline/db";
 import { checkServerReachability } from "@/lib/offline/sync";
@@ -25,9 +27,18 @@ import { getReportCopy } from "@/lib/i18n/report";
 
 interface HealthReportFormProps {
   mode: "farmer" | "agent";
+  initialRequestId?: string;
+  initialFarmId?: string;
+  initialAnimalId?: string;
+  expectedUpdatedAt?: string;
 }
 
-export function HealthReportForm({ mode }: HealthReportFormProps) {
+export function HealthReportForm({
+  mode,
+  initialRequestId,
+  expectedUpdatedAt,
+}: HealthReportFormProps) {
+  const { user } = useUser();
   const { locale } = useLocale();
   const copy = getReportCopy(locale);
   const [step, setStep] = useState(1);
@@ -43,6 +54,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
   const [mortalityCount, setMortalityCount] = useState<number>(0);
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLng, setGpsLng] = useState<number | null>(null);
 
@@ -91,6 +103,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
     setMortalityCount(0);
     setHeartRate(null);
     setPhotoUrl(null);
+    setPhotoBlob(null);
     setGpsLat(null);
     setGpsLng(null);
     setTemperature(null);
@@ -146,6 +159,8 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
     setSubmitting(true);
     setFormError("");
 
+    const activeClerkUserId = user?.id || "anonymous_user";
+
     const reportPayload = {
       submissionId: reportSubmissionId,
       animalId: selectedAnimal.id,
@@ -176,7 +191,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         await enqueueReport({
           id: reportSubmissionId,
           submissionId: reportSubmissionId,
-          clerkUserId: "local_user",
+          clerkUserId: activeClerkUserId,
           animalId: selectedAnimal.id,
           symptoms,
           durationDays,
@@ -184,7 +199,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           herdSize,
           mortalityCount,
           heartRate: heartRate || null,
-          photoBlob: null,
+          photoBlob: photoBlob || null,
           photoUrl: photoUrl || null,
           gpsLat: gpsLat || null,
           gpsLng: gpsLng || null,
@@ -193,6 +208,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             activity: activity || null,
           },
           status: "QUEUED",
+          retryCount: 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
@@ -206,11 +222,44 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         return;
       }
 
-      const res = await createCaseReportAction(reportPayload);
-      if (res.success) {
-        setSubmitResult(res);
+      if (initialRequestId) {
+        const res = await completeAssistanceWithReportAction({
+          submissionId: reportSubmissionId,
+          requestId: initialRequestId,
+          animalId: selectedAnimal.id,
+          symptoms,
+          durationDays,
+          affectedCount,
+          herdSize,
+          mortalityCount,
+          heartRate: heartRate || null,
+          gpsLat: gpsLat || null,
+          gpsLng: gpsLng || null,
+          photoUrl: photoUrl || null,
+          iotData: {
+            temperature: temperature || null,
+            activity: activity || null,
+          },
+          expectedUpdatedAt,
+        });
+
+        if (res.success && res.caseId) {
+          setSubmitResult({
+            success: true,
+            caseId: res.caseId,
+            caseNumber: res.caseNumber,
+            status: res.status,
+          });
+        } else {
+          setFormError(res.error || "Report submission failed. Please try again.");
+        }
       } else {
-        setFormError(res.error || "Report submission failed. Please try again.");
+        const res = await createCaseReportAction(reportPayload);
+        if (res.success) {
+          setSubmitResult(res);
+        } else {
+          setFormError(res.error || "Report submission failed. Please try again.");
+        }
       }
     } catch (err: unknown) {
       const isNetworkError =
@@ -221,7 +270,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           await enqueueReport({
             id: reportSubmissionId,
             submissionId: reportSubmissionId,
-            clerkUserId: "local_user",
+            clerkUserId: activeClerkUserId,
             animalId: selectedAnimal.id,
             symptoms,
             durationDays,
@@ -229,7 +278,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
             herdSize,
             mortalityCount,
             heartRate: heartRate || null,
-            photoBlob: null,
+            photoBlob: photoBlob || null,
             photoUrl: photoUrl || null,
             gpsLat: gpsLat || null,
             gpsLng: gpsLng || null,
@@ -238,6 +287,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
               activity: activity || null,
             },
             status: "QUEUED",
+            retryCount: 0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
@@ -404,11 +454,11 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
       </div>
 
       <CardHeader className="border-b border-[#E5E0D8] pb-4">
-        <div className="flex items-center justify-between">
-          <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono shrink-0">
             Step {step} / 7 — {mode === "farmer" ? "Farmer report" : "Field inspection"}
           </Badge>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {[1, 2, 3, 4, 5, 6, 7].map((s) => (
               <span
                 key={s}
@@ -560,6 +610,10 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
         {step === 4 && (
           <PhotoCapture
             photoUrl={photoUrl}
+            onChangePhoto={(url, blob) => {
+              setPhotoUrl(url);
+              setPhotoBlob(blob);
+            }}
             onChangePhotoUrl={setPhotoUrl}
             submissionId={submissionId}
           />

@@ -14,7 +14,7 @@ export function AuthorityMetricsCards({ metrics }: AuthorityMetricsCardsProps) {
   return (
     <div className="space-y-4 text-[#191F1C]">
       {/* Primary KPI Metrics Grid with Soft Pastel Surfaces */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
         <Card className="p-4 bg-white border-[#E5E0D8] rounded-2xl shadow-xs hover-lift flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs text-stone-500 font-medium">Animals Monitored</span>
@@ -67,7 +67,7 @@ export function AuthorityMetricsCards({ metrics }: AuthorityMetricsCardsProps) {
           </div>
         </Card>
 
-        <Card className="p-4 bg-amber-50/80 border-amber-200 rounded-2xl shadow-2xs hover-lift flex flex-col justify-between col-span-2 md:col-span-1">
+        <Card className="p-4 bg-amber-50/80 border-amber-200 rounded-2xl shadow-2xs hover-lift flex flex-col justify-between min-[380px]:col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs text-amber-900 font-bold">Active Outbreak Alerts</span>
             <ShieldAlert className="h-4 w-4 text-amber-700" />

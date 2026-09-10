@@ -6,11 +6,12 @@ import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, Refre
 
 interface PhotoCaptureProps {
   photoUrl: string | null;
-  onChangePhotoUrl: (url: string | null) => void;
+  onChangePhotoUrl?: (url: string | null) => void;
+  onChangePhoto?: (url: string | null, blob: Blob | null) => void;
   submissionId: string;
 }
 
-export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: PhotoCaptureProps) {
+export function PhotoCapture({ photoUrl, onChangePhotoUrl, onChangePhoto, submissionId }: PhotoCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -37,13 +38,15 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
       return;
     }
 
-    // 2. Set immediate local preview for smooth UX
+    // 2. Set immediate local preview and notify parent of blob for offline resiliency
     const previewUrl = URL.createObjectURL(file);
     setLocalPreview(previewUrl);
+    onChangePhoto?.(null, file);
+    onChangePhotoUrl?.(null);
     setUploading(true);
 
     try {
-      // 3. Upload to secure endpoint
+      // 3. Attempt upload to secure endpoint
       const formData = new FormData();
       formData.append("file", file);
       formData.append("submissionId", submissionId);
@@ -59,13 +62,15 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
         throw new Error(data.error || "Failed to upload image to secure storage.");
       }
 
-      // 4. Update parent state with authorized storage reference
-      onChangePhotoUrl(data.url);
+      // 4. Update parent state with authorized storage reference and blob
+      onChangePhoto?.(data.url, file);
+      onChangePhotoUrl?.(data.url);
     } catch (err: unknown) {
-      console.error("[Client Photo Upload Error]:", err);
+      // F-01: On upload failure (e.g. offline), retain raw Blob in parent state for IndexedDB queue
+      onChangePhoto?.(null, file);
+      onChangePhotoUrl?.(null);
       const msg = err instanceof Error ? err.message : "Image upload failed.";
-      setError(`${msg} You can retry or submit the report without a photo.`);
-      onChangePhotoUrl(null);
+      setError(`Network unreachable: Photo stored locally on device for offline sync (${msg}).`);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -100,7 +105,8 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, submissionId }: Photo
   const handleRemovePhoto = () => {
     setLocalPreview(null);
     setError(null);
-    onChangePhotoUrl(null);
+    onChangePhoto?.(null, null);
+    onChangePhotoUrl?.(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
