@@ -254,47 +254,8 @@ export function LocationSearch({
               {headingText} {required && <span className="text-red-500">*</span>}
             </span>
           </label>
+        )}
 
-          {!selectedLocation && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleUseCurrentLocation}
-              disabled={disabled || isGpsLoading}
-              className="h-7 px-2.5 text-[11px] gap-1.5 border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer transition-colors"
-            >
-              {isGpsLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
-              ) : (
-                <Navigation className="h-3 w-3 text-emerald-700" />
-              )}
-              <span>{isGpsLoading ? "Acquiring GPS..." : "Use My Location"}</span>
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* GPS Denied Informative Banner */}
-      {gpsDenied && !selectedLocation && (
-        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2 animate-fade-in">
-          <Compass className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
-          <span>
-            Location access was not granted. Search results may be less precise. You can still search any village or district name.
-          </span>
-        </div>
-      )}
-
-      {/* Error Banner */}
-      {searchError && (
-        <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-[11px] flex items-start gap-2 animate-fade-in">
-          <AlertCircle className="h-3.5 w-3.5 text-red-600 shrink-0 mt-0.5" />
-          <span>{searchError}</span>
-        </div>
-      )}
-
-      {/* Confirmed Selected State */}
-      {selectedLocation ? (
         <div className="p-4 rounded-2xl border border-emerald-300 bg-emerald-50/50 space-y-3 animate-fade-in">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
