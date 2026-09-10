@@ -53,7 +53,7 @@ export function VetFeedbackForm({
     initialFollowUpDate ? new Date(initialFollowUpDate).toISOString().split("T")[0] : ""
   );
   const [notes, setNotes] = useState<string>(initialNotes || "");
-  const [labName, setLabName] = useState<string>("जिल्हा पशुवैद्यकीय रोग अन्वेषण प्रयोगशाळा (DIS Lab)");
+  const [labName, setLabName] = useState<string>("District Veterinary Disease Investigation Laboratory (DIS Lab)");
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,9 +77,9 @@ export function VetFeedbackForm({
       });
 
       if (!res.success) {
-        setError(res.error || "पशुवैद्यकीय अहवाल जतन करण्यात त्रुटी आली.");
+        setError(res.error || "Failed to save veterinary report.");
       } else {
-        setSuccessMsg("पशुवैद्यकीय निदान व अभिप्राय यशस्वीरीत्या जतन झाला.");
+        setSuccessMsg("Veterinary report and clinical feedback saved successfully.");
         setTimeout(() => window.location.reload(), 1200);
       }
     } catch (err: unknown) {
@@ -91,7 +91,7 @@ export function VetFeedbackForm({
 
   const handleConfirmCase = async () => {
     if (!diagnosis.trim()) {
-      setError("कृपया रोग पुष्टी करण्यापूर्वी अधिकृत वैद्यकीय निदान (Diagnosis) नोंदवा.");
+      setError("Please enter an official clinical diagnosis before confirming the case.");
       return;
     }
 
@@ -108,9 +108,9 @@ export function VetFeedbackForm({
       });
 
       if (!res.success) {
-        setError(res.error || "प्रकरण पुष्टी करण्यात त्रुटी आली.");
+        setError(res.error || "Failed to confirm case.");
       } else {
-        setSuccessMsg("रोग प्रकरण यशस्वीरीत्या पुष्ट (CONFIRMED) केले गेले.");
+        setSuccessMsg("Case successfully confirmed (CONFIRMED).");
         setTimeout(() => window.location.reload(), 1200);
       }
     } catch (err: unknown) {
@@ -135,9 +135,9 @@ export function VetFeedbackForm({
       });
 
       if (!res.success) {
-        setError(res.error || "लॅबकडे वर्ग करण्यात त्रुटी आली.");
+        setError(res.error || "Failed to refer case to lab.");
       } else {
-        setSuccessMsg("प्रकरण निदान प्रयोगशाळेकडे वर्ग केले. नमुना नोंद तयार झाली.");
+        setSuccessMsg("Case referred to diagnostic laboratory. Sample record created.");
         setTimeout(() => window.location.reload(), 1200);
       }
     } catch (err: unknown) {
@@ -160,15 +160,32 @@ export function VetFeedbackForm({
       });
 
       if (!res.success) {
-        setError(res.error || "प्रकरण बंद करण्यात त्रुटी आली.");
+        setError(res.error || "Failed to close case.");
       } else {
-        setSuccessMsg("प्रकरण सुरक्षित / पूर्ण बरे (CLOSED) म्हणून निकाली काढले.");
+        setSuccessMsg("Case marked as resolved/harmless (CLOSED).");
         setTimeout(() => window.location.reload(), 1200);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Closure failed.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const getActionLabel = (act: VetAction) => {
+    switch (act) {
+      case "ISOLATE":
+        return "ISOLATE";
+      case "TREAT":
+        return "TREAT";
+      case "MONITOR":
+        return "MONITOR";
+      case "REFER_LAB":
+        return "REFER TO LAB";
+      case "NONE":
+        return "NONE";
+      default:
+        return act;
     }
   };
 
@@ -180,15 +197,15 @@ export function VetFeedbackForm({
           <Stethoscope className="h-5 w-5 text-emerald-700" />
           <div>
             <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-wider">
-              पशुवैद्यकीय निदान व उपचार निर्णय
+              Veterinary Clinical Assessment
             </h3>
             <p className="text-[11px] text-emerald-800">
-              अधिकृत परवानाधारक पशुवैद्यकीय डॉक्टरांचे वैद्यकीय मूल्यांकन.
+              Official licensed veterinary medical evaluation.
             </p>
           </div>
         </div>
         <Badge className="border-emerald-300 text-emerald-900 bg-emerald-100 text-[10px] font-bold">
-          डॉक्टर नोंद
+          Doctor&apos;s Notes
         </Badge>
       </div>
 
@@ -196,7 +213,7 @@ export function VetFeedbackForm({
       <div className="bg-white p-3 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5 shadow-2xs">
         <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed">
-          <strong>वैद्यकीय अधिकार:</strong> AI मधील निष्कर्ष हे केवळ प्राथमिक सहाय्यासाठी आहेत. खालील नोंद ही जनावरावरील अंतिम अधिकृत वैद्यकीय निदान मानली जाईल.
+          <strong>Clinical Authority:</strong> AI findings are for clinical decision support only. The entry below serves as the official final veterinary diagnosis.
         </p>
       </div>
 
@@ -220,13 +237,13 @@ export function VetFeedbackForm({
         {/* 1. Diagnosis Summary */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-emerald-950">
-            १. अधिकृत वैद्यकीय निदान (Clinical Diagnosis) *
+            1. Clinical Diagnosis *
           </Label>
           <Input
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
             disabled={isTerminal || submitting}
-            placeholder="उदा. लंपी त्वचा रोग संशयित (Suspected Lumpy Skin Disease) / घटसर्प / साधे फोड"
+            placeholder="e.g. Suspected Lumpy Skin Disease / Hemorrhagic Septicemia / Non-specific Lesions"
             className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400"
           />
         </div>
@@ -235,12 +252,12 @@ export function VetFeedbackForm({
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <Label className="text-xs font-bold text-emerald-950">
-              २. अनुशंसित कारवाई (Recommended Action) *
+              2. Recommended Action *
             </Label>
             {suggestedAction && (
               <span className="text-[10px] text-amber-800 font-semibold flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3 text-amber-600" />
-                AI सूचना: {suggestedAction}
+                AI Suggestion: {suggestedAction}
               </span>
             )}
           </div>
@@ -258,11 +275,7 @@ export function VetFeedbackForm({
                     : "bg-white border-[#D9D3C7] text-stone-700 hover:bg-stone-50 hover:text-stone-900"
                 }`}
               >
-                {act === "ISOLATE" && "वेगळे करा"}
-                {act === "TREAT" && "उपचार"}
-                {act === "MONITOR" && "निरीक्षण"}
-                {act === "REFER_LAB" && "लॅब तपासणी"}
-                {act === "NONE" && "काही नाही"}
+                {getActionLabel(act)}
               </button>
             ))}
           </div>
@@ -273,7 +286,7 @@ export function VetFeedbackForm({
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-emerald-700" />
-              <span>३. पुनर्तपासणी तारीख (Follow-up Date)</span>
+              <span>3. Follow-up Date</span>
             </Label>
             <Input
               type="date"
@@ -287,13 +300,13 @@ export function VetFeedbackForm({
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
               <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
-              <span>प्रयोगशाळा नाव (Diagnostic Lab Name)</span>
+              <span>Diagnostic Lab Name</span>
             </Label>
             <Input
               value={labName}
               onChange={(e) => setLabName(e.target.value)}
               disabled={isTerminal || submitting}
-              placeholder="उदा. जिल्हा पशुवैद्यकीय रोग अन्वेषण लॅब"
+              placeholder="e.g. District Veterinary Disease Investigation Laboratory"
               className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400"
             />
           </div>
@@ -302,13 +315,13 @@ export function VetFeedbackForm({
         {/* 4. Veterinary Notes */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-emerald-950">
-            ४. तपासणी नोंदी व सूचना (Clinical Notes & Quarantine Guidelines)
+            4. Clinical Notes &amp; Quarantine Guidelines
           </Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={isTerminal || submitting}
-            placeholder="जनावरासाठी दिलेल्या औषधांची नावे, विलगीकरण सूचना किंवा लॅब नमुना माहिती नोंदवा..."
+            placeholder="Enter prescribed medications, quarantine guidelines, dosage instructions, or sample collection notes..."
             rows={3}
             className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400 shadow-2xs"
           />
@@ -327,7 +340,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 min-h-[36px] rounded-xl"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            <span>अभिप्राय जतन करा</span>
+            <span>Save Feedback</span>
           </Button>
 
           <Button
@@ -339,7 +352,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-100 hover:bg-amber-200 min-h-[36px] rounded-xl"
           >
             <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
-            <span>लॅबकडे पाठवा</span>
+            <span>Refer to Lab</span>
           </Button>
 
           <Button
@@ -351,7 +364,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-700 hover:bg-stone-50 min-h-[36px] rounded-xl"
           >
             <XCircle className="h-3.5 w-3.5 text-stone-500" />
-            <span>सुरक्षित / बंद करा</span>
+            <span>Close / Harmless</span>
           </Button>
 
           <Button
@@ -362,7 +375,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs min-h-[36px] rounded-xl"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            <span>रोग पुष्टी करा (Confirm)</span>
+            <span>Confirm Disease (Confirm)</span>
           </Button>
         </div>
       )}

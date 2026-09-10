@@ -1,8 +1,10 @@
 "use server";
 
+import { z } from "zod";
 import prisma from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
-import { requireActiveUser, FullAppUser } from "@/lib/auth/session";
+import { requireActiveUser, FullAppUser, getCurrentClerkUser } from "@/lib/auth/session";
+import { clerkClient } from "@clerk/nextjs/server";
 import { canUserAccessCase } from "@/lib/storage/auth";
 import { VetAction, SampleStatus, Prisma } from "@prisma/client";
 import {
@@ -11,12 +13,14 @@ import {
   confirmCaseSchema,
   closeCaseSchema,
   updateSampleStatusSchema,
+  updateVetProfileSchema,
   getRiskRank,
   VetFeedbackInput,
   ReferToLabInput,
   ConfirmCaseInput,
   CloseCaseInput,
   UpdateSampleStatusInput,
+  UpdateVetProfileInput,
 } from "@/lib/vet/schemas";
 import { evaluateVillageOutbreakAlert } from "@/lib/authority/alerts";
 import { createInAppNotification } from "./notifications";
@@ -1192,3 +1196,208 @@ export async function completeFollowUpAction(reportId: string, notes?: string) {
 
   return { success: true };
 }
+
+export interface VetProfileData {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  imageUrl: string | null;
+  preferredLanguage: string;
+  telegramChatId: string | null;
+  role: string;
+  status: string;
+  districtId: string | null;
+  districtName: string | null;
+  blockId: string | null;
+  blockName: string | null;
+  villageId: string | null;
+  villageName: string | null;
+  assignedActiveCasesCount: number;
+  authoredReportsCount: number;
+  reviewedCasesCount: number;
+  createdAt: string;
+}
+
+/**
+ * Retrieves the profile details for the currently authenticated veterinarian.
+ */
+export async function getVetProfileAction(): Promise<VetProfileData> {
+  const vet = await requireActiveVeterinarian();
+  const [clerkUser, fullUser, assignedActiveCasesCount, authoredReportsCount, reviewedCasesCount] = await Promise.all([
+    getCurrentClerkUser(),
+    prisma.user.findUnique({
+      where: { id: vet.id },
+      include: {
+        district: true,
+        block: true,
+        village: true,
+      },
+    }),
+    prisma.case.count({
+      where: {
+        assignedVeterinarianUserId: vet.id,
+        status: { in: ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"] },
+      },
+    }),
+    prisma.veterinaryReport.count({
+      where: { vetUserId: vet.id },
+    }),
+    prisma.case.count({
+      where: { reviewedByUserId: vet.id },
+    }),
+  ]);
+
+  if (!fullUser) {
+    throw new Error("Veterinarian profile not found.");
+  }
+
+  const primaryEmail = clerkUser?.emailAddresses[0]?.emailAddress || null;
+  const imageUrl = clerkUser?.imageUrl || null;
+
+  return {
+    id: fullUser.id,
+    name: fullUser.name,
+    phone: fullUser.phone,
+    email: primaryEmail,
+    imageUrl,
+    preferredLanguage: fullUser.preferredLanguage || "en",
+    telegramChatId: fullUser.telegramChatId || null,
+    role: fullUser.role,
+    status: fullUser.status,
+    districtId: fullUser.districtId || null,
+    districtName: fullUser.district?.name || null,
+    blockId: fullUser.blockId || null,
+    blockName: fullUser.block?.name || null,
+    villageId: fullUser.villageId || null,
+    villageName: fullUser.village?.name || null,
+    assignedActiveCasesCount,
+    authoredReportsCount,
+    reviewedCasesCount,
+    createdAt: fullUser.createdAt.toISOString(),
+  };
+}
+
+/**
+ * Updates the authenticated veterinarian's profile and service jurisdiction.
+ * Strictly verifies identity, forbids role manipulation, and validates location hierarchy.
+ */
+export async function updateVetProfileAction(input: UpdateVetProfileInput) {
+  try {
+    const vet = await requireActiveVeterinarian();
+
+    const parsed = updateVetProfileSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message || "Invalid profile data.",
+      };
+    }
+
+    const { name, phone, preferredLanguage, districtId, blockId, villageId } = parsed.data;
+
+    // 1. Resolve and validate administrative location hierarchy
+    let resolvedDistrictId: string | null = null;
+    let resolvedBlockId: string | null = null;
+    let resolvedVillageId: string | null = null;
+
+    if (villageId) {
+      const villageObj = await prisma.village.findUnique({
+        where: { id: villageId },
+        include: { block: { include: { district: true } } },
+      });
+      if (!villageObj) {
+        return { success: false, error: "Selected Village does not exist." };
+      }
+      resolvedVillageId = villageObj.id;
+      resolvedBlockId = villageObj.blockId;
+      resolvedDistrictId = villageObj.block.districtId;
+
+      if (blockId && blockId !== resolvedBlockId) {
+        return { success: false, error: "Selected Village does not belong to the chosen Block." };
+      }
+      if (districtId && districtId !== resolvedDistrictId) {
+        return { success: false, error: "Selected Village does not belong to the chosen District." };
+      }
+    } else if (blockId) {
+      const blockObj = await prisma.block.findUnique({
+        where: { id: blockId },
+        include: { district: true },
+      });
+      if (!blockObj) {
+        return { success: false, error: "Selected Block does not exist." };
+      }
+      resolvedBlockId = blockObj.id;
+      resolvedDistrictId = blockObj.districtId;
+      if (districtId && districtId !== resolvedDistrictId) {
+        return { success: false, error: "Selected Block does not belong to the chosen District." };
+      }
+    } else if (districtId) {
+      const distObj = await prisma.district.findUnique({
+        where: { id: districtId },
+      });
+      if (!distObj) {
+        return { success: false, error: "Selected District does not exist." };
+      }
+      resolvedDistrictId = distObj.id;
+    }
+
+    // 2. Update Veterinarian User in Prisma (Role and Status remain strictly protected)
+    const updatedUser = await prisma.user.update({
+      where: { id: vet.id },
+      data: {
+        name: name.trim(),
+        phone: phone.trim(),
+        preferredLanguage: preferredLanguage || "en",
+        districtId: resolvedDistrictId,
+        blockId: resolvedBlockId,
+        villageId: resolvedVillageId,
+      },
+    });
+
+    // 3. Sync name with Clerk if possible
+    try {
+      if (vet.clerkId) {
+        const client = await clerkClient();
+        const parts = name.trim().split(" ");
+        const firstName = parts[0] || name.trim();
+        const lastName = parts.slice(1).join(" ") || undefined;
+        await client.users.updateUser(vet.clerkId, {
+          firstName,
+          lastName,
+        });
+      }
+    } catch (clerkErr) {
+      console.warn("[Clerk Vet Name Sync Warning]:", clerkErr);
+    }
+
+    // 4. Invalidate Next.js Server Cache
+    try {
+      revalidatePath("/vet");
+      revalidatePath("/vet/profile");
+      revalidatePath("/vet/cases");
+      revalidatePath("/vet/follow-ups");
+      revalidatePath("/vet/samples");
+    } catch {
+      // Safe fallback
+    }
+
+    return {
+      success: true,
+      message: "Profile updated successfully.",
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        preferredLanguage: updatedUser.preferredLanguage,
+      },
+    };
+  } catch (err: unknown) {
+    console.error("[Update Vet Profile Error]:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update profile.",
+    };
+  }
+}
+

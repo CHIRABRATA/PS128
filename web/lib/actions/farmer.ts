@@ -60,44 +60,29 @@ export interface FarmerProfileData {
 export async function getFarmerDashboardMetricsAction() {
   const farmer = await requireFarmer();
 
-  // Dynamically build Case include to prevent crashes on stale Prisma clients
-  const caseInclude: any = {};
-  
-  if (isRelation("Case", "createdByUser")) {
-    caseInclude.createdByUser = { select: { id: true, name: true, phone: true } };
-  }
-  if (isRelation("Case", "reviewedByUser")) {
-    caseInclude.reviewedByUser = { select: { id: true, name: true, phone: true } };
-  }
-  if (isRelation("Case", "treatments")) {
-    caseInclude.treatments = {
+  const caseInclude = {
+    createdByUser: { select: { id: true, name: true, phone: true } },
+    reviewedByUser: { select: { id: true, name: true, phone: true } },
+    treatments: {
       include: {
         administeredByUser: { select: { id: true, name: true, role: true } },
       },
-      orderBy: { dateGiven: "desc" },
-    };
-  }
-  if (isRelation("Case", "samples")) {
-    caseInclude.samples = {
+      orderBy: { dateGiven: "desc" as const },
+    },
+    samples: {
       include: {
         collectedByUser: { select: { id: true, name: true } },
       },
-      orderBy: { collectedAt: "desc" },
-    };
-  }
-  if (isRelation("Case", "assignedVeterinarianUser")) {
-    caseInclude.assignedVeterinarianUser = { select: { id: true, name: true, phone: true } };
-  }
-  if (isRelation("Case", "veterinaryReports")) {
-    caseInclude.veterinaryReports = {
+      orderBy: { collectedAt: "desc" as const },
+    },
+    assignedVeterinarianUser: { select: { id: true, name: true, phone: true } },
+    veterinaryReports: {
       include: {
         vetUser: { select: { id: true, name: true, phone: true } },
       },
-      orderBy: { createdAt: "desc" },
-    };
-  }
-  if (isRelation("Case", "animal")) {
-    caseInclude.animal = {
+      orderBy: { createdAt: "desc" as const },
+    },
+    animal: {
       select: {
         id: true,
         tag: true,
@@ -127,8 +112,8 @@ export async function getFarmerDashboardMetricsAction() {
           },
         },
       },
-    };
-  }
+    },
+  };
 
   const [farms, assistanceRequests, unreadNotificationsCount] = await Promise.all([
     prisma.farm.findMany({
@@ -258,11 +243,8 @@ export async function getFarmerDashboardMetricsAction() {
 export async function getFarmerCaseDetailAction(caseId: string) {
   const farmer = await requireFarmer();
 
-  // Dynamically build Case include to prevent crashes on stale Prisma clients
-  const detailInclude: any = {};
-
-  if (isRelation("Case", "animal")) {
-    detailInclude.animal = {
+  const detailInclude = {
+    animal: {
       include: {
         herd: {
           include: {
@@ -282,33 +264,36 @@ export async function getFarmerCaseDetailAction(caseId: string) {
             },
           },
         },
+        cases: {
+          where: { id: { not: caseId } },
+          orderBy: { reportedAt: "desc" as const },
+        },
+        vaccinations: {
+          include: { administeredByUser: true },
+          orderBy: { dateGiven: "desc" as const },
+        },
+        treatments: {
+          include: { administeredByUser: true },
+          orderBy: { dateGiven: "desc" as const },
+        },
       },
-    };
-  }
-
-  if (isRelation("Case", "createdByUser")) {
-    detailInclude.createdByUser = {
+    },
+    createdByUser: {
       select: {
         id: true,
         name: true,
         phone: true,
         role: true,
       },
-    };
-  }
-
-  if (isRelation("Case", "reviewedByUser")) {
-    detailInclude.reviewedByUser = {
+    },
+    reviewedByUser: {
       select: {
         id: true,
         name: true,
         phone: true,
       },
-    };
-  }
-
-  if (isRelation("Case", "treatments")) {
-    detailInclude.treatments = {
+    },
+    treatments: {
       include: {
         administeredByUser: {
           select: {
@@ -318,12 +303,9 @@ export async function getFarmerCaseDetailAction(caseId: string) {
           },
         },
       },
-      orderBy: { dateGiven: "desc" },
-    };
-  }
-
-  if (isRelation("Case", "samples")) {
-    detailInclude.samples = {
+      orderBy: { dateGiven: "desc" as const },
+    },
+    samples: {
       include: {
         collectedByUser: {
           select: {
@@ -332,22 +314,16 @@ export async function getFarmerCaseDetailAction(caseId: string) {
           },
         },
       },
-      orderBy: { collectedAt: "desc" },
-    };
-  }
-
-  if (isRelation("Case", "assignedVeterinarianUser")) {
-    detailInclude.assignedVeterinarianUser = {
+      orderBy: { collectedAt: "desc" as const },
+    },
+    assignedVeterinarianUser: {
       select: {
         id: true,
         name: true,
         phone: true,
       },
-    };
-  }
-
-  if (isRelation("Case", "veterinaryReports")) {
-    detailInclude.veterinaryReports = {
+    },
+    veterinaryReports: {
       include: {
         vetUser: {
           select: {
@@ -357,30 +333,20 @@ export async function getFarmerCaseDetailAction(caseId: string) {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
-    };
-  }
-
-  if (isRelation("Case", "fieldVisit")) {
-    detailInclude.fieldVisit = {
+      orderBy: { createdAt: "desc" as const },
+    },
+    fieldVisit: {
       include: {
-        fieldVisit: {
-          include: {
-            fieldAgentUser: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-              },
-            },
+        fieldAgentUser: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
           },
         },
       },
-    };
-  }
-
-  if (isRelation("Case", "assistanceRequest")) {
-    detailInclude.assistanceRequest = {
+    },
+    assistanceRequest: {
       include: {
         assignedFieldAgentUser: {
           select: {
@@ -390,8 +356,8 @@ export async function getFarmerCaseDetailAction(caseId: string) {
           },
         },
       },
-    };
-  }
+    },
+  };
 
   const healthCase = await prisma.case.findUnique({
     where: { id: caseId },
