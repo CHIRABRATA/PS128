@@ -26,6 +26,7 @@ const caseReportSchema = z.object({
   gpsLat: z.number().optional().nullable(),
   gpsLng: z.number().optional().nullable(),
   photoUrl: z.string().optional().nullable(),
+  yoloVisionResult: z.any().optional().nullable(),
   iotData: z
     .object({
       iotDeviceId: z.string().optional().nullable(),
@@ -205,7 +206,7 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
           gpsLng: data.gpsLng ? data.gpsLng : null,
           iotTelemetry: rawIotTelemetry,
           analysisResult: undefined, // Reserved strictly for FastAPI /api/analyze
-          visionResult: undefined, // Reserved strictly for FastAPI /api/predict
+          visionResult: data.yoloVisionResult ?? undefined,
         },
       });
 

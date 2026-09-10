@@ -61,6 +61,7 @@ export function HealthReportForm({
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [yoloVisionResult, setYoloVisionResult] = useState<any>(null);
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLng, setGpsLng] = useState<number | null>(null);
 
@@ -110,6 +111,7 @@ export function HealthReportForm({
     setHeartRate(null);
     setPhotoUrl(null);
     setPhotoBlob(null);
+    setYoloVisionResult(null);
     setGpsLat(null);
     setGpsLng(null);
     setTemperature(null);
@@ -179,6 +181,7 @@ export function HealthReportForm({
       activity: activity || undefined,
       heartRate: heartRate || undefined,
       photoUrl: photoUrl || undefined,
+      yoloVisionResult: yoloVisionResult || undefined,
       gpsLat: gpsLat || undefined,
       gpsLng: gpsLng || undefined,
       iotData:
@@ -694,7 +697,15 @@ export function HealthReportForm({
               setPhotoBlob(blob);
             }}
             onChangePhotoUrl={setPhotoUrl}
+            onVisionResult={setYoloVisionResult}
             submissionId={submissionId}
+            animalCategory={
+              selectedAnimal?.species?.toUpperCase().includes("DOG") || 
+              selectedAnimal?.species?.toUpperCase().includes("CAT") || 
+              selectedAnimal?.species?.toUpperCase().includes("PET") 
+                ? "pet" 
+                : "cow"
+            }
           />
         )}
 

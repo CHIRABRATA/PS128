@@ -1,4 +1,4 @@
-﻿import io
+import io
 import base64
 from pathlib import Path
 from PIL import Image
@@ -138,10 +138,14 @@ class VisionService:
                     "Replace app/ml_artifacts/model_pet.pt with a pet-trained model."
                 )
             model = self.pet_model
-        elif animal_lower in ["cow", "cattle", "livestock"] and self.cow_model is not None:
+        elif animal_lower in ["cow", "cattle", "livestock", "buffalo", "sheep", "goat"] and self.cow_model is not None:
             model = self.cow_model
         else:
-            raise ValueError(f"No valid model available for animal category: '{animal_type}'")
+            # Fallback to cow model for other livestock species if available
+            if self.cow_model is not None:
+                model = self.cow_model
+            else:
+                raise ValueError(f"No valid model available for animal category: '{animal_type}'")
 
         # Perform inference
         results = model(image)

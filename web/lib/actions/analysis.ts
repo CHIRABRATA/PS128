@@ -108,8 +108,14 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
     let analyzeSuccess = false;
     let yoloAnalysis: Record<string, unknown> | null = null;
 
-    // 7. Execute POST /api/predict first so the unified engine receives the vision result.
-    if (healthCase.photoUrl) {
+    // 7. Execute POST /api/predict if visionResult is not already present.
+    if (updatedVisionResult) {
+      const visionPayload = updatedVisionResult as unknown as Record<string, unknown>;
+      const extractedVision = visionPayload.yolo_result || visionPayload.data || visionPayload;
+      if (extractedVision && typeof extractedVision === "object") {
+        yoloAnalysis = extractedVision as Record<string, unknown>;
+      }
+    } else if (healthCase.photoUrl) {
       try {
         let imageBuffer: Buffer | null = null;
         let contentType = "image/jpeg";

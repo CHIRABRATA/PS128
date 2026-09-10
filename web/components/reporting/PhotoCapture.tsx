@@ -2,19 +2,32 @@
 
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
+import { predictYoloImage } from "@/lib/api/livestock";
+import { Badge } from "@/components/ui/badge";
 
 interface PhotoCaptureProps {
   photoUrl: string | null;
   onChangePhotoUrl?: (url: string | null) => void;
   onChangePhoto?: (url: string | null, blob: Blob | null) => void;
+  onVisionResult?: (result: any) => void;
   submissionId: string;
+  animalCategory?: string;
 }
 
-export function PhotoCapture({ photoUrl, onChangePhotoUrl, onChangePhoto, submissionId }: PhotoCaptureProps) {
+export function PhotoCapture({
+  photoUrl,
+  onChangePhotoUrl,
+  onChangePhoto,
+  onVisionResult,
+  submissionId,
+  animalCategory = "cow"
+}: PhotoCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [visionResult, setVisionResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
@@ -65,6 +78,20 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, onChangePhoto, submis
       // 4. Update parent state with authorized storage reference and blob
       onChangePhoto?.(data.url, file);
       onChangePhotoUrl?.(data.url);
+
+      // 5. Trigger AI Vision Prediction immediately
+      try {
+        setAnalyzing(true);
+        const result = await predictYoloImage(file, animalCategory);
+        if (result) {
+          setVisionResult(result);
+          onVisionResult?.(result);
+        }
+      } catch (visionErr) {
+        console.warn("[PhotoCapture AI Warning]:", visionErr);
+      } finally {
+        setAnalyzing(false);
+      }
     } catch (err: unknown) {
       // F-01: On upload failure (e.g. offline), retain raw Blob in parent state for IndexedDB queue
       onChangePhoto?.(null, file);
@@ -104,7 +131,9 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, onChangePhoto, submis
 
   const handleRemovePhoto = () => {
     setLocalPreview(null);
+    setVisionResult(null);
     setError(null);
+    onVisionResult?.(null);
     onChangePhoto?.(null, null);
     onChangePhotoUrl?.(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -167,6 +196,26 @@ export function PhotoCapture({ photoUrl, onChangePhotoUrl, onChangePhoto, submis
             alt="Animal Health Inspection Preview"
             className="max-h-56 object-contain rounded-xl transition-transform duration-300 group-hover:scale-[1.02]"
           />
+
+          {visionResult && !analyzing && (
+            <div className="absolute bottom-3 left-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <Badge className="bg-emerald-600/90 text-white border-emerald-400 backdrop-blur-sm gap-1.5 px-2.5 py-1 shadow-lg">
+                <Sparkles className="h-3 w-3" />
+                <span className="text-[10px] font-bold tracking-wide">
+                  AI: {visionResult.primary_prediction} ({Math.round(visionResult.confidence)}%)
+                </span>
+              </Badge>
+            </div>
+          )}
+
+          {analyzing && (
+            <div className="absolute bottom-3 left-3">
+              <Badge className="bg-blue-600/90 text-white border-blue-400 backdrop-blur-sm gap-1.5 px-2.5 py-1 shadow-lg animate-pulse">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="text-[10px] font-bold tracking-wide">AI Analyzing...</span>
+              </Badge>
+            </div>
+          )}
 
           <div className="absolute top-3 right-3 flex items-center gap-2">
             <Button

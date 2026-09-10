@@ -1,4 +1,4 @@
-﻿import os
+import os
 import joblib
 import pandas as pd
 import logging
@@ -48,8 +48,8 @@ class SpeciesAwareDiseasePredictor:
 
         input_df = pd.DataFrame([{
             "Animal_Type_Clean": formatted_animal,
-            "Body_Temp_Clean": float(body_temp),
-            "Heart_Rate_Clean": float(heart_rate),
+            "Body_Temp_Clean": float(body_temp) if body_temp is not None else 38.5,
+            "Heart_Rate_Clean": float(heart_rate) if heart_rate is not None else 80.0,
             "combined_symptoms": symptoms_str
         }])
 

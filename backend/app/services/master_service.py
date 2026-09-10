@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import logging
 from app.services.ml_service import predictor
 from app.services.weather_service import fetch_weather_risk
@@ -33,7 +33,8 @@ class MasterAnalysisEngine:
         
         if iot_input and "temperature" in iot_input and iot_input["temperature"] is not None:
             iot_temp = float(iot_input["temperature"])
-            iot_act = int(iot_input.get("activity", 50))
+            raw_act = iot_input.get("activity")
+            iot_act = int(raw_act) if raw_act is not None else 50
         else:
             simulated = generate_simulated_telemetry(
                 animal_id=animal_id, 
@@ -50,15 +51,19 @@ class MasterAnalysisEngine:
 
         # STEP 4: Machine Learning Model Inference
         symptoms = health_report.get("symptoms", ["Fever"])
-
+        raw_heart_rate = health_report.get("heart_rate")
+        raw_affected = health_report.get("affected_count")
+        raw_herd = health_report.get("herd_size")
+        raw_mortality = health_report.get("mortality_count")
+        
         ml_res = predictor.predict(
             symptoms=symptoms,
             animal_type=species if isinstance(species, str) else "Cow",
             body_temp=iot_temp,
-            heart_rate=health_report.get("heart_rate", 85.0),
-            affected_count=health_report.get("affected_count", 1),
-            herd_size=health_report.get("herd_size", 10),
-            mortality_count=health_report.get("mortality_count", 0)
+            heart_rate=float(raw_heart_rate) if raw_heart_rate is not None else 85.0,
+            affected_count=int(raw_affected) if raw_affected is not None else 1,
+            herd_size=int(raw_herd) if raw_herd is not None else 10,
+            mortality_count=int(raw_mortality) if raw_mortality is not None else 0
         )
 
         ml_confidence = float(ml_res.get("confidence", 0) or 0)
@@ -66,7 +71,10 @@ class MasterAnalysisEngine:
             ml_res["suspected_condition"] = "No strong disease signal"
 
         # STEP 5: Outbreak Surge & Historical Analytics
-        history = payload.get("historical_weekly_cases", [10, 12, 11, 13, 12, 14])
+        history = payload.get("historical_weekly_cases")
+        if not history or not isinstance(history, list) or len(history) == 0:
+            history = [10, 12, 11, 13, 12, 14]
+            
         mean_val = float(np.mean(history[:-1])) if len(history) > 1 else float(history[0])
         std_val = float(np.std(history[:-1])) if len(history) > 1 and np.std(history[:-1]) > 0 else 1.0
         latest_cases = history[-1]

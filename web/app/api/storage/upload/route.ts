@@ -49,10 +49,11 @@ export async function POST(request: NextRequest) {
     const sanitizeSubId = submissionId.replace(/[^a-zA-Z0-9_-]/g, "");
     
     // Deterministic key ensures retries after browser crashes re-use the exact same storage key
+    const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
     const objectKey =
-      submissionId && submissionId !== "upload"
+      submissionId && submissionId !== "upload" && submissionId !== "pending-submission"
         ? `cases/${sanitizeSubId}/photo.${ext}`
-        : `cases/upload/${crypto.randomUUID()}.${ext}`;
+        : `cases/upload/${uniqueId}.${ext}`;
 
     // 5. Convert file to buffer and upload via storage abstraction
     const arrayBuffer = await file.arrayBuffer();
