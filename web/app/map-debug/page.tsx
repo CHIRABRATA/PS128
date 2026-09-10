@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
 
 const MapDebug = dynamic(() => import("@/components/debug/MapDebugInternal"), {
   ssr: false,
@@ -12,5 +13,8 @@ const MapDebug = dynamic(() => import("@/components/debug/MapDebugInternal"), {
 });
 
 export default function MapDebugPage() {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
   return <MapDebug />;
 }

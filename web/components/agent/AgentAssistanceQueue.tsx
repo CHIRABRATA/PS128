@@ -25,6 +25,7 @@ interface RequestItem {
   reason: string;
   status: string;
   requestedAt: Date | string;
+  updatedAt?: Date | string;
   notes?: string | null;
   farmerUser: {
     id: string;
@@ -75,11 +76,11 @@ export function AgentAssistanceQueue({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = async (requestId: string, expectedUpdatedAt?: string) => {
     setLoadingId(requestId);
     setActionError(null);
     try {
-      const res = await acceptAssistanceRequestAction(requestId);
+      const res = await acceptAssistanceRequestAction(requestId, expectedUpdatedAt);
       if (!res.success) {
         setActionError(res.error || "Failed to accept request.");
       } else {
@@ -92,11 +93,11 @@ export function AgentAssistanceQueue({
     }
   };
 
-  const handleStartVisit = async (requestId: string) => {
+  const handleStartVisit = async (requestId: string, expectedUpdatedAt?: string) => {
     setLoadingId(requestId);
     setActionError(null);
     try {
-      const res = await startVisitAssistanceRequestAction(requestId);
+      const res = await startVisitAssistanceRequestAction(requestId, expectedUpdatedAt);
       if (!res.success) {
         setActionError(res.error || "Failed to start visit.");
       } else {
@@ -135,6 +136,7 @@ export function AgentAssistanceQueue({
           const isAccepted = req.status === "ACCEPTED";
           const isInProgress = req.status === "IN_PROGRESS";
           const isCompleted = req.status === "COMPLETED";
+          const expectedUpdatedAt = req.updatedAt ? new Date(req.updatedAt).toISOString() : undefined;
 
           return (
             <div
@@ -192,7 +194,7 @@ export function AgentAssistanceQueue({
                 {isRequested && (
                   <Button
                     size="sm"
-                    onClick={() => handleAccept(req.id)}
+                    onClick={() => handleAccept(req.id, expectedUpdatedAt)}
                     disabled={loadingId === req.id}
                     className="text-xs bg-amber-700 hover:bg-amber-800 text-white font-semibold rounded-xl h-9 min-h-[36px]"
                   >
@@ -210,7 +212,7 @@ export function AgentAssistanceQueue({
                 {isAccepted && isAssignedToMe && (
                   <Button
                     size="sm"
-                    onClick={() => handleStartVisit(req.id)}
+                    onClick={() => handleStartVisit(req.id, expectedUpdatedAt)}
                     disabled={loadingId === req.id}
                     className="text-xs bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl h-9 min-h-[36px]"
                   >
@@ -226,7 +228,7 @@ export function AgentAssistanceQueue({
                 )}
 
                 {isInProgress && isAssignedToMe && (
-                  <Link href={`/agent/report?requestId=${req.id}&farmId=${req.farm.id}${req.animal ? `&animalId=${req.animal.id}` : ""}`}>
+                  <Link href={`/agent/report?requestId=${req.id}&farmId=${req.farm.id}${req.animal ? `&animalId=${req.animal.id}` : ""}${expectedUpdatedAt ? `&expectedUpdatedAt=${encodeURIComponent(expectedUpdatedAt)}` : ""}`}>
                     <Button
                       size="sm"
                       className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl h-9 min-h-[36px] shadow-sm gap-1"

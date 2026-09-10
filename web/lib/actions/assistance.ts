@@ -236,7 +236,7 @@ export async function getFieldAgentAssistanceQueueAction() {
  * Field Agent accepts an assistance request.
  * Transitions status to ACCEPTED and records the persistent FieldVisit timestamp.
  */
-export async function acceptAssistanceRequestAction(requestId: string) {
+export async function acceptAssistanceRequestAction(requestId: string, expectedUpdatedAt?: string) {
   const agent = await requireFieldAgent();
 
   const request = await prisma.assistanceRequest.findUnique({
@@ -260,6 +260,14 @@ export async function acceptAssistanceRequestAction(requestId: string) {
 
   if (request.status !== "REQUESTED" && request.status !== "ASSIGNED") {
     return { success: false, error: `Cannot accept request in status: ${request.status}` };
+  }
+
+  // F-03: Optimistic concurrency check
+  if (expectedUpdatedAt && request.updatedAt.toISOString() !== expectedUpdatedAt) {
+    return {
+      success: false,
+      error: "This assistance request was updated by another field agent. Please refresh your queue before accepting.",
+    };
   }
 
   const [updated] = await prisma.$transaction([
@@ -299,7 +307,7 @@ export async function acceptAssistanceRequestAction(requestId: string) {
 /**
  * Field Agent starts visit (transitions to IN_PROGRESS and records startedAt).
  */
-export async function startVisitAssistanceRequestAction(requestId: string) {
+export async function startVisitAssistanceRequestAction(requestId: string, expectedUpdatedAt?: string) {
   const agent = await requireFieldAgent();
 
   const request = await prisma.assistanceRequest.findUnique({
@@ -319,6 +327,14 @@ export async function startVisitAssistanceRequestAction(requestId: string) {
 
   if (request.assignedAgentUserId !== agent.id && request.village && !canUserAccessAssistanceRequest(agent, request as Parameters<typeof canUserAccessAssistanceRequest>[1])) {
     return { success: false, error: "Unauthorized to start visit for this request." };
+  }
+
+  // F-03: Optimistic concurrency check
+  if (expectedUpdatedAt && request.updatedAt.toISOString() !== expectedUpdatedAt) {
+    return {
+      success: false,
+      error: "This assistance request was updated by another field agent. Please refresh your queue before starting the visit.",
+    };
   }
 
   const [updated] = await prisma.$transaction([
@@ -356,6 +372,7 @@ export async function startVisitAssistanceRequestAction(requestId: string) {
 
 const completeFieldReportSchema = z.object({
   requestId: z.string().min(1, "Request ID is required"),
+  expectedUpdatedAt: z.string().optional().nullable(),
   submissionId: z.string().min(1, "Submission ID is required"),
   animalId: z.string().min(1, "Animal selection is required"),
   symptoms: z.array(z.string()).min(1, "At least one symptom is required"),
@@ -418,6 +435,14 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
 
     if (request.status === "COMPLETED") {
       return { success: false, error: "This assistance request is already completed." };
+    }
+
+    // F-03: Optimistic concurrency check
+    if (data.expectedUpdatedAt && request.updatedAt.toISOString() !== data.expectedUpdatedAt) {
+      return {
+        success: false,
+        error: "This assistance request was updated by another field agent. Please refresh before completing the report.",
+      };
     }
 
     // Load and verify animal

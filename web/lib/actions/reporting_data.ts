@@ -162,7 +162,16 @@ export async function deleteFarmerAnimal(animalId: string): Promise<{ success: b
     where: { id: animalId },
     include: {
       herd: { include: { farm: true } },
-      _count: { select: { cases: true, vaccinations: true, treatments: true, conversations: true } },
+      _count: {
+        select: {
+          cases: true,
+          vaccinations: true,
+          treatments: true,
+          conversations: true,
+          assistanceRequests: true,
+          veterinaryReports: true,
+        },
+      },
     },
   });
 
@@ -174,7 +183,7 @@ export async function deleteFarmerAnimal(animalId: string): Promise<{ success: b
   if (hasRecords) {
     return {
       success: false,
-      error: "This animal cannot be deleted because it has health, vaccination, treatment, or conversation records.",
+      error: "This animal cannot be deleted because it has linked clinical, assistance, vaccination, treatment, or conversation records.",
     };
   }
 

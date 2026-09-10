@@ -13,6 +13,8 @@ export interface ChatMessageItem {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  status?: "sending" | "sent" | "failed";
+  error?: string | null;
 }
 
 interface FarmerChatBoxProps {
@@ -65,7 +67,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
         const res = await getFarmerConversationHistoryAction(animalId);
         if (isMounted) {
           if (res.success && res.messages) {
-            setMessages(res.messages);
+            setMessages(res.messages.map((m) => ({ ...m, status: "sent" })));
             setConversationId(res.conversationId);
           } else {
             setError(res.error || "Failed to load chat history");
@@ -98,22 +100,30 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
   const activeRiskLevel = recentCase?.overallRiskLevel;
   const isHighRisk = activeRiskLevel === "HIGH" || activeRiskLevel === "CRITICAL";
 
-  async function handleSend(textToSend?: string) {
+  async function handleSend(textToSend?: string, retryId?: string) {
     const text = (textToSend || inputMessage).trim();
     if (!text || sending) return;
 
-    const clientSubmissionId = generateSubmissionId();
+    const clientSubmissionId = retryId || generateSubmissionId();
 
     const tempUserMsg: ChatMessageItem = {
       id: clientSubmissionId,
       role: "user",
       content: text,
       createdAt: new Date().toISOString(),
+      status: "sending",
     };
 
-    // Optimistically add user message
-    setMessages((prev) => [...prev, tempUserMsg]);
-    setInputMessage("");
+    // Optimistically add or update user message
+    if (retryId) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === retryId ? tempUserMsg : m))
+      );
+    } else {
+      setMessages((prev) => [...prev, tempUserMsg]);
+      setInputMessage("");
+    }
+
     setSending(true);
     setError(null);
 
@@ -129,18 +139,34 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
         setConversationId(res.conversationId);
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== clientSubmissionId),
-          res.userMessage!,
-          res.assistantMessage!,
+          { ...res.userMessage!, status: "sent" },
+          { ...res.assistantMessage!, status: "sent" },
         ]);
 
         if (res.riskNotice) {
           setRiskNotice(res.riskNotice);
         }
       } else {
-        setError(res.error || "Failed to get AI response. Please try again.");
+        const errorMsg = res.error || "Failed to get AI response. Please try again.";
+        setError(errorMsg);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === clientSubmissionId
+              ? { ...m, status: "failed", error: errorMsg }
+              : m
+          )
+        );
       }
     } catch {
-      setError("Network or server error sending message. Please try again.");
+      const errorMsg = "Network or server error sending message. Please try again.";
+      setError(errorMsg);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === clientSubmissionId
+            ? { ...m, status: "failed", error: errorMsg }
+            : m
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -234,6 +260,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
         ) : (
           messages.map((msg) => {
             const isUser = msg.role === "user";
+            const isFailed = msg.status === "failed";
             return (
               <div
                 key={msg.id}
@@ -241,12 +268,30 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
               >
                 <div
                   className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all ${
-                    isUser
+                    isFailed
+                      ? "bg-red-50 border border-red-300 text-red-900 rounded-br-none shadow-xs"
+                      : isUser
                       ? "bg-emerald-700 text-white rounded-br-none shadow-xs font-medium"
                       : "bg-white border border-[#E5E0D8] text-[#191F1C] rounded-bl-none shadow-xs"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
+                  {isFailed && (
+                    <div className="mt-2 pt-2 border-t border-red-200 flex items-center justify-between gap-3 text-xs">
+                      <span className="text-red-700 text-[11px] flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-red-600" />
+                        संदेश अयशस्वी (Failed)
+                      </span>
+                      <button
+                        onClick={() => handleSend(msg.content, msg.id)}
+                        disabled={sending}
+                        className="text-[11px] font-bold text-red-800 bg-red-100 hover:bg-red-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <RefreshCw className={`w-2.5 h-2.5 ${sending ? "animate-spin" : ""}`} />
+                        <span>पुन्हा पाठवा (Retry)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] text-stone-400 px-1 font-mono">
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

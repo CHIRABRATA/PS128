@@ -20,7 +20,8 @@ export interface OfflineQueueRecord {
   iotData?: { iotDeviceId?: string | null; temperature?: number | null; activity?: number | null } | null;
   photoBlob?: Blob | null;
   photoUrl?: string | null;
-  status: "QUEUED" | "SYNCING" | "SYNCED" | "FAILED" | "FAILED_AUTHORIZATION";
+  status: "QUEUED" | "SYNCING" | "SYNCED" | "FAILED" | "FAILED_AUTHORIZATION" | "NEEDS_MANUAL_RETRY";
+  retryCount?: number;
   createdAt: string;
   updatedAt: string;
   lastError?: string | null;
@@ -60,13 +61,16 @@ export async function enqueueReport(record: OfflineQueueRecord): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-    const request = store.put(record);
+    const request = store.put({
+      ...record,
+      retryCount: record.retryCount ?? 0,
+    });
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-export async function getQueuedReports(clerkUserId?: string): Promise<OfflineQueueRecord[]> {
+export async function getAllQueuedReports(): Promise<OfflineQueueRecord[]> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -75,17 +79,43 @@ export async function getQueuedReports(clerkUserId?: string): Promise<OfflineQue
       const request = store.getAll();
 
       request.onsuccess = () => {
-        let results = (request.result as OfflineQueueRecord[]) || [];
-        if (clerkUserId) {
-          // Account Isolation: filter reports by authenticated clerkUserId
-          results = results.filter((item) => item.clerkUserId === clerkUserId);
-        }
-        resolve(results);
+        resolve((request.result as OfflineQueueRecord[]) || []);
       };
       request.onerror = () => reject(request.error);
     });
   } catch {
     return [];
+  }
+}
+
+export async function getQueuedReports(clerkUserId?: string): Promise<OfflineQueueRecord[]> {
+  try {
+    const all = await getAllQueuedReports();
+    if (clerkUserId) {
+      // Strict Account Isolation: filter reports by authenticated clerkUserId
+      return all.filter((item) => item.clerkUserId === clerkUserId);
+    }
+    return all;
+  } catch {
+    return [];
+  }
+}
+
+export async function getQueueRecordById(id: string): Promise<OfflineQueueRecord | null> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        resolve((getReq.result as OfflineQueueRecord) || null);
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -117,6 +147,13 @@ export async function updateQueueRecordStatus(
     };
 
     getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+export async function resetQueueRecordRetry(id: string): Promise<void> {
+  await updateQueueRecordStatus(id, "QUEUED", {
+    retryCount: 0,
+    lastError: null,
   });
 }
 

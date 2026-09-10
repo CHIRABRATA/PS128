@@ -1,6 +1,8 @@
 import {
   getQueuedReports,
+  getQueueRecordById,
   updateQueueRecordStatus,
+  resetQueueRecordRetry,
   OfflineQueueRecord,
 } from "./db";
 import { createCaseReportAction } from "@/lib/actions/cases";
@@ -9,6 +11,8 @@ import { runCaseAnalysisAction } from "@/lib/actions/analysis";
 /**
  * PHASE 11: OFFLINE SYNCHRONIZATION MANAGER & COORDINATOR
  */
+
+export const MAX_AUTO_RETRIES = 5;
 
 let inMemorySyncingFlag = false;
 
@@ -36,7 +40,7 @@ export async function checkServerReachability(): Promise<boolean> {
 /**
  * 2. Uploads offline photo Blob to POST /api/storage/upload with deterministic submissionId key
  */
-async function uploadOfflinePhoto(item: OfflineQueueRecord): Promise<string | null> {
+export async function uploadOfflinePhoto(item: OfflineQueueRecord): Promise<string | null> {
   if (item.photoUrl) return item.photoUrl;
   if (!item.photoBlob) return null;
 
@@ -60,7 +64,6 @@ async function uploadOfflinePhoto(item: OfflineQueueRecord): Promise<string | nu
     }
     throw new Error(data.error || "Failed to upload photo");
   } catch (err: unknown) {
-    console.warn(`[Offline Sync] Photo upload retry for ${item.submissionId}:`, err);
     throw err;
   }
 }
@@ -68,7 +71,7 @@ async function uploadOfflinePhoto(item: OfflineQueueRecord): Promise<string | nu
 /**
  * 3. Core Queue Execution Algorithm for a Single Item
  */
-async function syncSingleQueueItem(item: OfflineQueueRecord): Promise<boolean> {
+export async function syncSingleQueueItem(item: OfflineQueueRecord): Promise<boolean> {
   try {
     await updateQueueRecordStatus(item.id, "SYNCING");
 
@@ -103,11 +106,12 @@ async function syncSingleQueueItem(item: OfflineQueueRecord): Promise<boolean> {
         serverCaseId: reportRes.caseId,
         serverCaseNumber: reportRes.caseNumber,
         photoBlob: null, // Clear binary blob to free IndexedDB space
+        lastError: null,
       });
 
       // Trigger Phase 6 AI Analysis seamlessly
-      runCaseAnalysisAction(reportRes.caseId).catch((aiErr) => {
-        console.warn(`[Offline Sync] AI analysis trigger after sync for case ${reportRes.caseId}:`, aiErr);
+      runCaseAnalysisAction(reportRes.caseId).catch(() => {
+        // AI analysis is non-blocking
       });
 
       return true;
@@ -117,20 +121,68 @@ async function syncSingleQueueItem(item: OfflineQueueRecord): Promise<boolean> {
       if (errorMsg.includes("Unauthorized") || errorMsg.includes("do not own")) {
         await updateQueueRecordStatus(item.id, "FAILED_AUTHORIZATION", { lastError: errorMsg });
       } else {
-        await updateQueueRecordStatus(item.id, "FAILED", { lastError: errorMsg });
+        const nextRetries = (item.retryCount || 0) + 1;
+        if (nextRetries >= MAX_AUTO_RETRIES) {
+          await updateQueueRecordStatus(item.id, "NEEDS_MANUAL_RETRY", {
+            retryCount: nextRetries,
+            lastError: errorMsg,
+          });
+        } else {
+          await updateQueueRecordStatus(item.id, "FAILED", {
+            retryCount: nextRetries,
+            lastError: errorMsg,
+          });
+        }
       }
 
       return false;
     }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Sync error";
-    await updateQueueRecordStatus(item.id, "FAILED", { lastError: errorMsg });
+    const nextRetries = (item.retryCount || 0) + 1;
+    if (nextRetries >= MAX_AUTO_RETRIES) {
+      await updateQueueRecordStatus(item.id, "NEEDS_MANUAL_RETRY", {
+        retryCount: nextRetries,
+        lastError: errorMsg,
+      });
+    } else {
+      await updateQueueRecordStatus(item.id, "FAILED", {
+        retryCount: nextRetries,
+        lastError: errorMsg,
+      });
+    }
     return false;
   }
 }
 
 /**
- * 4. Main Queue Synchronization Coordinator with Progressive Web Locks
+ * 4. Manual Retry Handler for Capped/Failed Queue Items
+ */
+export async function retryManualQueueItem(
+  id: string,
+  currentClerkUserId?: string
+): Promise<boolean> {
+  const item = await getQueueRecordById(id);
+  if (!item) return false;
+
+  // Enforce account isolation on manual retry
+  if (currentClerkUserId && item.clerkUserId !== currentClerkUserId) {
+    return false;
+  }
+
+  await resetQueueRecordRetry(id);
+  const updatedItem: OfflineQueueRecord = {
+    ...item,
+    status: "QUEUED",
+    retryCount: 0,
+    lastError: null,
+  };
+
+  return await syncSingleQueueItem(updatedItem);
+}
+
+/**
+ * 5. Main Queue Synchronization Coordinator with Strict Account Isolation
  */
 export async function triggerQueueSync(currentClerkUserId?: string): Promise<{
   processed: number;
@@ -147,6 +199,11 @@ export async function triggerQueueSync(currentClerkUserId?: string): Promise<{
     return { processed: 0, synced: 0, failed: 0 };
   }
 
+  // Strict Account Isolation: Do not sync if no authenticated user session
+  if (!currentClerkUserId) {
+    return { processed: 0, synced: 0, failed: 0 };
+  }
+
   let processed = 0;
   let synced = 0;
   let failed = 0;
@@ -156,12 +213,16 @@ export async function triggerQueueSync(currentClerkUserId?: string): Promise<{
     inMemorySyncingFlag = true;
 
     try {
+      // Strictly fetch only items matching active user ID
       const items = await getQueuedReports(currentClerkUserId);
       const pendingItems = items.filter(
         (item) => item.status === "QUEUED" || item.status === "FAILED"
       );
 
       for (const item of pendingItems) {
+        // Enforce account isolation safeguard: hold-never-reassign
+        if (item.clerkUserId !== currentClerkUserId) continue;
+
         processed++;
         const success = await syncSingleQueueItem(item);
         if (success) {
@@ -186,7 +247,6 @@ export async function triggerQueueSync(currentClerkUserId?: string): Promise<{
   if ("locks" in navigator && typeof navigator.locks?.request === "function") {
     await navigator.locks.request("maitri_queue_sync_lock", { ifAvailable: true }, async (lock) => {
       if (!lock) {
-        console.log("[Offline Sync] Sync lock already held by another tab");
         return;
       }
       await executeSyncWork();

@@ -4,8 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-export default async function AgentReportPage() {
+export default async function AgentReportPage(props: {
+  searchParams: Promise<{ requestId?: string; farmId?: string; animalId?: string; expectedUpdatedAt?: string }>;
+}) {
   await requireFieldAgent();
+  const searchParams = await props.searchParams;
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-4xl mx-auto w-full gap-6 bg-[#FAF8F3] text-[#191F1C]">
@@ -25,7 +28,13 @@ export default async function AgentReportPage() {
         </Link>
       </div>
 
-      <HealthReportForm mode="agent" />
+      <HealthReportForm
+        mode="agent"
+        initialRequestId={searchParams.requestId}
+        initialFarmId={searchParams.farmId}
+        initialAnimalId={searchParams.animalId}
+        expectedUpdatedAt={searchParams.expectedUpdatedAt}
+      />
     </div>
   );
 }
