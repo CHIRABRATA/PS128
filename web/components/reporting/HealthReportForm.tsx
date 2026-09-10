@@ -15,6 +15,7 @@ import { completeAssistanceWithReportAction } from "@/lib/actions/assistance";
 import { runCaseAnalysisAction } from "@/lib/actions/analysis";
 import { enqueueReport } from "@/lib/offline/db";
 import { checkServerReachability } from "@/lib/offline/sync";
+import type { YoloVisionAnalysis } from "@/lib/types/livestock";
 import { AiAssessmentCard } from "@/components/ai/AiAssessmentCard";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export function HealthReportForm({
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
-  const [yoloVisionResult, setYoloVisionResult] = useState<any>(null);
+  const [yoloVisionResult, setYoloVisionResult] = useState<YoloVisionAnalysis | null>(null);
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLng, setGpsLng] = useState<number | null>(null);
 

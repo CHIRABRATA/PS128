@@ -26,9 +26,11 @@ function createPrismaClient(): PrismaClient {
 
 function getValidClient(): PrismaClient {
   const cached = globalForPrisma.prisma;
-  const runtimeModel = (cached as any)?._runtimeDataModel;
-  const hasAssignedVetField = runtimeModel?.models?.Case?.fields?.some((f: any) => f.name === "assignedVeterinarianUserId");
-  const hasAssistanceRequest = typeof (cached as any)?.assistanceRequest === "object";
+  const runtimeModel = (cached as unknown as { _runtimeDataModel?: { models?: Record<string, { fields?: Array<{ name: string }> }> } })?._runtimeDataModel;
+  const hasAssignedVetField = runtimeModel?.models?.Case?.fields?.some((f) => f.name === "assignedVeterinarianUserId");
+  const hasAssistanceRequest =
+    !!runtimeModel?.models?.AssistanceRequest ||
+    typeof (cached as unknown as Record<string, unknown> | undefined)?.assistanceRequest === "object";
 
   if (!cached || !hasAssignedVetField || !hasAssistanceRequest) {
     globalForPrisma.prisma = createPrismaClient();
@@ -80,9 +82,9 @@ export function isRelation(modelName: string, fieldName: string): boolean {
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
     const client = getValidClient();
-    const value = Reflect.get(client, prop, receiver);
+    const value = Reflect.get(client, prop, client);
     if (typeof value === "function") {
       return value.bind(client);
     }
