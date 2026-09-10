@@ -35,4 +35,15 @@ describe("Batch 3 (F-11 & F-12): Code Hygiene & Clean Production Codebase", () =
     const content = fs.readFileSync(pwaFile, "utf-8");
     expect(content).not.toContain("console.log(");
   });
+
+  it("F-13: ensures Content-Security-Policy permits Clerk authentication and Cloudflare Turnstile CAPTCHA resources", async () => {
+    const nextConfigFile = path.resolve(__dirname, "../next.config.ts");
+    expect(fs.existsSync(nextConfigFile)).toBe(true);
+    const content = fs.readFileSync(nextConfigFile, "utf-8");
+    expect(content).toContain("challenges.cloudflare.com");
+    expect(content).toContain("*.protect.clerk.com");
+    expect(content).toContain("frame-src");
+    expect(content).toContain("worker-src");
+  });
 });
+
