@@ -276,6 +276,7 @@ export async function markCaseReviewedAction(caseId: string) {
       reviewedAt: true,
       reviewedByUserId: true,
       createdByUserId: true,
+      assignedVeterinarianUserId: true,
       animal: {
         select: {
           herd: {

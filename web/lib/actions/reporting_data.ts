@@ -39,22 +39,35 @@ export async function registerFarmerAnimal(input: {
   const farmer = await requireFarmer();
   const validation = farmerAnimalSchema.safeParse(input);
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0]?.message || "अवैध जनावर माहिती." };
+    return { success: false, error: validation.error.issues[0]?.message || "Invalid animal details." };
   }
 
   const data = validation.data;
-  const villageId = farmer.villageId || data.villageId;
+  const villageId = data.villageId || farmer.villageId;
   if (!villageId) {
-    return { success: false, error: "जनावर नोंदवण्यापूर्वी गाव निवडा." };
+    return { success: false, error: "Please select a village location." };
   }
 
-  const village = await prisma.village.findUnique({ where: { id: villageId } });
-  if (!village) return { success: false, error: "निवडलेले गाव उपलब्ध नाही." };
+  const village = await prisma.village.findUnique({
+    where: { id: villageId },
+    include: {
+      block: {
+        include: {
+          district: true,
+        },
+      },
+    },
+  });
+  if (!village) return { success: false, error: "Selected village does not exist." };
 
-  if (!farmer.villageId) {
+  if (!farmer.villageId || !farmer.districtId || data.villageId) {
     await prisma.user.update({
       where: { id: farmer.id },
-      data: { villageId, blockId: village.blockId },
+      data: {
+        villageId: village.id,
+        blockId: village.blockId,
+        districtId: village.block.districtId,
+      },
     });
   }
 

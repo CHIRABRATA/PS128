@@ -1096,4 +1096,296 @@ describe("Comprehensive Report Routing & Visibility End-to-End Suite", () => {
       expect(crossDistrictCheck).toBeNull();
     });
   });
+
+  describe("6. Step 9 — Regression Integration: Farmer Case Creation to Vet Queue & Notifications", () => {
+    it("should route farmer case at DISTRICT level when no closer village/block vet exists, verify vet queue, notification, and duplicate protection", async () => {
+      // Setup ACTIVE farmer in district_d1
+      vi.mocked(requireActiveUser).mockResolvedValue({
+        id: "farmer_d1",
+        name: "Farmer D1",
+        phone: "9876540001",
+        role: "FARMER",
+        status: "ACTIVE",
+        districtId: "district_d1",
+        blockId: "block_farmer",
+        villageId: "village_farmer",
+      } as unknown as FullAppUser);
+
+      // Animal on farm in district_d1 / block_farmer / village_farmer
+      mockFindUniqueAnimal.mockResolvedValue({
+        id: "animal_d1_01",
+        tag: "COW-D1-01",
+        species: "COW",
+        herd: {
+          farm: {
+            id: "farm_d1",
+            farmerUserId: "farmer_d1",
+            villageId: "village_farmer",
+            village: {
+              id: "village_farmer",
+              name: "Farmer Village",
+              blockId: "block_farmer",
+              block: {
+                id: "block_farmer",
+                name: "Farmer Block",
+                districtId: "district_d1",
+                district: { id: "district_d1", name: "District D1" },
+              },
+            },
+          },
+        },
+      });
+
+      // Active Vet in district_d1, but in a DIFFERENT block/village (no closer vet)
+      const vetDistrictOnly = {
+        id: "vet_d1_only",
+        name: "Dr. District D1 Vet",
+        phone: "+919876540002",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        districtId: "district_d1",
+        blockId: "block_other",
+        villageId: "village_other",
+      };
+
+      mockFindManyUsers.mockResolvedValue([vetDistrictOnly]);
+      mockGroupByCase.mockResolvedValue([]);
+
+      mockFindUniqueCase.mockImplementation(({ where }) => {
+        if (where.submissionId === "sub_fresh_01") {
+          return Promise.resolve(null);
+        }
+        if (where.id === "case_fresh_01") {
+          return Promise.resolve({
+            id: "case_fresh_01",
+            caseNumber: "CASE-2026-999001",
+            submissionId: "sub_fresh_01",
+            status: "PENDING_REVIEW",
+            createdByUserId: "farmer_d1",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            assignedAt: null,
+            assignmentLevel: null,
+            animal: {
+              id: "animal_d1_01",
+              species: "COW",
+              herd: {
+                farm: {
+                  farmerUserId: "farmer_d1",
+                  villageId: "village_farmer",
+                  village: {
+                    id: "village_farmer",
+                    name: "Farmer Village",
+                    blockId: "block_farmer",
+                    block: {
+                      id: "block_farmer",
+                      name: "Farmer Block",
+                      districtId: "district_d1",
+                      district: { id: "district_d1", name: "District D1" },
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      mockFindFirstCase.mockResolvedValue(null);
+
+      mockCreateCase.mockResolvedValue({
+        id: "case_fresh_01",
+        caseNumber: "CASE-2026-999001",
+        submissionId: "sub_fresh_01",
+        status: "PENDING_REVIEW",
+        createdByUserId: "farmer_d1",
+        animalId: "animal_d1_01",
+        reportedAt: new Date(),
+      });
+
+      let updatedFields: Record<string, unknown> = {};
+      mockUpdateCase.mockImplementation(({ where, data }) => {
+        updatedFields = { ...data };
+        return Promise.resolve({
+          id: where.id,
+          caseNumber: "CASE-2026-999001",
+          assignedVeterinarianUserId: data.assignedVeterinarianUserId,
+          assignedVeterinarianUser: {
+            id: vetDistrictOnly.id,
+            name: vetDistrictOnly.name,
+            phone: vetDistrictOnly.phone,
+          },
+          assignedAt: data.assignedAt,
+          assignmentLevel: data.assignmentLevel,
+        });
+      });
+
+      mockFindFirstNotification.mockResolvedValue(null);
+      let createdNotification: { userId?: string; link?: string; type?: string } | null = null;
+      mockCreateNotification.mockImplementation(({ data }) => {
+        createdNotification = data;
+        return Promise.resolve({ id: "notif_fresh_01", ...data });
+      });
+
+      // Execute farmer submission
+      const result = await createCaseReportAction({
+        submissionId: "sub_fresh_01",
+        animalId: "animal_d1_01",
+        symptoms: ["High Fever", "Loss of Appetite"],
+        durationDays: 2,
+        affectedCount: 1,
+        herdSize: 5,
+        mortalityCount: 0,
+      });
+
+      // Assertions
+      // 1. Case exists and creation succeeded
+      expect(result.success).toBe(true);
+      expect(result.caseId).toBe("case_fresh_01");
+
+      // 2. routeCaseToVeterinarian() executed and selected the district vet
+      // 3. assignedVeterinarianUserId = veterinarian.id
+      expect(updatedFields.assignedVeterinarianUserId).toBe("vet_d1_only");
+
+      // 4. assignmentLevel = DISTRICT
+      expect(updatedFields.assignmentLevel).toBe("DISTRICT");
+
+      // 5. assignedAt != null
+      expect(updatedFields.assignedAt).toBeInstanceOf(Date);
+
+      // 6. Veterinarian queue returns the Case for authenticated veterinarian
+      vi.mocked(requireActiveUser).mockResolvedValue({
+        id: "vet_d1_only",
+        name: "Dr. District D1 Vet",
+        phone: "+919876540002",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        districtId: "district_d1",
+      } as unknown as FullAppUser);
+
+      mockFindManyCases.mockImplementation(({ where }) => {
+        if (where.assignedVeterinarianUserId === "vet_d1_only") {
+          return Promise.resolve([
+            {
+              id: "case_fresh_01",
+              caseNumber: "CASE-2026-999001",
+              status: "PENDING_REVIEW",
+              assignedVeterinarianUserId: "vet_d1_only",
+              reportedAt: new Date(),
+              animal: {
+                tag: "COW-D1-01",
+                species: "COW",
+                herd: { farm: { name: "Farm D1", village: { name: "Farmer Village" } } },
+              },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const vetQueue = await getVetQueueAction({ scope: "assigned" });
+      expect(vetQueue).toHaveLength(1);
+      expect(vetQueue[0].id).toBe("case_fresh_01");
+      expect(vetQueue[0].assignedVeterinarianUserId).toBe("vet_d1_only");
+
+      // 7. InAppNotification created for assigned veterinarian with deep link
+      expect(createdNotification).not.toBeNull();
+      expect(createdNotification!.userId).toBe("vet_d1_only");
+      expect(createdNotification!.link).toBe("/vet/cases/case_fresh_01");
+      expect(createdNotification!.type).toBe("CASE_ASSIGNED");
+
+      // 8. Duplicate submission with same submissionId does not create duplicate case
+      vi.mocked(requireActiveUser).mockResolvedValue({
+        id: "farmer_d1",
+        name: "Farmer D1",
+        role: "FARMER",
+        status: "ACTIVE",
+      } as unknown as FullAppUser);
+
+      mockFindUniqueCase.mockImplementation(({ where }) => {
+        if (where.submissionId === "sub_fresh_01" || where.id === "case_fresh_01") {
+          return Promise.resolve({
+            id: "case_fresh_01",
+            caseNumber: "CASE-2026-999001",
+            submissionId: "sub_fresh_01",
+            status: "PENDING_REVIEW",
+            createdByUserId: "farmer_d1",
+            assignedVeterinarianUserId: "vet_d1_only",
+            assignedVeterinarianUser: { id: "vet_d1_only", name: "Dr. District D1 Vet", phone: "+919876540002" },
+            assignedAt: new Date(),
+            assignmentLevel: "DISTRICT",
+            reportedAt: new Date(),
+            animal: {
+              id: "animal_d1_01",
+              species: "COW",
+              herd: {
+                farm: {
+                  village: { name: "Farmer Village", block: { name: "Farmer Block", district: { name: "District D1" } } },
+                },
+              },
+            },
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      const duplicateRes = await createCaseReportAction({
+        submissionId: "sub_fresh_01",
+        animalId: "animal_d1_01",
+        symptoms: ["High Fever", "Loss of Appetite"],
+        durationDays: 2,
+        affectedCount: 1,
+        herdSize: 5,
+        mortalityCount: 0,
+      });
+
+      expect(duplicateRes.success).toBe(true);
+      expect(duplicateRes.caseId).toBe("case_fresh_01");
+      expect(mockCreateCase).toHaveBeenCalledTimes(1); // Not called again
+    });
+
+    it("should route at BLOCK and VILLAGE levels when closer eligible veterinarians exist", async () => {
+      // Animal in village_a, block_a, district_a
+      const animalHierarchy = {
+        villageId: "village_a",
+        blockId: "block_a",
+        districtId: "district_a",
+      };
+
+      const vetVillage = {
+        id: "vet_vil",
+        name: "Dr. Village",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        villageId: "village_a",
+        blockId: "block_a",
+        districtId: "district_a",
+      };
+
+      const vetBlock = {
+        id: "vet_blk",
+        name: "Dr. Block",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        villageId: "village_other",
+        blockId: "block_a",
+        districtId: "district_a",
+      };
+
+      // Test Village level winning
+      mockFindManyUsers.mockResolvedValue([vetVillage, vetBlock]);
+      mockGroupByCase.mockResolvedValue([]);
+
+      const villageMatch = await findEligibleVeterinarians(animalHierarchy);
+      expect(villageMatch?.level).toBe("VILLAGE");
+      expect(villageMatch?.eligibleVets[0].id).toBe("vet_vil");
+
+      // Test Block level winning when no village vet exists
+      mockFindManyUsers.mockResolvedValue([vetBlock]);
+      const blockMatch = await findEligibleVeterinarians(animalHierarchy);
+      expect(blockMatch?.level).toBe("BLOCK");
+      expect(blockMatch?.eligibleVets[0].id).toBe("vet_blk");
+    });
+  });
 });

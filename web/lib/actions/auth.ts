@@ -55,25 +55,33 @@ export async function completeOnboardingAction(input: OnboardingInput) {
     };
   }
 
-  // 4. Verify geographic entities if provided
-  if (districtId) {
-    const districtExists = await prisma.district.findUnique({ where: { id: districtId } });
-    if (!districtExists) {
-      return { success: false, error: "Invalid District selected." };
-    }
-  }
+  // 4. Verify and resolve geographic entities if provided
+  let resolvedDistrictId = districtId || null;
+  let resolvedBlockId = blockId || null;
+  const resolvedVillageId = villageId || null;
 
-  if (blockId) {
-    const blockExists = await prisma.block.findUnique({ where: { id: blockId } });
-    if (!blockExists) {
+  if (resolvedVillageId) {
+    const villageObj = await prisma.village.findUnique({
+      where: { id: resolvedVillageId },
+      include: { block: true },
+    });
+    if (!villageObj) {
+      return { success: false, error: "Invalid Village selected." };
+    }
+    resolvedBlockId = resolvedBlockId || villageObj.blockId;
+    resolvedDistrictId = resolvedDistrictId || villageObj.block.districtId;
+  } else if (resolvedBlockId) {
+    const blockObj = await prisma.block.findUnique({
+      where: { id: resolvedBlockId },
+    });
+    if (!blockObj) {
       return { success: false, error: "Invalid Block selected." };
     }
-  }
-
-  if (villageId) {
-    const villageExists = await prisma.village.findUnique({ where: { id: villageId } });
-    if (!villageExists) {
-      return { success: false, error: "Invalid Village selected." };
+    resolvedDistrictId = resolvedDistrictId || blockObj.districtId;
+  } else if (resolvedDistrictId) {
+    const districtExists = await prisma.district.findUnique({ where: { id: resolvedDistrictId } });
+    if (!districtExists) {
+      return { success: false, error: "Invalid District selected." };
     }
   }
 
@@ -86,9 +94,9 @@ export async function completeOnboardingAction(input: OnboardingInput) {
       name,
       phone,
       preferredLanguage: preferredLanguage || "en",
-      districtId: districtId || null,
-      blockId: blockId || null,
-      villageId: villageId || null,
+      districtId: resolvedDistrictId,
+      blockId: resolvedBlockId,
+      villageId: resolvedVillageId,
     },
   });
 
