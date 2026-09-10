@@ -37,19 +37,19 @@ export default async function FieldAgentPage() {
       }),
       prisma.assistanceRequest.count({
         where: {
-          assignedAgentUserId: agent.id,
+          assignedFieldAgentUserId: agent.id,
           status: { in: ["ACCEPTED", "ASSIGNED"] },
         },
       }),
       prisma.assistanceRequest.count({
         where: {
-          assignedAgentUserId: agent.id,
+          assignedFieldAgentUserId: agent.id,
           status: "IN_PROGRESS",
         },
       }),
       prisma.assistanceRequest.count({
         where: {
-          assignedAgentUserId: agent.id,
+          assignedFieldAgentUserId: agent.id,
           status: "COMPLETED",
         },
       }),

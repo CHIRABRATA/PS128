@@ -9,6 +9,19 @@ vi.mock("@/lib/auth/permissions", () => ({
 vi.mock("@/lib/geo/routing", () => ({
   findEligibleFieldAgents: vi.fn().mockResolvedValue([]),
   canUserAccessAssistanceRequest: vi.fn().mockReturnValue(true),
+  routeCaseToVeterinarian: vi.fn().mockResolvedValue({
+    success: true,
+    caseId: "case_created_123",
+    caseNumber: "CASE-2026-123456",
+    assignedVeterinarian: { id: "vet_1", name: "Dr. Sharma" },
+    assignmentLevel: "VILLAGE",
+  }),
+  routeAssistanceRequestToFieldAgent: vi.fn().mockResolvedValue({
+    success: true,
+    requestId: "req_001",
+    assignedFieldAgent: { id: "agent_1", name: "Agent Suresh" },
+    assignmentLevel: "VILLAGE",
+  }),
 }));
 
 vi.mock("@/lib/actions/notifications", () => ({
@@ -113,7 +126,7 @@ describe("Batch 1 (F-03): Assistance Optimistic Concurrency Controls", () => {
     mockFindUnique.mockResolvedValue({
       id: "req_002",
       farmerUserId: "farmer_1",
-      assignedAgentUserId: "agent_1",
+      assignedFieldAgentUserId: "agent_1",
       status: "ACCEPTED",
       updatedAt: mockDate,
       village: null,
@@ -130,7 +143,7 @@ describe("Batch 1 (F-03): Assistance Optimistic Concurrency Controls", () => {
     mockFindUnique.mockResolvedValue({
       id: "req_002",
       farmerUserId: "farmer_1",
-      assignedAgentUserId: "agent_1",
+      assignedFieldAgentUserId: "agent_1",
       status: "ACCEPTED",
       updatedAt: mockDate,
       village: null,
@@ -157,6 +170,7 @@ describe("Batch 1 (F-03): Assistance Optimistic Concurrency Controls", () => {
     mockFindUnique.mockResolvedValue({
       id: "req_003",
       farmerUserId: "farmer_1",
+      assignedFieldAgentUserId: "agent_1",
       status: "IN_PROGRESS",
       updatedAt: mockDate,
       farm: { id: "farm_1" },
@@ -184,6 +198,7 @@ describe("Batch 1 (F-03): Assistance Optimistic Concurrency Controls", () => {
     mockFindUnique.mockResolvedValue({
       id: "req_003",
       farmerUserId: "farmer_1",
+      assignedFieldAgentUserId: "agent_1",
       status: "IN_PROGRESS",
       updatedAt: mockDate,
       farm: { id: "farm_1" },

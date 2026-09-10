@@ -282,7 +282,7 @@ export async function runFinalRealWorldAudit(): Promise<{
         where: { id: assistReq.id },
         data: {
           status: "ACCEPTED",
-          assignedAgentUserId: agentA.id,
+          assignedFieldAgentUserId: agentA.id,
         },
       });
 

@@ -51,6 +51,11 @@ vi.mock("@/lib/db/prisma", () => {
         findMany: vi.fn(),
         findFirst: vi.fn(),
       },
+      assistanceRequest: {
+        findMany: vi.fn(),
+        findFirst: vi.fn(),
+        groupBy: vi.fn(),
+      },
     },
   };
 });
@@ -462,12 +467,13 @@ describe("GPS-Biased Location Search & Rebuilt Two-Choice UX", () => {
       { id: "agent_block", name: "Block Agent", phone: "123", villageId: "v2", blockId: "b1", districtId: "d1" },
     ] as never);
 
-    const agents = await findEligibleFieldAgents("v1", "b1", "d1");
+    vi.mocked(prisma.assistanceRequest.groupBy).mockResolvedValue([] as never);
 
-    expect(agents).toHaveLength(3);
-    expect(agents[0].id).toBe("agent_village"); // Priority 1: Same village
-    expect(agents[1].id).toBe("agent_block"); // Priority 2: Same block
-    expect(agents[2].id).toBe("agent_district"); // Priority 3: Same district
+    const result = await findEligibleFieldAgents("v1", "b1", "d1");
+
+    expect(result).not.toBeNull();
+    expect(result?.level).toBe("VILLAGE");
+    expect(result?.eligibleAgents[0].id).toBe("agent_village"); // Priority 1: Same village
   });
 
   it("17. Selected Location Map Preview: renders map iframe ONLY when valid real coordinates exist", () => {

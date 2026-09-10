@@ -52,9 +52,10 @@ interface RequestItem {
       };
     };
   } | null;
-  assignedAgentUser?: {
+  assignedFieldAgentUser?: {
     id: string;
     name: string;
+    phone?: string | null;
   } | null;
   case?: {
     id: string;
@@ -131,8 +132,8 @@ export function AgentAssistanceQueue({
 
       <div className="space-y-3">
         {requests.map((req) => {
-          const isAssignedToMe = req.assignedAgentUser?.id === currentAgentId;
-          const isRequested = req.status === "REQUESTED";
+          const isAssignedToMe = req.assignedFieldAgentUser?.id === currentAgentId;
+          const isRequestedOrAssigned = req.status === "REQUESTED" || req.status === "ASSIGNED";
           const isAccepted = req.status === "ACCEPTED";
           const isInProgress = req.status === "IN_PROGRESS";
           const isCompleted = req.status === "COMPLETED";
@@ -150,7 +151,7 @@ export function AgentAssistanceQueue({
                   </span>
                   <Badge
                     className={
-                      isRequested
+                      isRequestedOrAssigned
                         ? "bg-amber-100 text-amber-950 border-amber-300 text-[10px]"
                         : isAccepted || isInProgress
                         ? "bg-sky-100 text-sky-950 border-sky-300 text-[10px]"
@@ -159,11 +160,15 @@ export function AgentAssistanceQueue({
                   >
                     {req.status}
                   </Badge>
-                  {isAssignedToMe && (
+                  {isAssignedToMe ? (
                     <Badge className="bg-purple-100 text-purple-950 border-purple-300 text-[10px]">
                       Assigned to you
                     </Badge>
-                  )}
+                  ) : req.assignedFieldAgentUser ? (
+                    <Badge className="bg-stone-100 text-stone-800 border-stone-300 text-[10px]">
+                      Assigned: {req.assignedFieldAgentUser.name}
+                    </Badge>
+                  ) : null}
                 </div>
 
                 <p className="text-xs font-semibold text-stone-800">
@@ -191,7 +196,7 @@ export function AgentAssistanceQueue({
 
               {/* Action Buttons based on status */}
               <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                {isRequested && (
+                {isRequestedOrAssigned && (!req.assignedFieldAgentUser || isAssignedToMe) && (
                   <Button
                     size="sm"
                     onClick={() => handleAccept(req.id, expectedUpdatedAt)}

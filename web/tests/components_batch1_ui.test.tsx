@@ -131,7 +131,7 @@ describe("Batch 1 Component UI Tests", () => {
       animal: { id: "a1", tag: "COW-101", species: "Cattle" },
       farm: { id: "farm1", name: "Green Valley Farm", latitude: 18.52, longitude: 73.85 },
       village: { name: "Shivaji Nagar", block: { name: "Haveli", district: { name: "Pune" } } },
-      assignedAgentUser: null,
+      assignedFieldAgentUser: null,
       case: null,
     };
 
@@ -153,7 +153,7 @@ describe("Batch 1 Component UI Tests", () => {
       const acceptedRequest = {
         ...mockRequest,
         status: "ACCEPTED",
-        assignedAgentUser: { id: "agent_1", name: "Agent Suresh" },
+        assignedFieldAgentUser: { id: "agent_1", name: "Agent Suresh" },
       };
 
       render(<AgentAssistanceQueue requests={[acceptedRequest]} currentAgentId="agent_1" />);
@@ -173,7 +173,7 @@ describe("Batch 1 Component UI Tests", () => {
       const inProgressRequest = {
         ...mockRequest,
         status: "IN_PROGRESS",
-        assignedAgentUser: { id: "agent_1", name: "Agent Suresh" },
+        assignedFieldAgentUser: { id: "agent_1", name: "Agent Suresh" },
       };
 
       render(<AgentAssistanceQueue requests={[inProgressRequest]} currentAgentId="agent_1" />);
@@ -190,7 +190,7 @@ describe("Batch 1 Component UI Tests", () => {
       const completedRequest = {
         ...mockRequest,
         status: "COMPLETED",
-        assignedAgentUser: { id: "agent_1", name: "Agent Suresh" },
+        assignedFieldAgentUser: { id: "agent_1", name: "Agent Suresh" },
         case: { id: "c1", caseNumber: "CASE-2026-000456", status: "PENDING_REVIEW" },
       };
 

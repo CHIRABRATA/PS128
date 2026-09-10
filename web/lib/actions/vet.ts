@@ -52,7 +52,7 @@ export async function getVetDashboardMetricsAction() {
     };
   }
 
-  const [pendingCount, underExamCount, labRefCount, followUpsDueCount, activeCases] = await Promise.all([
+  const [pendingCount, underExamCount, labRefCount, followUpsDueCount, myAssignedCount, activeCases] = await Promise.all([
     prisma.case.count({
       where: { ...baseWhere, status: "PENDING_REVIEW" },
     }),
@@ -67,6 +67,12 @@ export async function getVetDashboardMetricsAction() {
         ...baseWhere,
         vetFollowUpDate: { not: null },
         status: { not: "CLOSED_HARMLESS" },
+      },
+    }),
+    prisma.case.count({
+      where: {
+        assignedVeterinarianUserId: vet.id,
+        status: { in: ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"] },
       },
     }),
     prisma.case.findMany({
@@ -104,6 +110,7 @@ export async function getVetDashboardMetricsAction() {
     underExamCount,
     labRefCount,
     followUpsDueCount,
+    myAssignedCount,
     criticalCount,
     highCount,
     recentlyReviewedCount,
@@ -113,13 +120,14 @@ export async function getVetDashboardMetricsAction() {
 
 /**
  * Retrieves the priority triage queue for an active veterinarian.
- * Filtered by district jurisdiction and ordered by risk rank, score, and oldest reportedAt.
+ * Filtered by district jurisdiction / direct assignment and ordered by risk rank, score, and oldest reportedAt.
  */
 export async function getVetQueueAction(filters?: {
   status?: string;
   riskLevel?: string;
   villageId?: string;
   species?: string;
+  scope?: "assigned" | "service_area";
 }) {
   const vet = await requireActiveVeterinarian();
 
@@ -131,19 +139,23 @@ export async function getVetQueueAction(filters?: {
     },
   };
 
-  // District scoping
-  if (vet.districtId) {
-    whereClause.animal = {
-      herd: {
-        farm: {
-          village: {
-            block: {
-              districtId: vet.districtId,
+  if (filters?.scope === "assigned") {
+    whereClause.assignedVeterinarianUserId = vet.id;
+  } else {
+    // District jurisdiction scoping
+    if (vet.districtId) {
+      whereClause.animal = {
+        herd: {
+          farm: {
+            village: {
+              block: {
+                districtId: vet.districtId,
+              },
             },
           },
         },
-      },
-    };
+      };
+    }
   }
 
   if (filters?.villageId) {
@@ -167,6 +179,20 @@ export async function getVetQueueAction(filters?: {
   const cases = await prisma.case.findMany({
     where: whereClause,
     include: {
+      createdByUser: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      assignedVeterinarianUser: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
       animal: {
         include: {
           herd: {

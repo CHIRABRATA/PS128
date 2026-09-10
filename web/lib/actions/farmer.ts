@@ -26,7 +26,58 @@ export async function getFarmerDashboardMetricsAction() {
           include: {
             animals: {
               include: {
+                herd: {
+                  include: {
+                    farm: {
+                      include: {
+                        village: {
+                          include: {
+                            block: {
+                              include: {
+                                district: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
                 cases: {
+                  include: {
+                    assignedVeterinarianUser: { select: { id: true, name: true, phone: true } },
+                    animal: {
+                      select: {
+                        id: true,
+                        tag: true,
+                        species: true,
+                        herd: {
+                          select: {
+                            farm: {
+                              select: {
+                                name: true,
+                                village: {
+                                  select: {
+                                    name: true,
+                                    block: {
+                                      select: {
+                                        name: true,
+                                        district: {
+                                          select: {
+                                            name: true,
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                   orderBy: { reportedAt: "desc" },
                 },
                 veterinaryReports: {
@@ -49,7 +100,29 @@ export async function getFarmerDashboardMetricsAction() {
       where: { farmerUserId: farmer.id },
       include: {
         animal: true,
-        assignedAgentUser: { select: { name: true, phone: true } },
+        farm: {
+          include: {
+            village: {
+              include: {
+                block: {
+                  include: {
+                    district: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        village: {
+          include: {
+            block: {
+              include: {
+                district: true,
+              },
+            },
+          },
+        },
+        assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
       },
       orderBy: { requestedAt: "desc" },
     }),

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createAssistanceRequestAction } from "@/lib/actions/assistance";
+import { createAssistanceRequestAction, CreateAssistanceRequestResult } from "@/lib/actions/assistance";
 import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ export function AssistanceRequestForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [submitResult, setSubmitResult] = useState<CreateAssistanceRequestResult | null>(null);
 
   const selectedFarm = farms.find((f) => f.id === selectedFarmId);
   const farmAnimals = selectedFarm ? selectedFarm.animals : [];
@@ -83,11 +83,7 @@ export function AssistanceRequestForm({
       if (!res.success) {
         setError(res.error || "Failed to submit assistance request.");
       } else {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/farmer");
-          router.refresh();
-        }, 1500);
+        setSubmitResult(res);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Submission error.");
@@ -96,19 +92,133 @@ export function AssistanceRequestForm({
     }
   };
 
-  if (success) {
+  const handleResetForm = () => {
+    setReason("");
+    setNotes("");
+    setScheduledDate("");
+    setCustomLocation(null);
+    setShowLocationSearch(false);
+    setSelectedAnimalId(preSelectedAnimalId || "");
+    setSubmitResult(null);
+    setError(null);
+  };
+
+  if (submitResult?.success) {
+    const agent = submitResult.assignedFieldAgent;
+    const assignmentLevel = submitResult.assignmentLevel;
+    const location = submitResult.location;
+
     return (
-      <div className="p-8 rounded-3xl bg-white border border-emerald-200 text-center space-y-4 shadow-sm text-[#191F1C]">
-        <div className="h-16 w-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="h-9 w-9" />
+      <div className="max-w-xl mx-auto w-full p-6 rounded-3xl bg-white border border-emerald-200 text-center space-y-5 shadow-sm text-[#191F1C]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-16 w-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+            <CheckCircle2 className="h-9 w-9" />
+          </div>
+          <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs px-3 py-1 font-semibold">
+            Assistance Request Submitted
+          </Badge>
+          <h2 className="text-2xl font-bold text-[#191F1C]">Field Assistance Dispatched</h2>
+          <p className="text-xs text-stone-600 max-w-sm">
+            Your request for on-site livestock assistance has been received.
+          </p>
         </div>
-        <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs px-3 py-1">
-          Request Submitted Successfully
-        </Badge>
-        <h2 className="text-xl font-bold text-[#191F1C]">Field Agent Assistance Dispatched</h2>
-        <p className="text-xs text-stone-600 max-w-md mx-auto">
-          Your request has been routed to the field agents in <strong>{selectedFarm?.villageName || customLocation?.displayName}</strong>. You will be notified as soon as an agent accepts your request.
-        </p>
+
+        {/* Location & Routing Summary */}
+        <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs text-left space-y-3 text-stone-700">
+          {/* 1. Request ID */}
+          <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-2">
+            <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px]">Request Reference:</span>
+            <span className="font-mono text-stone-800 font-semibold">{submitResult.requestId}</span>
+          </div>
+
+          {/* 2. Location */}
+          <div className="space-y-1 border-b border-[#E5E0D8] pb-2.5">
+            <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-emerald-700" />
+              <span>Visit Location</span>
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+              <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                <span className="text-stone-500 block text-[10px]">Village:</span>
+                <strong className="text-stone-900">{location?.villageName || selectedFarm?.villageName || "-"}</strong>
+              </div>
+              <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                <span className="text-stone-500 block text-[10px]">Block:</span>
+                <strong className="text-stone-900">{location?.blockName || "-"}</strong>
+              </div>
+              <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                <span className="text-stone-500 block text-[10px]">District:</span>
+                <strong className="text-stone-900">{location?.districtName || "-"}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Assigned Field Agent */}
+          <div className="space-y-1.5 border-b border-[#E5E0D8] pb-2.5">
+            <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <UserCheck className="h-3 w-3 text-amber-700" />
+              <span>Assigned Field Agent (Pashusakhi)</span>
+            </span>
+            {agent ? (
+              <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-sm text-emerald-950 block">{agent.name}</span>
+                  <span className="text-[11px] text-emerald-800">
+                    Assigned at: <strong className="uppercase">{assignmentLevel || "District"}</strong> level
+                  </span>
+                  {agent.phone && (
+                    <span className="block text-[10px] text-stone-500 mt-0.5">Contact: {agent.phone}</span>
+                  )}
+                </div>
+                <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">
+                  Assigned
+                </Badge>
+              </div>
+            ) : (
+              <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-amber-950">Waiting for a field agent</span>
+                  <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px]">
+                    Queued
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-amber-900">
+                  Your request is queued in the local field agent pool and will be accepted shortly.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Crucial Lifecycle Clarification */}
+          <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
+            <span className="font-bold block">Lifecycle Notice:</span>
+            <p className="text-stone-700">
+              No health case has been created yet. A formal Case will be generated after the field agent completes the on-site visit and submits the examination report.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResetForm}
+            className="flex-1 text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl min-h-[44px]"
+          >
+            Submit Another Request
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              router.push("/farmer");
+              router.refresh();
+            }}
+            className="flex-1 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[44px] gap-1.5"
+          >
+            <span>View in Dashboard</span>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     );
   }

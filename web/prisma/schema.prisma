@@ -116,7 +116,8 @@ model User {
   chatConversations          ChatConversation[]
   notificationDeliveries     NotificationDelivery[]
   farmerAssistanceRequests   AssistanceRequest[]    @relation("FarmerAssistanceRequests")
-  assignedAssistanceRequests AssistanceRequest[]    @relation("AgentAssistanceRequests")
+  assignedAssistanceRequests AssistanceRequest[]    @relation("AssistanceAssignedAgent")
+  assignedCases              Case[]                 @relation("CaseAssignedVet")
   fieldVisits                FieldVisit[]           @relation("AgentFieldVisits")
   authoredVetReports         VeterinaryReport[]     @relation("VetAuthoredReports")
   appNotifications           InAppNotification[]
@@ -255,10 +256,13 @@ model Case {
   vetDiagnosis         String?
   vetRecommendedAction VetAction?
 
+  vetNotes            String?
   vetFollowUpDate     DateTime?
   followUpCompleted   Boolean            @default(false)
   followUpCompletedAt DateTime?
-  vetNotes            String?
+  assignedVeterinarianUserId String?
+  assignedAt                 DateTime?
+  assignmentLevel            String?
   reportedAt          DateTime           @default(now())
   reviewedAt          DateTime?
   confirmedAt         DateTime?
@@ -266,17 +270,19 @@ model Case {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  animal            Animal             @relation(fields: [animalId], references: [id], onDelete: Restrict)
-  createdByUser     User               @relation("CaseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  reviewedByUser    User?              @relation("CaseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  assistanceRequest AssistanceRequest?
-  fieldVisit        FieldVisit?
-  treatments        TreatmentRecord[]
-  samples           Sample[]
-  veterinaryReports VeterinaryReport[]
+  animal                   Animal             @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  createdByUser            User               @relation("CaseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  reviewedByUser           User?              @relation("CaseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  assignedVeterinarianUser User?              @relation("CaseAssignedVet", fields: [assignedVeterinarianUserId], references: [id], onDelete: SetNull)
+  assistanceRequest        AssistanceRequest?
+  fieldVisit               FieldVisit?
+  treatments               TreatmentRecord[]
+  samples                  Sample[]
+  veterinaryReports        VeterinaryReport[]
 
   @@index([animalId])
   @@index([createdByUserId])
+  @@index([assignedVeterinarianUserId])
   @@index([status])
   @@index([reportedAt])
   @@index([reviewedAt])
@@ -293,27 +299,29 @@ model AssistanceRequest {
   blockId             String?
   districtId          String?
   reason              String
-  status              AssistanceRequestStatus @default(REQUESTED)
-  assignedAgentUserId String?
-  requestedAt         DateTime                @default(now())
-  scheduledAt         DateTime?
-  notes               String?
-  caseId              String?                 @unique
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
+  status                   AssistanceRequestStatus @default(REQUESTED)
+  assignedFieldAgentUserId String?
+  assignedAt               DateTime?
+  assignmentLevel          String?
+  requestedAt              DateTime                @default(now())
+  scheduledAt              DateTime?
+  notes                    String?
+  caseId                   String?                 @unique
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
 
-  farmerUser          User                    @relation("FarmerAssistanceRequests", fields: [farmerUserId], references: [id], onDelete: Cascade)
-  assignedAgentUser   User?                   @relation("AgentAssistanceRequests", fields: [assignedAgentUserId], references: [id], onDelete: SetNull)
-  animal              Animal?                 @relation(fields: [animalId], references: [id], onDelete: SetNull)
-  farm                Farm                    @relation(fields: [farmId], references: [id], onDelete: Restrict)
-  village             Village?                @relation(fields: [villageId], references: [id], onDelete: SetNull)
-  block               Block?                  @relation(fields: [blockId], references: [id], onDelete: SetNull)
-  district            District?               @relation(fields: [districtId], references: [id], onDelete: SetNull)
-  case                Case?                   @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  visit               FieldVisit?
+  farmerUser             User                    @relation("FarmerAssistanceRequests", fields: [farmerUserId], references: [id], onDelete: Cascade)
+  assignedFieldAgentUser User?                   @relation("AssistanceAssignedAgent", fields: [assignedFieldAgentUserId], references: [id], onDelete: SetNull)
+  animal                 Animal?                 @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  farm                   Farm                    @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  village                Village?                @relation(fields: [villageId], references: [id], onDelete: SetNull)
+  block                  Block?                  @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  district               District?               @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  case                   Case?                   @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  visit                  FieldVisit?
 
   @@index([farmerUserId])
-  @@index([assignedAgentUserId])
+  @@index([assignedFieldAgentUserId])
   @@index([villageId])
   @@index([blockId])
   @@index([districtId])

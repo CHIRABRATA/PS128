@@ -113,7 +113,7 @@ export async function getAnimalDetailHistoryAction(animalId: string) {
       },
       assistanceRequests: {
         include: {
-          assignedAgentUser: { select: { id: true, name: true, phone: true } },
+          assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
           visit: true,
         },
         orderBy: { requestedAt: "desc" },
@@ -226,7 +226,7 @@ export async function getAnimalDetailHistoryAction(animalId: string) {
         type: "FIELD_VISIT",
         date: ar.visit.completedAt.toISOString(),
         title: `Field Inspection: Doorstep Visit`,
-        subtitle: `Inspected by Agent ${ar.assignedAgentUser?.name || "Field Agent"}${ar.assignedAgentUser?.phone ? ` (${ar.assignedAgentUser.phone})` : ""}`,
+        subtitle: `Inspected by Agent ${ar.assignedFieldAgentUser?.name || "Field Agent"}${ar.assignedFieldAgentUser?.phone ? ` (${ar.assignedFieldAgentUser.phone})` : ""}`,
         badge: "Completed Visit",
         badgeVariant: "default",
         details: {

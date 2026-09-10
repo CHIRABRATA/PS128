@@ -271,7 +271,7 @@ export async function runWorkflowRebuildTests(): Promise<{
         where: { id: assistReq.id },
         data: {
           status: "ACCEPTED",
-          assignedAgentUserId: agentUser1.id,
+          assignedFieldAgentUserId: agentUser1.id,
         },
       });
 
@@ -442,7 +442,7 @@ export async function runWorkflowRebuildTests(): Promise<{
         matchCrossDistrict.score === 0 &&
         isAuthSameDistrict === true &&
         isAuthCrossDistrict === false &&
-        eligibleAgents.length >= 1;
+        Boolean(eligibleAgents && eligibleAgents.eligibleAgents.length >= 1);
 
       recordResult(
         4,

@@ -214,89 +214,198 @@ export default async function FarmerPortalPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. ACTIVE CASES & FIELD ASSISTANCE REQUESTS                                */}
+      {/* 2. MY ACTIVE REPORTS & REQUESTS (ROUTING & DESTINATION VISIBILITY)         */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Active Health Cases */}
-        <div className="p-5 rounded-3xl bg-white border border-[#E5E0D8] space-y-4 shadow-xs">
-          <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-amber-700" />
-              <h3 className="font-bold text-[#191F1C] text-base">Active Health Episodes ({activeCases.length})</h3>
-            </div>
-            <Link href="/farmer/report" className="text-xs text-emerald-800 font-semibold hover:underline">
-              New Report &rarr;
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E0D8] pb-3">
+          <div>
+            <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">Active Reports & Assistance Requests</h2>
+            <p className="text-xs text-stone-500">Live tracking of your submissions, destination routing, and assigned healthcare personnel.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/farmer/report">
+              <Button size="sm" variant="outline" className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl h-8">
+                + Self-Report Case
+              </Button>
+            </Link>
+            <Link href="/farmer/request-help">
+              <Button size="sm" variant="outline" className="text-xs border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl h-8">
+                + Field Agent Visit
+              </Button>
             </Link>
           </div>
-
-          {activeCases.length === 0 ? (
-            <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-              No active livestock disease alerts or pending episodes.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activeCases.map((c) => (
-                <div key={c.id} className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] flex items-center justify-between hover-lift">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#191F1C]">#{c.caseNumber}</span>
-                      <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px]">
-                        {c.status}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-stone-600 mt-1">
-                      Symptoms: {c.symptoms.join(", ")} • Reported: {new Date(c.reportedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Link href={`/farmer/animals/${c.animalId}`}>
-                    <Button size="sm" variant="outline" className="text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 rounded-xl h-8">
-                      View
-                    </Button>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Assistance Requests Queue */}
-        <div className="p-5 rounded-3xl bg-white border border-[#E5E0D8] space-y-4 shadow-xs">
-          <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
-            <div className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-sky-700" />
-              <h3 className="font-bold text-[#191F1C] text-base">Field Assistance Requests ({assistanceRequests.length})</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Active Health Cases (Path 1 / Direct or Completed Agent Reports) */}
+          <div className="p-5 rounded-3xl bg-white border border-[#E5E0D8] space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-amber-700" />
+                <div>
+                  <h3 className="font-bold text-[#191F1C] text-sm">Active Health Cases ({activeCases.length})</h3>
+                  <span className="text-[11px] text-stone-500">Directly routed to Veterinarians</span>
+                </div>
+              </div>
+              <Badge className="bg-amber-50 text-amber-900 border-amber-200 text-[10px]">
+                Under Vet Review
+              </Badge>
             </div>
-            <Link href="/farmer/request-help" className="text-xs text-emerald-800 font-semibold hover:underline">
-              Request Help &rarr;
-            </Link>
+
+            {activeCases.length === 0 ? (
+              <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
+                No active health cases pending veterinary examination.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activeCases.slice(0, 5).map((c) => {
+                  const farmLoc = c.animal?.herd?.farm?.village;
+                  const locText = farmLoc
+                    ? `${farmLoc.name}, ${farmLoc.block?.name || ""}`
+                    : "Territory";
+
+                  return (
+                    <div key={c.id} className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] space-y-2.5 hover-lift">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-stone-900">#{c.caseNumber}</span>
+                          <span className="text-xs font-semibold text-stone-700">
+                            {c.animal?.tag} ({c.animal?.species})
+                          </span>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px] font-semibold">
+                          {c.status}
+                        </Badge>
+                      </div>
+
+                      <div className="text-xs space-y-1 text-stone-600 bg-white p-2.5 rounded-xl border border-[#E5E0D8]">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Destination / Vet:</span>
+                          {c.assignedVeterinarianUser ? (
+                            <span className="font-bold text-emerald-950">
+                              Dr. {c.assignedVeterinarianUser.name}
+                              {c.assignmentLevel && (
+                                <span className="ml-1 text-[10px] font-normal text-emerald-800">
+                                  ({c.assignmentLevel.toLowerCase()})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-amber-800 font-medium italic">Awaiting vet assignment</span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Location:</span>
+                          <span className="text-stone-700">{locText}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Symptoms:</span>
+                          <span className="text-stone-800 truncate max-w-[200px]">{c.symptoms.join(", ")}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] font-mono text-stone-500">
+                          {new Date(c.reportedAt).toLocaleDateString()}
+                        </span>
+                        <Link href={`/farmer/animals/${c.animalId}`}>
+                          <Button size="sm" variant="outline" className="text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 rounded-xl h-7 px-3">
+                            View Case
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {assistanceRequests.length === 0 ? (
-            <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-              No assistance requests currently logged.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {assistanceRequests.slice(0, 4).map((req) => (
-                <div key={req.id} className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] flex items-center justify-between hover-lift">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#191F1C]">{req.reason}</span>
-                      <Badge className="bg-sky-100 text-sky-950 border-sky-300 text-[10px]">
-                        {req.status}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-stone-500 mt-1">
-                      {req.assignedAgentUser ? `Assigned Agent: ${req.assignedAgentUser.name} (${req.assignedAgentUser.phone})` : "Awaiting agent assignment"}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-mono text-stone-500">
-                    {new Date(req.requestedAt).toLocaleDateString()}
-                  </span>
+          {/* Field Assistance Requests (Path 2) */}
+          <div className="p-5 rounded-3xl bg-white border border-[#E5E0D8] space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-sky-700" />
+                <div>
+                  <h3 className="font-bold text-[#191F1C] text-sm">Field Assistance Requests ({assistanceRequests.length})</h3>
+                  <span className="text-[11px] text-stone-500">Doorstep Pashusakhi visit requests</span>
                 </div>
-              ))}
+              </div>
+              <Badge className="bg-sky-50 text-sky-900 border-sky-200 text-[10px]">
+                On-Site Visits
+              </Badge>
             </div>
-          )}
+
+            {assistanceRequests.length === 0 ? (
+              <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
+                No field assistance requests currently logged.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {assistanceRequests.slice(0, 5).map((req) => {
+                  const reqLoc = req.village || req.farm?.village;
+                  const locText = reqLoc
+                    ? `${reqLoc.name}, ${reqLoc.block?.name || ""}`
+                    : "Territory";
+
+                  return (
+                    <div key={req.id} className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] space-y-2.5 hover-lift">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-stone-500">REQ-{req.id.slice(-6).toUpperCase()}</span>
+                          {req.animal && (
+                            <span className="text-xs font-semibold text-stone-800">
+                              {req.animal.tag} ({req.animal.species})
+                            </span>
+                          )}
+                        </div>
+                        <Badge className="bg-sky-100 text-sky-950 border-sky-300 text-[10px] font-semibold">
+                          {req.status}
+                        </Badge>
+                      </div>
+
+                      <div className="text-xs space-y-1 text-stone-600 bg-white p-2.5 rounded-xl border border-[#E5E0D8]">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Assigned Agent:</span>
+                          {req.assignedFieldAgentUser ? (
+                            <span className="font-bold text-sky-950">
+                              {req.assignedFieldAgentUser.name}
+                              {req.assignmentLevel && (
+                                <span className="ml-1 text-[10px] font-normal text-sky-800">
+                                  ({req.assignmentLevel.toLowerCase()})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-amber-800 font-medium italic">Waiting for a field agent</span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Location:</span>
+                          <span className="text-stone-700">{locText}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-stone-500">Reason:</span>
+                          <span className="text-stone-800 truncate max-w-[200px]">{req.reason}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-stone-500">
+                        <span>Requested: {new Date(req.requestedAt).toLocaleDateString()}</span>
+                        {req.status === "REQUESTED" || req.status === "ASSIGNED" ? (
+                          <span className="text-amber-700 font-medium">Pending Agent Visit</span>
+                        ) : req.status === "IN_PROGRESS" ? (
+                          <span className="text-sky-700 font-bold">Visit in Progress</span>
+                        ) : (
+                          <span className="text-emerald-700 font-semibold">Completed</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -3,7 +3,14 @@
 import { z } from "zod";
 import prisma from "@/lib/db/prisma";
 import { requireFarmer, requireFieldAgent } from "@/lib/auth/permissions";
-import { findEligibleFieldAgents, canUserAccessAssistanceRequest } from "@/lib/geo/routing";
+import {
+  routeAssistanceRequestToFieldAgent,
+  routeCaseToVeterinarian,
+  canUserAccessAssistanceRequest,
+  AssignmentLevel,
+  AssignedUserInfo,
+  RoutedLocationInfo,
+} from "@/lib/geo/routing";
 import { createInAppNotification } from "./notifications";
 import { runCaseAnalysisAction } from "./analysis";
 import { Prisma } from "@prisma/client";
@@ -18,11 +25,24 @@ const createAssistanceRequestSchema = z.object({
 
 export type CreateAssistanceRequestInput = z.infer<typeof createAssistanceRequestSchema>;
 
+export interface CreateAssistanceRequestResult {
+  success: boolean;
+  error?: string;
+  requestId?: string;
+  status?: string;
+  assignedFieldAgent?: AssignedUserInfo | null;
+  assignmentLevel?: AssignmentLevel | null;
+  location?: RoutedLocationInfo;
+}
+
 /**
  * Farmer creates a new field agent assistance request.
  * Creates an AssistanceRequest in REQUESTED status. Case is NOT created at this stage.
+ * Deterministically routes request to eligible field agent in the territory.
  */
-export async function createAssistanceRequestAction(input: CreateAssistanceRequestInput) {
+export async function createAssistanceRequestAction(
+  input: CreateAssistanceRequestInput
+): Promise<CreateAssistanceRequestResult> {
   try {
     const farmer = await requireFarmer();
 
@@ -81,38 +101,18 @@ export async function createAssistanceRequestAction(input: CreateAssistanceReque
         status: "REQUESTED",
         caseId: null,
       },
-      include: {
-        village: {
-          include: {
-            block: true,
-          },
-        },
-      },
     });
 
-    // Notify eligible field agents in the village/block
-    if (farm.villageId) {
-      const eligibleAgents = await findEligibleFieldAgents(
-        farm.villageId,
-        farm.village.blockId,
-        farm.village.block.districtId
-      );
-
-      for (const agent of eligibleAgents) {
-        await createInAppNotification({
-          userId: agent.id,
-          title: "New Assistance Request",
-          message: `${farmer.name} requested field assistance at ${farm.name}: "${reason}"`,
-          link: `/agent?requestId=${request.id}`,
-          type: "ASSISTANCE_REQUESTED",
-        });
-      }
-    }
+    // Deterministic server-side field agent routing
+    const routeRes = await routeAssistanceRequestToFieldAgent(request.id);
 
     return {
       success: true,
       requestId: request.id,
-      status: request.status,
+      status: routeRes.assignedFieldAgent ? "ASSIGNED" : request.status,
+      assignedFieldAgent: routeRes.assignedFieldAgent,
+      assignmentLevel: routeRes.assignmentLevel,
+      location: routeRes.location,
     };
   } catch (err: unknown) {
     console.error("[Create Assistance Request Error]:", err);
@@ -144,7 +144,7 @@ export async function getFarmerAssistanceRequestsAction() {
           },
         },
       },
-      assignedAgentUser: {
+      assignedFieldAgentUser: {
         select: {
           id: true,
           name: true,
@@ -172,7 +172,7 @@ export async function getFieldAgentAssistanceQueueAction() {
 
   const whereClause: Prisma.AssistanceRequestWhereInput = {
     OR: [
-      { assignedAgentUserId: agent.id },
+      { assignedFieldAgentUserId: agent.id },
       {
         status: { in: ["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"] },
         OR: [
@@ -213,7 +213,7 @@ export async function getFieldAgentAssistanceQueueAction() {
           },
         },
       },
-      assignedAgentUser: {
+      assignedFieldAgentUser: {
         select: {
           id: true,
           name: true,
@@ -254,6 +254,11 @@ export async function acceptAssistanceRequestAction(requestId: string, expectedU
     return { success: false, error: "Assistance request not found." };
   }
 
+  // Strict agent authorization: if already assigned to a specific agent, only that agent may accept
+  if (request.assignedFieldAgentUserId && request.assignedFieldAgentUserId !== agent.id) {
+    return { success: false, error: "Unauthorized: This assistance request is assigned to another field agent." };
+  }
+
   if (request.village && !canUserAccessAssistanceRequest(agent, request as Parameters<typeof canUserAccessAssistanceRequest>[1])) {
     return { success: false, error: "Unauthorized: Request lies outside your jurisdiction." };
   }
@@ -275,7 +280,9 @@ export async function acceptAssistanceRequestAction(requestId: string, expectedU
       where: { id: requestId },
       data: {
         status: "ACCEPTED",
-        assignedAgentUserId: agent.id,
+        assignedFieldAgentUserId: agent.id,
+        assignedAt: request.assignedAt || new Date(),
+        assignmentLevel: request.assignmentLevel || "DISTRICT",
       },
     }),
     prisma.fieldVisit.upsert({
@@ -296,7 +303,7 @@ export async function acceptAssistanceRequestAction(requestId: string, expectedU
   await createInAppNotification({
     userId: request.farmerUserId,
     title: "Assistance Request Accepted",
-    message: `Field agent ${agent.name} (${agent.phone}) has accepted your assistance request.`,
+    message: `Field agent ${agent.name} has accepted your assistance request.`,
     link: `/farmer`,
     type: "ASSISTANCE_ACCEPTED",
   });
@@ -325,8 +332,9 @@ export async function startVisitAssistanceRequestAction(requestId: string, expec
     return { success: false, error: "Assistance request not found." };
   }
 
-  if (request.assignedAgentUserId !== agent.id && request.village && !canUserAccessAssistanceRequest(agent, request as Parameters<typeof canUserAccessAssistanceRequest>[1])) {
-    return { success: false, error: "Unauthorized to start visit for this request." };
+  // Strict agent authorization: only the assigned agent may start the visit
+  if (request.assignedFieldAgentUserId !== agent.id) {
+    return { success: false, error: "Unauthorized: You are not the assigned field agent for this assistance request." };
   }
 
   // F-03: Optimistic concurrency check
@@ -342,7 +350,6 @@ export async function startVisitAssistanceRequestAction(requestId: string, expec
       where: { id: requestId },
       data: {
         status: "IN_PROGRESS",
-        assignedAgentUserId: agent.id,
       },
     }),
     prisma.fieldVisit.upsert({
@@ -399,12 +406,14 @@ export type CompleteFieldReportInput = z.infer<typeof completeFieldReportSchema>
 
 /**
  * Field Agent completes visit and submits field report.
+ * Strict lifecycle check: only the assigned field agent may complete.
  * Atomically:
  * 1. Creates Case (status: PENDING_REVIEW)
  * 2. Persists FieldVisit (observations, measurements, timestamps, photos, caseId)
- * 3. Updates AssistanceRequest (status: COMPLETED, caseId)
- * 4. Notifies Farmer
- * 5. Triggers advisory AI analysis
+ * 3. Updates AssistanceRequest (status: COMPLETED, caseId) - preserves original assignedFieldAgentUserId
+ * 4. Routes newly created Case to Veterinarian
+ * 5. Notifies Farmer and assigned Veterinarian
+ * 6. Triggers advisory AI analysis
  */
 export async function completeAssistanceWithReportAction(input: CompleteFieldReportInput) {
   try {
@@ -435,6 +444,14 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
 
     if (request.status === "COMPLETED") {
       return { success: false, error: "This assistance request is already completed." };
+    }
+
+    // Strict Authorization: only the assigned field agent may complete this report
+    if (request.assignedFieldAgentUserId !== agent.id) {
+      return {
+        success: false,
+        error: "Unauthorized: You are not the assigned field agent for this assistance request.",
+      };
     }
 
     // F-03: Optimistic concurrency check
@@ -530,16 +547,19 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
         where: { id: data.requestId },
         data: {
           status: "COMPLETED",
-          assignedAgentUserId: agent.id,
           animalId: data.animalId,
           caseId: newCase.id,
+          // Preserves original assignedFieldAgentUserId, assignedAt, assignmentLevel
         },
       });
 
       return { newCase, fieldVisit, updatedRequest };
     });
 
-    // Notify farmer that Case has been created and sent to Vet
+    // Route newly created Case to an eligible Veterinarian
+    const vetRouteResult = await routeCaseToVeterinarian(result.newCase.id);
+
+    // Notify farmer that Case has been created and routed to Vet
     await createInAppNotification({
       userId: request.farmerUserId,
       title: "Field Inspection Completed",
@@ -559,6 +579,8 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
       caseId: result.newCase.id,
       status: result.newCase.status,
       requestId: result.updatedRequest.id,
+      assignedVeterinarian: vetRouteResult.assignedVeterinarian,
+      assignmentLevel: vetRouteResult.assignmentLevel,
     };
   } catch (err: unknown) {
     console.error("[Complete Field Report Error]:", err);

@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getVetQueueAction, getVetDashboardMetricsAction } from "@/lib/actions/vet";
 import { RiskBadge } from "@/components/ai/RiskBadge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,12 +20,13 @@ import {
 export default async function VetDashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ status?: string; risk?: string; villageId?: string; species?: string }>;
+  searchParams?: Promise<{ status?: string; risk?: string; villageId?: string; species?: string; scope?: "assigned" | "service_area" }>;
 }) {
   const params = searchParams ? await searchParams : {};
   const statusFilter = params.status;
   const riskFilter = params.risk;
   const speciesFilter = params.species;
+  const scopeFilter = (params.scope as "assigned" | "service_area") || "assigned";
 
   const [metrics, queue] = await Promise.all([
     getVetDashboardMetricsAction(),
@@ -33,6 +34,7 @@ export default async function VetDashboardPage({
       status: statusFilter,
       riskLevel: riskFilter,
       species: speciesFilter,
+      scope: scopeFilter,
     }),
   ]);
 
@@ -131,29 +133,66 @@ export default async function VetDashboardPage({
 
       {/* Queue Section */}
       <Card className="border-[#E5E0D8] bg-white rounded-3xl shadow-xs">
-        <CardHeader className="border-b border-[#E5E0D8] pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
-                <span>Active Triage Register</span>
-                {(statusFilter || riskFilter || speciesFilter) && (
-                  <Badge className="bg-stone-100 text-stone-800 border-stone-300 text-[10px]">
-                    Filtered: {statusFilter || riskFilter || speciesFilter}
+        <CardHeader className="border-b border-[#E5E0D8] pb-3 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* SCOPE TOGGLE: Assigned to Me vs Service Area */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8] self-start">
+              <Link
+                href={`/vet?scope=assigned${statusFilter ? `&status=${statusFilter}` : ""}${riskFilter ? `&risk=${riskFilter}` : ""}${speciesFilter ? `&species=${speciesFilter}` : ""}`}
+              >
+                <Button
+                  size="sm"
+                  variant={scopeFilter === "assigned" ? "default" : "ghost"}
+                  className={`text-xs rounded-xl h-8 px-3.5 font-semibold transition-all ${
+                    scopeFilter === "assigned"
+                      ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900 hover:bg-white"
+                  }`}
+                >
+                  <span>Assigned to me</span>
+                  <Badge className="ml-1.5 bg-emerald-900/30 text-white border-0 text-[10px] px-1.5 py-0 h-4">
+                    {metrics.myAssignedCount}
                   </Badge>
-                )}
-              </CardTitle>
-              <CardDescription className="text-xs text-stone-500">
-                {queue.length} cases currently match your clinical workstation filters
-              </CardDescription>
-            </div>
-
-            {(statusFilter || riskFilter || speciesFilter) && (
-              <Link href="/vet">
-                <Button size="sm" variant="ghost" className="text-xs text-stone-600 hover:text-stone-900 gap-1 h-8">
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span>Reset Filters</span>
                 </Button>
               </Link>
+
+              <Link
+                href={`/vet?scope=service_area${statusFilter ? `&status=${statusFilter}` : ""}${riskFilter ? `&risk=${riskFilter}` : ""}${speciesFilter ? `&species=${speciesFilter}` : ""}`}
+              >
+                <Button
+                  size="sm"
+                  variant={scopeFilter === "service_area" ? "default" : "ghost"}
+                  className={`text-xs rounded-xl h-8 px-3.5 font-semibold transition-all ${
+                    scopeFilter === "service_area"
+                      ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900 hover:bg-white"
+                  }`}
+                >
+                  <span>In my service area</span>
+                </Button>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              {(statusFilter || riskFilter || speciesFilter) && (
+                <Link href={`/vet?scope=${scopeFilter}`}>
+                  <Button size="sm" variant="ghost" className="text-xs text-stone-600 hover:text-stone-900 gap-1 h-8">
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Reset Filters</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-stone-500">
+            <span>
+              {queue.length} cases currently visible in {scopeFilter === "assigned" ? "your personal queue" : "your district service area"}
+            </span>
+            {(statusFilter || riskFilter || speciesFilter) && (
+              <Badge className="bg-stone-100 text-stone-800 border-stone-300 text-[10px]">
+                Filtered: {statusFilter || riskFilter || speciesFilter}
+              </Badge>
             )}
           </div>
         </CardHeader>
@@ -178,7 +217,14 @@ export default async function VetDashboardPage({
                     <div key={item.id} className="p-4 rounded-2xl border border-[#E5E0D8] bg-[#FAF8F3] space-y-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className="text-xs font-bold text-[#191F1C]">#{item.caseNumber}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-[#191F1C]">#{item.caseNumber}</span>
+                            {item.assignmentLevel && (
+                              <Badge className="text-[9px] bg-emerald-50 text-emerald-800 border-emerald-200">
+                                {item.assignmentLevel}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-[11px] text-stone-500 mt-0.5">
                             Tag: <strong className="text-stone-800 font-mono">{item.animal.tag}</strong> ({item.animal.species})
                           </p>
@@ -190,6 +236,11 @@ export default async function VetDashboardPage({
                         <div>Farm: <span className="text-stone-900 font-medium">{item.animal.herd.farm.name}</span></div>
                         <div>Village: <span className="text-stone-900 font-medium">{item.animal.herd.farm.village.name}</span></div>
                         <div>Reported: <span className="text-stone-500">{new Date(item.reportedAt).toLocaleString()}</span></div>
+                        {item.assignedVeterinarianUser && (
+                          <div className="text-emerald-900 text-[11px] pt-0.5">
+                            Assigned to: <strong>Dr. {item.assignedVeterinarianUser.name}</strong>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5 pt-1">
@@ -230,6 +281,7 @@ export default async function VetDashboardPage({
                       <th className="py-3 px-3">Risk</th>
                       <th className="py-3 px-3">Animal</th>
                       <th className="py-3 px-3">Location</th>
+                      <th className="py-3 px-3">Assignment</th>
                       <th className="py-3 px-3">Reported</th>
                       <th className="py-3 px-3">Status</th>
                       <th className="py-3 px-3 text-right">Action</th>
@@ -255,6 +307,22 @@ export default async function VetDashboardPage({
                           <td className="py-3 px-3">
                             <div className="font-medium text-stone-800">{item.animal.herd.farm.village.name}</div>
                             <span className="text-[11px] text-stone-500">{item.animal.herd.farm.name}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            {item.assignedVeterinarianUser ? (
+                              <div>
+                                <span className="font-semibold text-emerald-950 block">
+                                  Dr. {item.assignedVeterinarianUser.name}
+                                </span>
+                                {item.assignmentLevel && (
+                                  <Badge className="text-[9px] bg-emerald-50 text-emerald-800 border-emerald-200 mt-0.5">
+                                    {item.assignmentLevel} Level
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-stone-400 italic">Unassigned</span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-stone-500">
                             {new Date(item.reportedAt).toLocaleDateString([], {

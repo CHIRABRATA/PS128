@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { PrintableAnimalOption } from "@/lib/actions/reporting_data";
 import { FarmerAnimalSelector } from "./FarmerAnimalSelector";
@@ -21,9 +21,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Stethoscope, WifiOff } from "lucide-react";
-import { useLocale } from "@/components/layout/LocaleProvider";
-import { getReportCopy } from "@/lib/i18n/report";
+import {
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Stethoscope,
+  WifiOff,
+  MapPin,
+  PhoneCall,
+} from "lucide-react";
 
 interface HealthReportFormProps {
   mode: "farmer" | "agent";
@@ -39,8 +47,6 @@ export function HealthReportForm({
   expectedUpdatedAt,
 }: HealthReportFormProps) {
   const { user } = useUser();
-  const { locale } = useLocale();
-  const copy = getReportCopy(locale);
   const [step, setStep] = useState(1);
   const [animalSelectorKey, setAnimalSelectorKey] = useState(0);
 
@@ -364,6 +370,10 @@ export function HealthReportForm({
 
   // Render Success Screen after Case creation
   if (submitResult?.success) {
+    const assignedVet = submitResult.assignedVeterinarian;
+    const assignmentLevel = submitResult.assignmentLevel;
+    const location = submitResult.location;
+
     return (
       <Card className="max-w-xl mx-auto w-full border-emerald-200 bg-white text-center shadow-sm p-6 space-y-5 rounded-3xl text-[#191F1C]">
         <CardHeader className="flex flex-col items-center gap-3 p-0">
@@ -372,49 +382,93 @@ export function HealthReportForm({
           </div>
 
           <Badge className="text-xs px-3 py-1 bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold">
-            {copy.successBadge}
+            Health report submitted
           </Badge>
 
           <CardTitle className="text-2xl font-bold text-[#191F1C]">
-            {copy.caseFor} #{submitResult.caseNumber}
+            Case #{submitResult.caseNumber}
           </CardTitle>
 
           <CardDescription className="text-xs text-stone-600 max-w-sm">
-            <strong className="text-stone-900">{selectedAnimal?.tag}</strong> {copy.submittedToVet}
+            Health report created for <strong className="text-stone-900">{selectedAnimal?.tag}</strong> ({selectedAnimal?.species}).
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4 text-left p-0">
-          <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2 text-stone-700">
-            <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">{copy.status}:</span>
-              <Badge className="text-[10px] bg-amber-100 text-amber-900 border-amber-300 font-bold">
-                {submitResult.status || "PENDING_REVIEW"}
-              </Badge>
+          {/* Location & Routing Summary Card */}
+          <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-3 text-stone-700">
+            {/* 1. Location */}
+            <div className="space-y-1 border-b border-[#E5E0D8] pb-2.5">
+              <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-emerald-700" />
+                <span>Location</span>
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                  <span className="text-stone-500 block text-[10px]">Village / Town:</span>
+                  <strong className="text-stone-900">{location?.villageName || selectedAnimal?.villageName || "-"}</strong>
+                </div>
+                <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                  <span className="text-stone-500 block text-[10px]">Block / Taluka:</span>
+                  <strong className="text-stone-900">{location?.blockName || "-"}</strong>
+                </div>
+                <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
+                  <span className="text-stone-500 block text-[10px]">District:</span>
+                  <strong className="text-stone-900">{location?.districtName || "-"}</strong>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">{copy.registrationType}:</span>
-              <span className="font-semibold text-stone-800">{mode === "farmer" ? copy.farmerSelf : "Field inspection"}</span>
-            </div>
-            <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">{copy.animalTag}:</span>
-              <span className="font-bold text-emerald-800">{selectedAnimal?.tag} ({selectedAnimal?.species})</span>
-            </div>
-            <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-              <span className="text-stone-500">{copy.symptoms}:</span>
-              <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-stone-500">{copy.reportedAt}:</span>
-              <span className="text-stone-600">{submitResult.reportedAt ? new Date(submitResult.reportedAt).toLocaleString() : new Date().toLocaleString()}</span>
-            </div>
-          </div>
 
-          <div className="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 text-xs text-emerald-950 flex items-start gap-2.5">
-            <Stethoscope className="h-5 w-5 text-emerald-700 shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-relaxed">
-              {copy.centralNotice}
-            </p>
+            {/* 2. Destination & Assigned Veterinarian */}
+            <div className="space-y-1.5 border-b border-[#E5E0D8] pb-2.5">
+              <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                <Stethoscope className="h-3 w-3 text-emerald-700" />
+                <span>Sent to Veterinarian</span>
+              </span>
+              {assignedVet ? (
+                <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-sm text-emerald-950 block">Dr. {assignedVet.name}</span>
+                    <span className="text-[11px] text-emerald-800">
+                      Assigned at: <strong className="uppercase">{assignmentLevel || "District"}</strong> level
+                    </span>
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">
+                    Assigned
+                  </Badge>
+                </div>
+              ) : (
+                <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-amber-950">Awaiting veterinarian assignment</span>
+                    <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px]">
+                      Pending Assignment
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-amber-900">
+                    No active veterinarian found in this immediate area; your case is queued for district assignment.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Status & Details */}
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500">Current status:</span>
+                <Badge className="text-[10px] bg-amber-100 text-amber-900 border-amber-300 font-bold">
+                  {submitResult.status === "PENDING_REVIEW" ? "Pending veterinarian review" : (submitResult.status || "Pending veterinarian review")}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500">Recorded symptoms:</span>
+                <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500">Reported at:</span>
+                <span className="text-stone-600">{submitResult.reportedAt ? new Date(submitResult.reportedAt).toLocaleString() : new Date().toLocaleString()}</span>
+              </div>
+            </div>
           </div>
 
           <AiAssessmentCard
@@ -425,18 +479,19 @@ export function HealthReportForm({
           />
         </CardContent>
 
-        <CardFooter className="flex justify-center pt-4 border-t border-[#E5E0D8] p-0">
+        <CardFooter className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-[#E5E0D8] p-0">
+          {selectedAnimal && (
+            <Link href={`/farmer/animals/${selectedAnimal.id}`} className="flex-1 w-full">
+              <Button variant="outline" size="sm" className="w-full text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl min-h-[40px] font-semibold">
+                <span>View Animal Health History</span>
+              </Button>
+            </Link>
+          )}
           <Button
-            onClick={() => {
-              setSubmitResult(null);
-              setAiState(null);
-              setSelectedAnimal(null);
-              setSymptoms([]);
-              setStep(1);
-            }}
-            className="w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[44px] rounded-xl"
+            onClick={resetReport}
+            className="flex-1 w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[40px] rounded-xl"
           >
-            {copy.newReport}
+            <span>Create Another Report</span>
           </Button>
         </CardFooter>
       </Card>
@@ -444,14 +499,38 @@ export function HealthReportForm({
   }
 
   return (
-    <Card className="max-w-2xl mx-auto w-full border-[#E5E0D8] bg-white shadow-xs rounded-3xl text-[#191F1C] overflow-hidden">
-      {/* Animated Step Progress Bar */}
-      <div className="w-full bg-stone-100 h-1.5 overflow-hidden">
-        <div
-          className="bg-emerald-700 h-full transition-all duration-300 ease-out"
-          style={{ width: `${(step / 7) * 100}%` }}
-        />
-      </div>
+    <div className="space-y-4">
+      {/* TWO PROMINENT REPORT CHOICES (Farmer Path 1 vs Path 2) */}
+      {mode === "farmer" && (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px] font-bold">
+                Report Options
+              </Badge>
+              <h3 className="text-sm font-bold text-stone-900">Need help from a Pashusakhi / Field Agent?</h3>
+            </div>
+            <p className="text-xs text-stone-600">
+              Can&apos;t fill this report yourself? Request a field agent to visit your farm, inspect the animal, and complete the report with you.
+            </p>
+          </div>
+          <Link href="/farmer/request-help" className="shrink-0">
+            <Button size="sm" variant="outline" className="text-xs border-amber-300 bg-white text-amber-900 hover:bg-amber-50 font-semibold gap-1.5 rounded-xl h-10 shadow-xs cursor-pointer">
+              <PhoneCall className="h-3.5 w-3.5 text-amber-700" />
+              <span>Call a Field Agent &rarr;</span>
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      <Card className="max-w-2xl mx-auto w-full border-[#E5E0D8] bg-white shadow-xs rounded-3xl text-[#191F1C] overflow-hidden">
+        {/* Animated Step Progress Bar */}
+        <div className="w-full bg-stone-100 h-1.5 overflow-hidden">
+          <div
+            className="bg-emerald-700 h-full transition-all duration-300 ease-out"
+            style={{ width: `${(step / 7) * 100}%` }}
+          />
+        </div>
 
       <CardHeader className="border-b border-[#E5E0D8] pb-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -738,5 +817,6 @@ export function HealthReportForm({
         )}
       </CardFooter>
     </Card>
+    </div>
   );
 }

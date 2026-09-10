@@ -6,6 +6,13 @@ import { requireActiveUser } from "@/lib/auth/session";
 import { cleanupOrphanPhoto } from "@/lib/storage/auth";
 import { Prisma } from "@prisma/client";
 
+import {
+  routeCaseToVeterinarian,
+  AssignmentLevel,
+  RoutedLocationInfo,
+  AssignedUserInfo,
+} from "@/lib/geo/routing";
+
 const caseReportSchema = z.object({
   submissionId: z.string().min(1, "Submission ID is required for double-submit protection"),
   animalId: z.string().min(1, "Please select an animal"),
@@ -37,12 +44,16 @@ export interface CaseReportResult {
   caseId?: string;
   reportedAt?: string;
   status?: string;
+  assignedVeterinarian?: AssignedUserInfo | null;
+  assignmentLevel?: AssignmentLevel | null;
+  location?: RoutedLocationInfo;
 }
 
 /**
  * Creates a production health Case report.
  * Server-enforces authentication, role derivation, animal access authorization,
- * Zod validation, raw IoT telemetry separation, and database-backed idempotency.
+ * Zod validation, raw IoT telemetry separation, database-backed idempotency,
+ * and deterministic hierarchical routing to an eligible veterinarian.
  */
 export async function createCaseReportAction(input: CaseReportInput): Promise<CaseReportResult> {
   try {
@@ -67,12 +78,16 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
 
     if (existingCase) {
       if (existingCase.createdByUserId === appUser.id) {
+        const routeResult = await routeCaseToVeterinarian(existingCase.id);
         return {
           success: true,
           caseNumber: existingCase.caseNumber,
           caseId: existingCase.id,
           reportedAt: existingCase.reportedAt.toISOString(),
           status: existingCase.status,
+          assignedVeterinarian: routeResult.assignedVeterinarian,
+          assignmentLevel: routeResult.assignmentLevel,
+          location: routeResult.location,
         };
       } else {
         return { success: false, error: "Unauthorized: Submission ID collision." };
@@ -142,12 +157,16 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
     });
 
     if (recentDuplicate) {
+      const routeResult = await routeCaseToVeterinarian(recentDuplicate.id);
       return {
         success: true,
         caseNumber: recentDuplicate.caseNumber,
         caseId: recentDuplicate.id,
         reportedAt: recentDuplicate.reportedAt.toISOString(),
         status: recentDuplicate.status,
+        assignedVeterinarian: routeResult.assignedVeterinarian,
+        assignmentLevel: routeResult.assignmentLevel,
+        location: routeResult.location,
       };
     }
 
@@ -189,12 +208,18 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
         },
       });
 
+      // 11. Route case to eligible active veterinarian
+      const routeResult = await routeCaseToVeterinarian(newCase.id);
+
       return {
         success: true,
         caseNumber: newCase.caseNumber,
         caseId: newCase.id,
         reportedAt: newCase.reportedAt.toISOString(),
         status: newCase.status,
+        assignedVeterinarian: routeResult.assignedVeterinarian,
+        assignmentLevel: routeResult.assignmentLevel,
+        location: routeResult.location,
       };
     } catch (err: unknown) {
       // Handle potential race condition on unique submissionId
@@ -204,12 +229,16 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
         });
 
         if (existing) {
+          const routeResult = await routeCaseToVeterinarian(existing.id);
           return {
             success: true,
             caseNumber: existing.caseNumber,
             caseId: existing.id,
             reportedAt: existing.reportedAt.toISOString(),
             status: existing.status,
+            assignedVeterinarian: routeResult.assignedVeterinarian,
+            assignmentLevel: routeResult.assignmentLevel,
+            location: routeResult.location,
           };
         }
       }
