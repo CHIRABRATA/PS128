@@ -58,8 +58,27 @@ export function PhotoCapture({
     onChangePhotoUrl?.(null);
     setUploading(true);
 
+    // 3. Trigger AI Vision Prediction immediately (Parallel to upload for smoothness)
+    const runVision = async () => {
+      try {
+        setAnalyzing(true);
+        const result = await predictYoloImage(file, animalCategory);
+        if (result) {
+          setVisionResult(result);
+          onVisionResult?.(result);
+        }
+      } catch (visionErr) {
+        console.warn("[PhotoCapture AI Warning]:", visionErr);
+      } finally {
+        setAnalyzing(false);
+      }
+    };
+
+    // Run vision in parallel
+    runVision();
+
     try {
-      // 3. Attempt upload to secure endpoint
+      // 4. Attempt upload to secure endpoint
       const formData = new FormData();
       formData.append("file", file);
       formData.append("submissionId", submissionId);
@@ -75,29 +94,22 @@ export function PhotoCapture({
         throw new Error(data.error || "Failed to upload image to secure storage.");
       }
 
-      // 4. Update parent state with authorized storage reference and blob
+      // 5. Update parent state with authorized storage reference and blob
       onChangePhoto?.(data.url, file);
       onChangePhotoUrl?.(data.url);
-
-      // 5. Trigger AI Vision Prediction immediately
-      try {
-        setAnalyzing(true);
-        const result = await predictYoloImage(file, animalCategory);
-        if (result) {
-          setVisionResult(result);
-          onVisionResult?.(result);
-        }
-      } catch (visionErr) {
-        console.warn("[PhotoCapture AI Warning]:", visionErr);
-      } finally {
-        setAnalyzing(false);
-      }
+      setError(null); // Clear any previous storage error on success
     } catch (err: unknown) {
       // F-01: On upload failure (e.g. offline), retain raw Blob in parent state for IndexedDB queue
       onChangePhoto?.(null, file);
       onChangePhotoUrl?.(null);
       const msg = err instanceof Error ? err.message : "Image upload failed.";
-      setError(`Network unreachable: Photo stored locally on device for offline sync (${msg}).`);
+      
+      // If it's the Vercel Blob private store error, provide a more helpful message but don't block
+      if (msg.includes("private store")) {
+        setError(`Storage Configuration: The image is saved locally but could not be uploaded because the storage is set to 'Private'. Please set your Vercel Blob store to 'Public' for live sharing.`);
+      } else {
+        setError(`Network unreachable: Photo stored locally on device for offline sync (${msg}).`);
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

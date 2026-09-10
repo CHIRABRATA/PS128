@@ -47,7 +47,13 @@ export async function uploadToBlob(
   }
 
   const blob = await put(pathKey, buffer, {
-    access: "public", // Vercel Blob access setting
+    /**
+     * access: "public" is required for Vercel Blob to provide a public URL.
+     * If your Vercel Blob store is configured as 'Private' in the dashboard,
+     * this call will fail. To fix, go to Vercel Dashboard -> Storage -> Blob 
+     * and ensure the store is set to 'Public'.
+     */
+    access: "public",
     contentType,
     token,
   });
