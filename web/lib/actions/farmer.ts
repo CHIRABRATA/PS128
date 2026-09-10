@@ -96,12 +96,24 @@ export async function getFarmerDashboardMetricsAction() {
         },
       },
     }),
-    prisma.assistanceRequest.findMany({
-      where: { farmerUserId: farmer.id },
-      include: {
-        animal: true,
-        farm: {
+    prisma.assistanceRequest
+      ? prisma.assistanceRequest.findMany({
+          where: { farmerUserId: farmer.id },
           include: {
+            animal: true,
+            farm: {
+              include: {
+                village: {
+                  include: {
+                    block: {
+                      include: {
+                        district: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
             village: {
               include: {
                 block: {
@@ -111,24 +123,16 @@ export async function getFarmerDashboardMetricsAction() {
                 },
               },
             },
+            assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
           },
-        },
-        village: {
-          include: {
-            block: {
-              include: {
-                district: true,
-              },
-            },
-          },
-        },
-        assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
-      },
-      orderBy: { requestedAt: "desc" },
-    }),
-    prisma.inAppNotification.count({
-      where: { userId: farmer.id, read: false },
-    }),
+          orderBy: { requestedAt: "desc" },
+        })
+      : Promise.resolve([]),
+    prisma.inAppNotification
+      ? prisma.inAppNotification.count({
+          where: { userId: farmer.id, read: false },
+        })
+      : Promise.resolve(0),
   ]);
 
   const allAnimals = farms.flatMap((f) => f.herds.flatMap((h) => h.animals));

@@ -17,12 +17,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrismaClient(): PrismaClient {
+  return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
+}
+
+// In development with hot-reloading (Turbopack), ensure cached instance is fresh and has all generated model delegates
+const isCachedClientValid =
+  globalForPrisma.prisma &&
+  typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).assistanceRequest === "object" &&
+  typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).case === "object";
+
+export const prisma = isCachedClientValid
+  ? (globalForPrisma.prisma as PrismaClient)
+  : createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 

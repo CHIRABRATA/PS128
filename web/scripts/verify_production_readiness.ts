@@ -4,7 +4,8 @@ import {
   routeAssistanceRequestToFieldAgent,
 } from "../lib/geo/routing";
 import { storageProvider, validateImageFile } from "../lib/storage";
-import { canUserAccessCase, getAuthorizedCasePhoto } from "../lib/storage/auth";
+import { canUserAccessCase, CaseLocationData } from "../lib/storage/auth";
+import { FullAppUser } from "../lib/auth/session";
 
 async function verifyProductionReadiness() {
   console.log("================================================================================");
@@ -168,7 +169,7 @@ async function verifyProductionReadiness() {
     },
   });
 
-  const vetAccessAllowed = canUserAccessCase(vet as any, loadedCase as any);
+  const vetAccessAllowed = canUserAccessCase(vet as unknown as FullAppUser, loadedCase as unknown as CaseLocationData);
   console.log(`Vet Authorized to view Case Photo: ${vetAccessAllowed ? "YES" : "NO"}`);
 
   // ================================================================================

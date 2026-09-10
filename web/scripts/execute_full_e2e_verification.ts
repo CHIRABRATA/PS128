@@ -1,8 +1,5 @@
 import prisma from "../lib/db/prisma";
-import {
-  routeCaseToVeterinarian,
-  findEligibleVeterinarians,
-} from "../lib/geo/routing";
+import { routeCaseToVeterinarian } from "../lib/geo/routing";
 
 async function runEndToEndVerification() {
   console.log("================================================================================");
