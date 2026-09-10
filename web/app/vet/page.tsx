@@ -1,5 +1,8 @@
 import React from "react";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { getVetQueueAction, getVetDashboardMetricsAction } from "@/lib/actions/vet";
 import { RiskBadge } from "@/components/ai/RiskBadge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";

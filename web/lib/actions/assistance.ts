@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/db/prisma";
 import { requireFarmer, requireFieldAgent } from "@/lib/auth/permissions";
 import {
@@ -105,6 +106,13 @@ export async function createAssistanceRequestAction(
 
     // Deterministic server-side field agent routing
     const routeRes = await routeAssistanceRequestToFieldAgent(request.id);
+
+    try {
+      revalidatePath("/agent");
+      revalidatePath("/farmer");
+    } catch {
+      // Safe fallback
+    }
 
     return {
       success: true,
@@ -308,6 +316,13 @@ export async function acceptAssistanceRequestAction(requestId: string, expectedU
     type: "ASSISTANCE_ACCEPTED",
   });
 
+  try {
+    revalidatePath("/agent");
+    revalidatePath("/farmer");
+  } catch {
+    // Safe fallback
+  }
+
   return { success: true, status: updated.status };
 }
 
@@ -373,6 +388,13 @@ export async function startVisitAssistanceRequestAction(requestId: string, expec
     link: `/farmer`,
     type: "VISIT_IN_PROGRESS",
   });
+
+  try {
+    revalidatePath("/agent");
+    revalidatePath("/farmer");
+  } catch {
+    // Safe fallback
+  }
 
   return { success: true, status: updated.status };
 }
@@ -557,7 +579,32 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
     });
 
     // Route newly created Case to an eligible Veterinarian
-    const vetRouteResult = await routeCaseToVeterinarian(result.newCase.id);
+    let vetRouteResult: {
+      assignedVeterinarian: AssignedUserInfo | null;
+      assignmentLevel: AssignmentLevel | null;
+    } = { assignedVeterinarian: null, assignmentLevel: null };
+
+    try {
+      const res = await routeCaseToVeterinarian(result.newCase.id);
+      vetRouteResult = {
+        assignedVeterinarian: res.assignedVeterinarian,
+        assignmentLevel: res.assignmentLevel,
+      };
+    } catch (routeErr) {
+      console.error("[Field Report Case Routing Error]:", routeErr);
+    }
+
+    // Invalidate caches
+    try {
+      revalidatePath("/agent");
+      revalidatePath("/vet");
+      revalidatePath("/vet/cases");
+      revalidatePath("/farmer");
+      revalidatePath("/authority");
+      revalidatePath(`/farmer/animals/${animal.id}`);
+    } catch {
+      // Safe fallback
+    }
 
     // Notify farmer that Case has been created and routed to Vet
     await createInAppNotification({

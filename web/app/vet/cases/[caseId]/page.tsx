@@ -1,6 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { getVetCaseDetailAction, markCaseReviewedAction } from "@/lib/actions/vet";
 import { CasePhotoViewer } from "@/components/media/CasePhotoViewer";
 import { AiAssessmentCard } from "@/components/ai/AiAssessmentCard";

@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/db/prisma";
+import { revalidatePath } from "next/cache";
 import { requireActiveUser, FullAppUser } from "@/lib/auth/session";
 import { canUserAccessCase } from "@/lib/storage/auth";
 import { VetAction, SampleStatus, Prisma } from "@prisma/client";
@@ -131,6 +132,8 @@ export async function getVetQueueAction(filters?: {
 }) {
   const vet = await requireActiveVeterinarian();
 
+  const scope = filters?.scope || "assigned";
+
   const whereClause: Prisma.CaseWhereInput = {
     status: {
       in: filters?.status
@@ -139,10 +142,11 @@ export async function getVetQueueAction(filters?: {
     },
   };
 
-  if (filters?.scope === "assigned") {
+  if (scope === "assigned") {
+    // Authoritative assigned queue: directly assigned to this authenticated veterinarian
     whereClause.assignedVeterinarianUserId = vet.id;
   } else {
-    // District jurisdiction scoping
+    // Service area jurisdiction queue: cases within vet's assigned district (including unassigned)
     if (vet.districtId) {
       whereClause.animal = {
         herd: {
@@ -159,14 +163,27 @@ export async function getVetQueueAction(filters?: {
   }
 
   if (filters?.villageId) {
-    whereClause.animal = {
-      ...(whereClause.animal as Prisma.AnimalWhereInput),
-      herd: {
-        farm: {
-          villageId: filters.villageId,
+    if (whereClause.animal) {
+      whereClause.animal = {
+        ...(whereClause.animal as Prisma.AnimalWhereInput),
+        herd: {
+          farm: {
+            villageId: filters.villageId,
+            village: vet.districtId && scope === "service_area"
+              ? { block: { districtId: vet.districtId } }
+              : undefined,
+          },
         },
-      },
-    };
+      };
+    } else {
+      whereClause.animal = {
+        herd: {
+          farm: {
+            villageId: filters.villageId,
+          },
+        },
+      };
+    }
   }
 
   if (filters?.species) {
@@ -519,6 +536,18 @@ export async function saveVetFeedbackAction(input: VetFeedbackInput) {
     });
   }
 
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/cases");
+    revalidatePath(`/vet/cases/${caseId}`);
+    revalidatePath("/vet/follow-ups");
+    revalidatePath("/farmer");
+    revalidatePath(`/farmer/animals/${currentCase.animalId}`);
+    revalidatePath("/authority");
+  } catch {
+    // Safe fallback
+  }
+
   return { success: true };
 }
 
@@ -622,6 +651,18 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
     });
   }
 
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/cases");
+    revalidatePath(`/vet/cases/${caseId}`);
+    revalidatePath("/vet/samples");
+    revalidatePath("/farmer");
+    revalidatePath(`/farmer/animals/${currentCase.animalId}`);
+    revalidatePath("/authority");
+  } catch {
+    // Safe fallback
+  }
+
   return { success: true };
 }
 
@@ -719,6 +760,17 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
     });
   }
 
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/cases");
+    revalidatePath(`/vet/cases/${caseId}`);
+    revalidatePath("/farmer");
+    revalidatePath(`/farmer/animals/${currentCase.animalId}`);
+    revalidatePath("/authority");
+  } catch {
+    // Safe fallback
+  }
+
   return { success: true };
 }
 
@@ -807,6 +859,17 @@ export async function closeCaseAction(input: CloseCaseInput) {
       link: `/farmer/animals/${currentCase.animalId}`,
       type: "CASE_CLOSED",
     });
+  }
+
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/cases");
+    revalidatePath(`/vet/cases/${caseId}`);
+    revalidatePath("/farmer");
+    revalidatePath(`/farmer/animals/${currentCase.animalId}`);
+    revalidatePath("/authority");
+  } catch {
+    // Safe fallback
   }
 
   return { success: true };
@@ -926,6 +989,16 @@ export async function updateSampleStatusAction(input: UpdateSampleStatusInput) {
     where: { id: sampleId },
     data: updateData,
   });
+
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/samples");
+    if (currentSample.case?.id) {
+      revalidatePath(`/vet/cases/${currentSample.case.id}`);
+    }
+  } catch {
+    // Safe fallback
+  }
 
   return { success: true };
 }
@@ -1097,6 +1170,17 @@ export async function completeFollowUpAction(reportId: string, notes?: string) {
       link: `/farmer/animals/${report.animalId}`,
       type: "FOLLOW_UP_COMPLETED",
     });
+  }
+
+  try {
+    revalidatePath("/vet");
+    revalidatePath("/vet/follow-ups");
+    if (report.caseId) {
+      revalidatePath(`/vet/cases/${report.caseId}`);
+    }
+    revalidatePath("/farmer");
+  } catch {
+    // Safe fallback
   }
 
   return { success: true };

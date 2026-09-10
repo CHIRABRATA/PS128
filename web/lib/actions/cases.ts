@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/db/prisma";
 import { requireActiveUser } from "@/lib/auth/session";
 import { cleanupOrphanPhoto } from "@/lib/storage/auth";
@@ -209,7 +210,43 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
       });
 
       // 11. Route case to eligible active veterinarian
-      const routeResult = await routeCaseToVeterinarian(newCase.id);
+      let routeResult: {
+        assignedVeterinarian: AssignedUserInfo | null;
+        assignmentLevel: AssignmentLevel | null;
+        location: RoutedLocationInfo;
+      };
+
+      try {
+        const res = await routeCaseToVeterinarian(newCase.id);
+        routeResult = {
+          assignedVeterinarian: res.assignedVeterinarian,
+          assignmentLevel: res.assignmentLevel,
+          location: res.location,
+        };
+      } catch (routingErr) {
+        console.error("[Maitri Case Routing Error]:", routingErr);
+        const farm = animal.herd.farm;
+        routeResult = {
+          assignedVeterinarian: null,
+          assignmentLevel: null,
+          location: {
+            villageName: farm.village?.name || null,
+            blockName: farm.village?.block?.name || null,
+            districtName: farm.village?.block?.districtId ? farm.village.block.name : null,
+          },
+        };
+      }
+
+      // 12. Invalidate Next.js cache so the newly assigned case appears instantly
+      try {
+        revalidatePath("/vet");
+        revalidatePath("/vet/cases");
+        revalidatePath("/farmer");
+        revalidatePath("/authority");
+        revalidatePath(`/farmer/animals/${data.animalId}`);
+      } catch {
+        // Safe fallback in testing/non-request environments
+      }
 
       return {
         success: true,
@@ -230,6 +267,15 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
 
         if (existing) {
           const routeResult = await routeCaseToVeterinarian(existing.id);
+          try {
+            revalidatePath("/vet");
+            revalidatePath("/vet/cases");
+            revalidatePath("/farmer");
+            revalidatePath("/authority");
+            revalidatePath(`/farmer/animals/${data.animalId}`);
+          } catch {
+            // Safe fallback
+          }
           return {
             success: true,
             caseNumber: existing.caseNumber,

@@ -1,5 +1,9 @@
 import React from "react";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { requireVeterinarian } from "@/lib/auth/permissions";
 import prisma from "@/lib/db/prisma";
 import { RiskBadge } from "@/components/ai/RiskBadge";
@@ -14,17 +18,24 @@ export default async function VetCasesPage() {
 
   const whereClause: Prisma.CaseWhereInput = {};
   if (vet.districtId) {
-    whereClause.animal = {
-      herd: {
-        farm: {
-          village: {
-            block: {
-              districtId: vet.districtId,
+    whereClause.OR = [
+      { assignedVeterinarianUserId: vet.id },
+      {
+        animal: {
+          herd: {
+            farm: {
+              village: {
+                block: {
+                  districtId: vet.districtId,
+                },
+              },
             },
           },
         },
       },
-    };
+    ];
+  } else {
+    whereClause.assignedVeterinarianUserId = vet.id;
   }
 
   const cases = await prisma.case.findMany({

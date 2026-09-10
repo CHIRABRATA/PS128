@@ -14,6 +14,7 @@ export interface CaseLocationData {
   id: string;
   photoUrl: string | null;
   createdByUserId: string;
+  assignedVeterinarianUserId?: string | null;
   animal: {
     herd: {
       farm: {
@@ -57,8 +58,9 @@ export function canUserAccessCase(appUser: FullAppUser, healthCase: CaseLocation
     return isReporter || isAssigned || isSameVillage || isSameBlock || isSameDistrict;
   }
 
-  // 3. Veterinarian Access: Case lies within Vet's assigned district (or unassigned/global vet)
+  // 3. Veterinarian Access: Directly assigned to Vet OR lies within Vet's assigned district (or unassigned/global vet)
   if (appUser.role === "VETERINARIAN") {
+    if (healthCase.assignedVeterinarianUserId === appUser.id) return true;
     if (!appUser.districtId) return true;
     return healthCase.animal.herd.farm.village.block.districtId === appUser.districtId;
   }

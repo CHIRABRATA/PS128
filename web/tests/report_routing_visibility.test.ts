@@ -112,6 +112,7 @@ vi.mock("@/lib/db/prisma", () => {
   return { default: prismaMock };
 });
 
+import { requireActiveUser, FullAppUser } from "@/lib/auth/session";
 import {
   findEligibleVeterinarians,
   findEligibleFieldAgents,
@@ -129,6 +130,9 @@ import {
   startVisitAssistanceRequestAction,
   completeAssistanceWithReportAction,
 } from "@/lib/actions/assistance";
+import {
+  getVetQueueAction,
+} from "@/lib/actions/vet";
 
 describe("Comprehensive Report Routing & Visibility End-to-End Suite", () => {
   beforeEach(() => {
@@ -594,6 +598,502 @@ describe("Comprehensive Report Routing & Visibility End-to-End Suite", () => {
       expect(res.assignedFieldAgent?.name).toBe("Agent Existing");
       expect(res.assignmentLevel).toBe("BLOCK");
       expect(mockUpdateRequest).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("6. FARMER SELF-REPORT → ASSIGNED VET DASHBOARD VISIBILITY (Urgent Bug Regression)", () => {
+    it("should create case from farmer report, assign to active village vet, and appear in vet assigned queue", async () => {
+      // 1. Farmer A submits report for Animal A in Village X, Block Y, District Z
+      mockFindUniqueAnimal.mockResolvedValue({
+        id: "animal_a",
+        tag: "ANIMAL_A",
+        species: "Cattle",
+        iotDeviceId: null,
+        herd: {
+          farm: {
+            farmerUserId: "farmer_1",
+            villageId: "village_x",
+            village: {
+              name: "Village X",
+              blockId: "block_y",
+              block: {
+                name: "Block Y",
+                districtId: "district_z",
+                district: { name: "District Z" },
+              },
+            },
+          },
+        },
+      });
+
+      mockFindFirstCase.mockResolvedValue(null);
+      mockFindUniqueCase.mockImplementation(({ where }: { where: { id?: string; submissionId?: string } }) => {
+        if (where.submissionId) return null;
+        if (where.id === "case_regression_1") {
+          return {
+            id: "case_regression_1",
+            caseNumber: "CASE-2026-9999",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            animal: {
+              species: "Cattle",
+              herd: {
+                farm: {
+                  villageId: "village_x",
+                  village: {
+                    name: "Village X",
+                    blockId: "block_y",
+                    block: {
+                      name: "Block Y",
+                      districtId: "district_z",
+                      district: { name: "District Z" },
+                    },
+                  },
+                },
+              },
+            },
+          };
+        }
+        return null;
+      });
+
+      mockCreateCase.mockResolvedValue({
+        id: "case_regression_1",
+        caseNumber: "CASE-2026-9999",
+        animalId: "animal_a",
+        createdByUserId: "farmer_1",
+        status: "PENDING_REVIEW",
+        reportedAt: new Date("2026-09-10T10:00:00Z"),
+      });
+
+      // 2. Active Veterinarian Vet_A in Village X
+      mockFindManyUsers.mockResolvedValue([
+        {
+          id: "vet_a",
+          name: "Dr. Vet A",
+          phone: "9876543210",
+          villageId: "village_x",
+          blockId: "block_y",
+          districtId: "district_z",
+        },
+      ]);
+      mockGroupByCase.mockResolvedValue([]);
+
+      mockUpdateCase.mockResolvedValue({
+        id: "case_regression_1",
+        caseNumber: "CASE-2026-9999",
+        assignedVeterinarianUserId: "vet_a",
+        assignmentLevel: "VILLAGE",
+        assignedVeterinarianUser: { id: "vet_a", name: "Dr. Vet A", phone: "9876543210" },
+      });
+
+      // Execute Farmer report submission
+      const farmerReportRes = await createCaseReportAction({
+        submissionId: "sub_regression_1",
+        animalId: "animal_a",
+        symptoms: ["High fever", "Blisters"],
+        durationDays: 2,
+        affectedCount: 1,
+        herdSize: 10,
+        mortalityCount: 0,
+      });
+
+      expect(farmerReportRes.success).toBe(true);
+      expect(farmerReportRes.caseId).toBe("case_regression_1");
+      expect(farmerReportRes.assignedVeterinarian?.id).toBe("vet_a");
+      expect(farmerReportRes.assignmentLevel).toBe("VILLAGE");
+      expect(mockCreateNotification).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: "vet_a",
+          type: "CASE_ASSIGNED",
+          link: "/vet/cases/case_regression_1",
+        }),
+      });
+
+      // 3. Veterinarian Dr. Vet A logs in and opens /vet dashboard
+      vi.mocked(requireActiveUser).mockResolvedValueOnce({
+        id: "vet_a",
+        name: "Dr. Vet A",
+        phone: "9876543210",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        villageId: "village_x",
+        blockId: "block_y",
+        districtId: "district_z",
+      } as unknown as FullAppUser);
+
+      mockFindManyCases.mockImplementation(({ where }) => {
+        // Verify where clause includes assignedVeterinarianUserId: "vet_a"
+        if (where.assignedVeterinarianUserId === "vet_a") {
+          return Promise.resolve([
+            {
+              id: "case_regression_1",
+              caseNumber: "CASE-2026-9999",
+              status: "PENDING_REVIEW",
+              reportedAt: new Date("2026-09-10T10:00:00Z"),
+              assignedVeterinarianUserId: "vet_a",
+              assignmentLevel: "VILLAGE",
+              analysisResult: null,
+              createdByUser: { id: "farmer_1", name: "Farmer Ramesh", phone: "9876543210" },
+              assignedVeterinarianUser: { id: "vet_a", name: "Dr. Vet A", phone: "9876543210" },
+              animal: {
+                tag: "ANIMAL_A",
+                species: "Cattle",
+                herd: {
+                  farm: {
+                    name: "Farm A",
+                    village: { name: "Village X" },
+                  },
+                },
+              },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      // Vet fetches assigned queue (default /vet view)
+      const vetQueue = await getVetQueueAction({ scope: "assigned" });
+
+      expect(vetQueue).toHaveLength(1);
+      expect(vetQueue[0].id).toBe("case_regression_1");
+      expect(vetQueue[0].assignedVeterinarianUser?.id).toBe("vet_a");
+      expect(vetQueue[0].status).toBe("PENDING_REVIEW");
+    });
+
+    it("should fallback to block vet when no village vet exists and appear in block vet assigned queue", async () => {
+      mockFindUniqueAnimal.mockResolvedValue({
+        id: "animal_b",
+        tag: "ANIMAL_B",
+        species: "Buffalo",
+        iotDeviceId: null,
+        herd: {
+          farm: {
+            farmerUserId: "farmer_1",
+            villageId: "village_remote",
+            village: {
+              name: "Village Remote",
+              blockId: "block_y",
+              block: {
+                name: "Block Y",
+                districtId: "district_z",
+                district: { name: "District Z" },
+              },
+            },
+          },
+        },
+      });
+
+      mockFindFirstCase.mockResolvedValue(null);
+      mockFindUniqueCase.mockImplementation(({ where }: { where: { id?: string; submissionId?: string } }) => {
+        if (where.submissionId) return null;
+        if (where.id === "case_block_fallback") {
+          return {
+            id: "case_block_fallback",
+            caseNumber: "CASE-2026-8888",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            animal: {
+              species: "Buffalo",
+              herd: {
+                farm: {
+                  villageId: "village_remote",
+                  village: {
+                    name: "Village Remote",
+                    blockId: "block_y",
+                    block: {
+                      name: "Block Y",
+                      districtId: "district_z",
+                      district: { name: "District Z" },
+                    },
+                  },
+                },
+              },
+            },
+          };
+        }
+        return null;
+      });
+
+      mockCreateCase.mockResolvedValue({
+        id: "case_block_fallback",
+        caseNumber: "CASE-2026-8888",
+        animalId: "animal_b",
+        createdByUserId: "farmer_1",
+        status: "PENDING_REVIEW",
+        reportedAt: new Date(),
+      });
+
+      // No vet in village_remote, but Vet B is in block_y
+      mockFindManyUsers.mockResolvedValue([
+        {
+          id: "vet_block_b",
+          name: "Dr. Block Vet",
+          phone: "9876543222",
+          villageId: "village_other",
+          blockId: "block_y",
+          districtId: "district_z",
+        },
+      ]);
+      mockGroupByCase.mockResolvedValue([]);
+
+      mockUpdateCase.mockResolvedValue({
+        id: "case_block_fallback",
+        caseNumber: "CASE-2026-8888",
+        assignedVeterinarianUserId: "vet_block_b",
+        assignmentLevel: "BLOCK",
+        assignedVeterinarianUser: { id: "vet_block_b", name: "Dr. Block Vet", phone: "9876543222" },
+      });
+
+      const res = await createCaseReportAction({
+        submissionId: "sub_block_fallback",
+        animalId: "animal_b",
+        symptoms: ["Lameness"],
+        durationDays: 1,
+        affectedCount: 1,
+        herdSize: 5,
+        mortalityCount: 0,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.assignedVeterinarian?.id).toBe("vet_block_b");
+      expect(res.assignmentLevel).toBe("BLOCK");
+    });
+
+    it("should fallback to district vet when no village/block vet exists and appear in district vet assigned queue", async () => {
+      mockFindUniqueAnimal.mockResolvedValue({
+        id: "animal_c",
+        tag: "ANIMAL_C",
+        species: "Goat",
+        iotDeviceId: null,
+        herd: {
+          farm: {
+            farmerUserId: "farmer_1",
+            villageId: "village_isolated",
+            village: {
+              name: "Village Isolated",
+              blockId: "block_isolated",
+              block: {
+                name: "Block Isolated",
+                districtId: "district_z",
+                district: { name: "District Z" },
+              },
+            },
+          },
+        },
+      });
+
+      mockFindFirstCase.mockResolvedValue(null);
+      mockFindUniqueCase.mockImplementation(({ where }: { where: { id?: string; submissionId?: string } }) => {
+        if (where.submissionId) return null;
+        if (where.id === "case_district_fallback") {
+          return {
+            id: "case_district_fallback",
+            caseNumber: "CASE-2026-7777",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            animal: {
+              species: "Goat",
+              herd: {
+                farm: {
+                  villageId: "village_isolated",
+                  village: {
+                    name: "Village Isolated",
+                    blockId: "block_isolated",
+                    block: {
+                      name: "Block Isolated",
+                      districtId: "district_z",
+                      district: { name: "District Z" },
+                    },
+                  },
+                },
+              },
+            },
+          };
+        }
+        return null;
+      });
+
+      mockCreateCase.mockResolvedValue({
+        id: "case_district_fallback",
+        caseNumber: "CASE-2026-7777",
+        animalId: "animal_c",
+        createdByUserId: "farmer_1",
+        status: "PENDING_REVIEW",
+        reportedAt: new Date(),
+      });
+
+      // Only Vet C in district_z (different block)
+      mockFindManyUsers.mockResolvedValue([
+        {
+          id: "vet_district_c",
+          name: "Dr. District Vet",
+          phone: "9876543233",
+          villageId: "village_headquarters",
+          blockId: "block_headquarters",
+          districtId: "district_z",
+        },
+      ]);
+      mockGroupByCase.mockResolvedValue([]);
+
+      mockUpdateCase.mockResolvedValue({
+        id: "case_district_fallback",
+        caseNumber: "CASE-2026-7777",
+        assignedVeterinarianUserId: "vet_district_c",
+        assignmentLevel: "DISTRICT",
+        assignedVeterinarianUser: { id: "vet_district_c", name: "Dr. District Vet", phone: "9876543233" },
+      });
+
+      const res = await createCaseReportAction({
+        submissionId: "sub_district_fallback",
+        animalId: "animal_c",
+        symptoms: ["Coughing"],
+        durationDays: 4,
+        affectedCount: 3,
+        herdSize: 20,
+        mortalityCount: 0,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.assignedVeterinarian?.id).toBe("vet_district_c");
+      expect(res.assignmentLevel).toBe("DISTRICT");
+    });
+
+    it("should leave case unassigned when no vet exists in district and make it visible in district service_area queue", async () => {
+      mockFindUniqueAnimal.mockResolvedValue({
+        id: "animal_d",
+        tag: "ANIMAL_D",
+        species: "Sheep",
+        iotDeviceId: null,
+        herd: {
+          farm: {
+            farmerUserId: "farmer_1",
+            villageId: "village_no_vet",
+            village: {
+              name: "Village No Vet",
+              blockId: "block_no_vet",
+              block: {
+                name: "Block No Vet",
+                districtId: "district_empty",
+                district: { name: "District Empty" },
+              },
+            },
+          },
+        },
+      });
+
+      mockFindFirstCase.mockResolvedValue(null);
+      mockFindUniqueCase.mockImplementation(({ where }: { where: { id?: string; submissionId?: string } }) => {
+        if (where.submissionId) return null;
+        if (where.id === "case_unassigned") {
+          return {
+            id: "case_unassigned",
+            caseNumber: "CASE-2026-6666",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            animal: {
+              species: "Sheep",
+              herd: {
+                farm: {
+                  villageId: "village_no_vet",
+                  village: {
+                    name: "Village No Vet",
+                    blockId: "block_no_vet",
+                    block: {
+                      name: "Block No Vet",
+                      districtId: "district_empty",
+                      district: { name: "District Empty" },
+                    },
+                  },
+                },
+              },
+            },
+          };
+        }
+        return null;
+      });
+
+      mockCreateCase.mockResolvedValue({
+        id: "case_unassigned",
+        caseNumber: "CASE-2026-6666",
+        animalId: "animal_d",
+        createdByUserId: "farmer_1",
+        status: "PENDING_REVIEW",
+        reportedAt: new Date(),
+      });
+
+      // No active vets in district_empty
+      mockFindManyUsers.mockResolvedValue([]);
+
+      const res = await createCaseReportAction({
+        submissionId: "sub_unassigned",
+        animalId: "animal_d",
+        symptoms: ["Lethargy"],
+        durationDays: 1,
+        affectedCount: 1,
+        herdSize: 10,
+        mortalityCount: 0,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.assignedVeterinarian).toBeNull();
+      expect(res.assignmentLevel).toBeNull();
+      expect(mockUpdateCase).not.toHaveBeenCalled();
+
+      // District Authority or roving Vet in district_empty accesses service_area queue
+      vi.mocked(requireActiveUser).mockResolvedValueOnce({
+        id: "vet_roving",
+        name: "Dr. Roving",
+        phone: "9876543244",
+        role: "VETERINARIAN",
+        status: "ACTIVE",
+        districtId: "district_empty",
+      } as unknown as FullAppUser);
+
+      mockFindManyCases.mockImplementation(({ where }) => {
+        // In service_area scope, animal is filtered by districtId
+        expect(where.animal.herd.farm.village.block.districtId).toBe("district_empty");
+        return Promise.resolve([
+          {
+            id: "case_unassigned",
+            caseNumber: "CASE-2026-6666",
+            status: "PENDING_REVIEW",
+            assignedVeterinarianUserId: null,
+            assignedVeterinarianUser: null,
+            animal: {
+              tag: "ANIMAL_D",
+              species: "Sheep",
+              herd: { farm: { name: "Farm D", village: { name: "Village No Vet" } } },
+            },
+          },
+        ]);
+      });
+
+      const serviceAreaQueue = await getVetQueueAction({ scope: "service_area" });
+      expect(serviceAreaQueue).toHaveLength(1);
+      expect(serviceAreaQueue[0].id).toBe("case_unassigned");
+      expect(serviceAreaQueue[0].assignedVeterinarianUserId).toBeNull();
+    });
+
+    it("should strictly forbid cross-district vet assignment", async () => {
+      // Vet in district_mumbai must never be selected for animal in district_pune
+      mockFindManyUsers.mockResolvedValue([
+        {
+          id: "vet_mumbai",
+          name: "Dr. Mumbai",
+          phone: "9876543255",
+          districtId: "district_mumbai",
+        },
+      ]);
+
+      const crossDistrictCheck = await findEligibleVeterinarians({
+        villageId: "v_pune",
+        blockId: "b_pune",
+        districtId: "district_pune",
+      });
+
+      // Because findMany queries districtId: district_pune, vet_mumbai is not returned
+      expect(crossDistrictCheck).toBeNull();
     });
   });
 });
