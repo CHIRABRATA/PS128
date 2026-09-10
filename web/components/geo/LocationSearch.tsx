@@ -278,10 +278,10 @@ export function LocationSearch({
       {selectedLocation ? (
         <div className="p-4 rounded-2xl border border-emerald-300 bg-emerald-50/50 space-y-3 animate-fade-in">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
-                <span className="font-bold text-sm text-stone-900">
+                <span className="min-w-0 font-bold text-sm text-stone-900 wrap-break-word">
                   {selectedLocation.displayName || selectedLocation.villageName || selectedLocation.districtName}
                 </span>
                 {selectedLocation.isUrban && (
@@ -291,19 +291,19 @@ export function LocationSearch({
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2 text-[11px] text-stone-600 pt-0.5">
+              <div className="grid grid-cols-1 gap-2 pt-0.5 text-[11px] text-stone-600 sm:grid-cols-2 lg:grid-cols-3">
                 {selectedLocation.villageName && (
-                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                  <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">
                     Village: <strong className="text-stone-800">{selectedLocation.villageName}</strong>
                   </span>
                 )}
                 {selectedLocation.blockName && (
-                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                  <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">
                     Block: <strong className="text-stone-800">{selectedLocation.blockName}</strong>
                   </span>
                 )}
                 {selectedLocation.districtName && (
-                  <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
+                  <span className="block min-w-0 rounded-md border border-[#E5E0D8] bg-white/80 px-2 py-1 wrap-break-word">
                     District: <strong className="text-stone-800">{selectedLocation.districtName}</strong>
                   </span>
                 )}

@@ -141,7 +141,7 @@ async function searchMapboxV6(
       const placeName = feat.properties.name_preferred || feat.properties.name;
       const district = feat.properties.context?.district?.name || feat.properties.context?.place?.name || null;
       const subdistrict = feat.properties.context?.locality?.name || feat.properties.context?.neighborhood?.name || null;
-      const state = feat.properties.context?.region?.name || "Maharashtra";
+      const state = feat.properties.context?.region?.name || null;
 
       let distanceKm: number | null = null;
       if (userGps && typeof userGps.lat === "number" && typeof userGps.lng === "number") {
@@ -165,6 +165,83 @@ async function searchMapboxV6(
         isUrban: feat.properties.feature_type === "place" || feat.properties.feature_type === "district",
       };
     });
+  } catch {
+    return null;
+  }
+}
+
+async function searchNominatim(
+  query: string,
+  userGps?: UserGpsCoordinates | null
+): Promise<GeocodedLocationResult[] | null> {
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("q", query);
+    url.searchParams.set("countrycodes", "in");
+    url.searchParams.set("addressdetails", "1");
+    url.searchParams.set("limit", "6");
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Maitri Livestock Health Platform location search",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as Array<{
+      place_id: number;
+      display_name: string;
+      lat: string;
+      lon: string;
+      type?: string;
+      name?: string;
+      address?: {
+        village?: string;
+        hamlet?: string;
+        suburb?: string;
+        town?: string;
+        city?: string;
+        municipality?: string;
+        county?: string;
+        state_district?: string;
+        state?: string;
+      };
+    }>;
+
+    const results = data.map((item) => {
+      const latitude = Number(item.lat);
+      const longitude = Number(item.lon);
+      const address = item.address ?? {};
+      const placeName = item.name || address.village || address.town || address.city || item.display_name.split(",")[0];
+      const subdistrict = address.suburb || address.municipality || address.town || address.state_district || null;
+      const district = address.county || address.state_district || address.city || null;
+      const distanceKm = userGps
+        ? computeHaversine(userGps.lat, userGps.lng, latitude, longitude)
+        : null;
+
+      return {
+        id: `nominatim_${item.place_id}`,
+        placeName,
+        displayName: item.display_name,
+        subdistrict,
+        district,
+        state: address.state || null,
+        latitude,
+        longitude,
+        distanceKm,
+        isUrban: ["town", "city", "municipality", "administrative"].includes(item.type || ""),
+      };
+    });
+
+    if (userGps) {
+      results.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+    }
+
+    return results;
   } catch {
     return null;
   }
@@ -301,8 +378,7 @@ async function searchLocalPrismaHierarchy(
 }
 
 /**
- * Searches for locations with Mapbox Geocoding v6 and strictly falls back to local Prisma hierarchy.
- * Never calls uncontrolled public endpoints.
+ * Searches Mapbox, then OpenStreetMap, then the local Prisma hierarchy.
  */
 export async function searchLocationsAction(
   query: string,
@@ -321,8 +397,12 @@ export async function searchLocationsAction(
     }
   }
 
-  // 2. Fallback to Local Prisma Hierarchy
-  return await searchLocalPrismaHierarchy(trimmed, userGps);
+  const nominatimResults = await searchNominatim(trimmed, userGps);
+  if (nominatimResults !== null && nominatimResults.length > 0) {
+    return nominatimResults;
+  }
+
+  return searchLocalPrismaHierarchy(trimmed, userGps);
 }
 
 /**
@@ -372,7 +452,7 @@ export async function reverseGeocodeLocationAction(
           const placeName = feature.properties.name_preferred || feature.properties.name;
           const district = feature.properties.context?.district?.name || feature.properties.context?.place?.name || null;
           const subdistrict = feature.properties.context?.locality?.name || feature.properties.context?.neighborhood?.name || null;
-          const state = feature.properties.context?.region?.name || "Maharashtra";
+          const state = feature.properties.context?.region?.name || null;
 
           const formattedParts = [placeName];
           if (district && district !== placeName) formattedParts.push(district);
@@ -397,27 +477,57 @@ export async function reverseGeocodeLocationAction(
     }
   }
 
-  // Fallback: match nearest local district / village in database
-  const firstDistrict = await prisma.district.findFirst({
-    include: { blocks: { include: { villages: true } } },
-  });
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("lat", String(latitude));
+    url.searchParams.set("lon", String(longitude));
+    url.searchParams.set("addressdetails", "1");
 
-  if (firstDistrict) {
-    const firstBlock = firstDistrict.blocks[0];
-    const firstVillage = firstBlock?.villages[0];
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Maitri Livestock Health Platform location search",
+      },
+      cache: "no-store",
+    });
 
-    return {
-      id: `detected_${latitude}_${longitude}`,
-      placeName: firstVillage?.name || firstBlock?.name || firstDistrict.name,
-      displayName: `${firstVillage?.name || firstBlock?.name || firstDistrict.name}, ${firstDistrict.name}`,
-      subdistrict: firstBlock?.name || null,
-      district: firstDistrict.name,
-      state: "Maharashtra",
-      latitude,
-      longitude,
-      distanceKm: 0,
-      isUrban: !firstVillage,
-    };
+    if (response.ok) {
+      const data = (await response.json()) as {
+        display_name?: string;
+        name?: string;
+        address?: {
+          village?: string;
+          hamlet?: string;
+          suburb?: string;
+          town?: string;
+          city?: string;
+          municipality?: string;
+          county?: string;
+          state_district?: string;
+          state?: string;
+        };
+      };
+      const address = data.address ?? {};
+      const placeName = data.name || address.village || address.town || address.city || "Current GPS location";
+      const district = address.county || address.state_district || address.city || null;
+      const subdistrict = address.suburb || address.municipality || address.town || null;
+
+      return {
+        id: `nominatim_${latitude}_${longitude}`,
+        placeName,
+        displayName: data.display_name || `${placeName}, ${district || "India"}`,
+        subdistrict,
+        district,
+        state: address.state || null,
+        latitude,
+        longitude,
+        distanceKm: 0,
+        isUrban: Boolean(address.city || address.town || address.municipality),
+      };
+    }
+  } catch {
+    // Preserve the exact coordinates below when reverse geocoding is unavailable.
   }
 
   return {
@@ -551,19 +661,13 @@ export async function resolveLocationHierarchyAction(input: {
     }
   }
 
-  // If no district is resolved, pick default/first district if exists
-  if (!resolvedDistrictId) {
-    const fallbackDistrict = await prisma.district.findFirst({
-      include: { blocks: true },
-    });
-    if (fallbackDistrict) {
-      resolvedDistrictId = fallbackDistrict.id;
-      resolvedDistrictName = fallbackDistrict.name;
-      if (!resolvedBlockId && fallbackDistrict.blocks.length > 0) {
-        resolvedBlockId = fallbackDistrict.blocks[0].id;
-        resolvedBlockName = fallbackDistrict.blocks[0].name;
-      }
-    }
+  // Preserve names returned by the external geocoder even when the place is
+  // not part of the local administrative dataset.
+  if (!resolvedDistrictName && districtName) {
+    resolvedDistrictName = districtName.trim();
+  }
+  if (!resolvedBlockName && blockName) {
+    resolvedBlockName = blockName.trim();
   }
 
   const isUrban = !resolvedVillageId;
