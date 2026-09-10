@@ -31,10 +31,10 @@ export function VisionPredictionCard({
         setVision(casted);
         onVisionUpdated?.(casted);
       } else {
-        setError(res.error || "छायाचित्र तपासणी करण्यात त्रुटी आली.");
+        setError(res.error || "Failed to analyze photo.");
       }
     } catch {
-      setError("प्रतिमा विश्लेषणासाठी सर्व्हरशी संपर्क होऊ शकला नाही.");
+      setError("Unable to contact the image analysis service.");
     } finally {
       setRunning(false);
     }
@@ -59,10 +59,10 @@ export function VisionPredictionCard({
           </div>
           <div>
             <span className="text-xs font-bold text-[#191F1C] uppercase tracking-wider">
-              छायाचित्र व्रण विश्लेषण (Computer Vision Lesion Scan)
+              Computer Vision Lesion Scan
             </span>
             <p className="text-[11px] text-stone-500">
-              त्वचेवरील गाठी, व्रण किंवा डोळे-तोंड लक्षणांची प्रतिमा तपासणी.
+              Automated visual inspection of lesions, skin nodules, ocular, or oral symptoms.
             </p>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function VisionPredictionCard({
           className="h-7 text-xs border-[#D9D3C7] bg-[#FAF8F3] text-stone-700 hover:bg-white min-h-[32px] cursor-pointer self-end sm:self-auto"
         >
           <RefreshCw className={`h-3 w-3 mr-1 ${running ? "animate-spin" : ""}`} />
-          <span>{vision ? "पुन्हा स्कॅन करा" : "प्रतिमा स्कॅन करा"}</span>
+          <span>{vision ? "Rescan Image" : "Scan Image"}</span>
         </Button>
       </div>
 
@@ -90,14 +90,14 @@ export function VisionPredictionCard({
       {!vision && !running && (
         <div className="text-center py-4 text-xs text-stone-500 space-y-2">
           <Eye className="h-6 w-6 text-stone-400 mx-auto" />
-          <p>छायाचित्र जोडले आहे. वरील बटणावर क्लिक करून व्रण तपासणी सुरू करा.</p>
+          <p>Photo attached. Click the button above to start lesion scanning.</p>
         </div>
       )}
 
       {running && (
         <div className="flex items-center justify-center gap-2 py-4 text-xs text-emerald-800 animate-pulse">
           <RefreshCw className="h-4 w-4 animate-spin text-emerald-700" />
-          <span>त्वचा व्रण व लक्षणांचे संगणकीय विश्लेषण सुरू आहे...</span>
+          <span>Analyzing skin lesions and symptoms with computer vision...</span>
         </div>
       )}
 
@@ -105,17 +105,17 @@ export function VisionPredictionCard({
         <div className="space-y-3 text-xs">
           <div className="grid grid-cols-3 gap-2 bg-[#FAF8F3] p-2.5 rounded-xl border border-[#E5E0D8] text-center">
             <div>
-              <span className="text-[10px] text-stone-500 block">व्रण तीव्रता</span>
+              <span className="text-[10px] text-stone-500 block">Lesion Severity</span>
               <span className="font-bold text-amber-900 font-mono">{lesionSeverity}</span>
             </div>
             <div>
-              <span className="text-[10px] text-stone-500 block">विश्वासार्हता स्कोअर</span>
+              <span className="text-[10px] text-stone-500 block">Confidence Score</span>
               <span className="font-bold text-emerald-800 font-mono">
                 {Math.round(confidenceScore * 100)}%
               </span>
             </div>
             <div>
-              <span className="text-[10px] text-stone-500 block">निदान स्तर</span>
+              <span className="text-[10px] text-stone-500 block">Diagnostic Confidence</span>
               <span className="font-bold text-[#191F1C]">{diagnosticConfidence}</span>
             </div>
           </div>
@@ -123,7 +123,7 @@ export function VisionPredictionCard({
           {detectedDiseases.length > 0 && (
             <div className="space-y-2">
               <span className="text-[11px] font-semibold text-stone-600 uppercase tracking-wider">
-                प्रतिमेमध्ये संशयित रोग लक्षणे:
+                Detected Visual Disease Signatures:
               </span>
               <div className="space-y-1.5">
                 {detectedDiseases.map((d, i) => (

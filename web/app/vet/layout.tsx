@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { requireVeterinarian } from "@/lib/auth/permissions";
 import { UserButton } from "@clerk/nextjs";
-import { Stethoscope, Activity, ClipboardList, FlaskConical, Calendar } from "lucide-react";
+import { Stethoscope, Activity, ClipboardList, FlaskConical, Calendar, User } from "lucide-react";
 
 export default async function VetLayout({ children }: { children: React.ReactNode }) {
   const vetUser = await requireVeterinarian();
@@ -70,6 +70,14 @@ export default async function VetLayout({ children }: { children: React.ReactNod
             >
               <Calendar className="h-4 w-4 text-purple-600" />
               <span>Visits & Schedule</span>
+            </Link>
+
+            <Link
+              href="/vet/profile"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
+            >
+              <User className="h-4 w-4 text-emerald-700" />
+              <span>Profile</span>
             </Link>
           </div>
         </div>

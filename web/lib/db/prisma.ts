@@ -42,25 +42,25 @@ function getValidClient(): PrismaClient {
  * Safely checks if a model or field exists in the current Prisma runtime client.
  */
 export function hasModel(modelName: string): boolean {
-  const client = getValidClient() as any;
-  const runtimeModel = client?._runtimeDataModel;
+  const client = getValidClient() as unknown as Record<string, unknown>;
+  const runtimeModel = client?._runtimeDataModel as { models?: Record<string, { name?: string; fields?: Array<{ name: string; kind?: string }> }> } | undefined;
   if (!runtimeModel?.models) return !!client[modelName] || !!client[modelName.toLowerCase()];
   
   return !!(runtimeModel.models[modelName] || 
-            Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase()));
+            Object.values(runtimeModel.models).find((m) => m.name?.toLowerCase() === modelName.toLowerCase()));
 }
 
 export function hasField(modelName: string, fieldName: string): boolean {
-  const client = getValidClient() as any;
-  const runtimeModel = client?._runtimeDataModel;
+  const client = getValidClient() as unknown as Record<string, unknown>;
+  const runtimeModel = client?._runtimeDataModel as { models?: Record<string, { name?: string; fields?: Array<{ name: string; kind?: string }> }> } | undefined;
   if (!runtimeModel?.models) return false;
   
   const model = runtimeModel.models[modelName] || 
-                Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase());
+                Object.values(runtimeModel.models).find((m) => m.name?.toLowerCase() === modelName.toLowerCase());
                 
   if (!model?.fields) return false;
   
-  const field = model.fields.find((f: any) => f.name === fieldName);
+  const field = model.fields.find((f) => f.name === fieldName);
   return !!field;
 }
 
@@ -68,16 +68,16 @@ export function hasField(modelName: string, fieldName: string): boolean {
  * Checks if a field is a relation (object kind) and thus includable.
  */
 export function isRelation(modelName: string, fieldName: string): boolean {
-  const client = getValidClient() as any;
-  const runtimeModel = client?._runtimeDataModel;
+  const client = getValidClient() as unknown as Record<string, unknown>;
+  const runtimeModel = client?._runtimeDataModel as { models?: Record<string, { name?: string; fields?: Array<{ name: string; kind?: string }> }> } | undefined;
   if (!runtimeModel?.models) return false;
   
   const model = runtimeModel.models[modelName] || 
-                Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase());
+                Object.values(runtimeModel.models).find((m) => m.name?.toLowerCase() === modelName.toLowerCase());
                 
   if (!model?.fields) return false;
   
-  const field = model.fields.find((f: any) => f.name === fieldName);
+  const field = model.fields.find((f) => f.name === fieldName);
   return field?.kind === "object";
 }
 

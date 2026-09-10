@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createAssistanceRequestAction, CreateAssistanceRequestResult } from "@/lib/actions/assistance";
 import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
@@ -36,9 +37,18 @@ export function AssistanceRequestForm({
   preSelectedAnimalId,
 }: AssistanceRequestFormProps) {
   const router = useRouter();
-  const [selectedFarmId, setSelectedFarmId] = useState<string>(
-    farms.length > 0 ? farms[0].id : ""
-  );
+
+  const resolveInitialFarmId = () => {
+    if (preSelectedAnimalId) {
+      const matchedFarm = farms.find((f) =>
+        f.animals.some((a) => a.id === preSelectedAnimalId)
+      );
+      if (matchedFarm) return matchedFarm.id;
+    }
+    return farms.length > 0 ? farms[0].id : "";
+  };
+
+  const [selectedFarmId, setSelectedFarmId] = useState<string>(resolveInitialFarmId());
   const [selectedAnimalId, setSelectedAnimalId] = useState<string>(
     preSelectedAnimalId || ""
   );
@@ -54,6 +64,14 @@ export function AssistanceRequestForm({
 
   const selectedFarm = farms.find((f) => f.id === selectedFarmId);
   const farmAnimals = selectedFarm ? selectedFarm.animals : [];
+
+  const handleFarmChange = (newFarmId: string) => {
+    setSelectedFarmId(newFarmId);
+    const targetFarm = farms.find((f) => f.id === newFarmId);
+    if (!targetFarm || !targetFarm.animals.some((a) => a.id === selectedAnimalId)) {
+      setSelectedAnimalId("");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,21 +285,42 @@ export function AssistanceRequestForm({
                 {showLocationSearch ? "Use standard farm" : "Search / GPS"}
               </button>
             </Label>
-            <select
-              value={selectedFarmId}
-              onChange={(e) => {
-                setSelectedFarmId(e.target.value);
-                setSelectedAnimalId("");
-              }}
-              required
-              className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
-            >
-              {farms.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name} ({f.villageName})
-                </option>
-              ))}
-            </select>
+            {farms.length > 0 ? (
+              <select
+                id="farm-select"
+                value={selectedFarmId}
+                onChange={(e) => handleFarmChange(e.target.value)}
+                required={!customLocation}
+                className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+              >
+                {farms.length > 1 && (
+                  <option value="">Select a farm / shed location...</option>
+                )}
+                {farms.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} ({f.villageName})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                  <AlertCircle className="h-4 w-4 text-amber-700 shrink-0" />
+                  <span>No registered farms found.</span>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  Please use <strong>Search / GPS</strong> above or register your farm under{" "}
+                  <Link href="/farmer/profile" className="underline font-medium hover:text-amber-950">
+                    My Profile
+                  </Link>{" "}
+                  /{" "}
+                  <Link href="/farmer/report" className="underline font-medium hover:text-amber-950">
+                    Report Health Concern
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Animal Selection (Optional) */}
@@ -291,9 +330,11 @@ export function AssistanceRequestForm({
               <span>Specific Animal (Optional)</span>
             </Label>
             <select
+              id="animal-select"
               value={selectedAnimalId}
               onChange={(e) => setSelectedAnimalId(e.target.value)}
-              className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+              disabled={farms.length === 0}
+              className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px] disabled:bg-stone-50 disabled:text-stone-400"
             >
               <option value="">General Herd / Multiple Animals</option>
               {farmAnimals.map((a) => (
