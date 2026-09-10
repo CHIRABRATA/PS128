@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getReportCopy } from "@/lib/i18n/report";
 import { LocaleProvider } from "@/components/layout/LocaleProvider";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export default async function FarmerReportPage() {
   await requireFarmer();
-  const copy = getReportCopy("en");
+  const locale = await getServerLocale();
+  const copy = getReportCopy(locale);
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-4xl mx-auto w-full gap-6 bg-[#FAF8F3] text-[#191F1C]">
@@ -28,7 +30,7 @@ export default async function FarmerReportPage() {
         </Link>
       </div>
 
-      <LocaleProvider initialLocale="en">
+      <LocaleProvider initialLocale={locale}>
         <HealthReportForm mode="farmer" />
       </LocaleProvider>
     </div>
