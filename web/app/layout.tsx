@@ -6,8 +6,6 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { SyncStatusBadge } from "@/components/offline/SyncStatusBadge";
 import { LocaleProvider } from "@/components/layout/LocaleProvider";
-import { defaultLocale, Locale } from "@/lib/i18n";
-import { cookies } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,21 +46,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const localeCookie = (await cookies()).get("maitri-locale")?.value;
-  const initialLocale = ["en", "bn", "hi", "mr"].includes(localeCookie || "")
-    ? (localeCookie as Locale)
-    : defaultLocale;
-
   return (
     <html
-      lang={initialLocale}
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#FAF8F3] text-[#191F1C] selection:bg-emerald-700 selection:text-white pb-16 lg:pb-0">
-        <meta name="language" content={initialLocale} />
+        <meta name="language" content="en" />
         <ClerkProvider>
-          <LocaleProvider initialLocale={initialLocale}>
+          <LocaleProvider initialLocale="en">
             <PwaRegister />
             <Navbar />
             <main className="flex-1 flex flex-col">{children}</main>

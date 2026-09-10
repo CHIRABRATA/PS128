@@ -21,12 +21,12 @@ interface GeoItem {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { locale, setLocale } = useLocale();
+  const { locale } = useLocale();
 
   const [selectedRole, setSelectedRole] = useState<"FARMER" | "FIELD_AGENT" | "VETERINARIAN" | "DISTRICT_AUTHORITY">("FARMER");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [language, setLanguage] = useState<Locale>(locale);
+  const [language] = useState<Locale>(locale);
 
   const [districts, setDistricts] = useState<GeoItem[]>([]);
   const [blocks, setBlocks] = useState<GeoItem[]>([]);
@@ -270,18 +270,11 @@ export default function OnboardingPage() {
                 <Label htmlFor="language" className="text-xs text-stone-700 font-medium">Preferred Interface Language</Label>
                 <select
                   id="language"
-                  value={language}
-                  onChange={(e) => {
-                    const nextLocale = e.target.value as Locale;
-                    setLanguage(nextLocale);
-                    setLocale(nextLocale);
-                  }}
-                  className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+                  value="en"
+                  disabled
+                  className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 opacity-80 min-h-[44px]"
                 >
-                  <option value="en">English</option>
-                  <option value="hi">हिंदी (Hindi)</option>
-                  <option value="mr">मराठी (Marathi)</option>
-                  <option value="bn">বাংলা (Bengali)</option>
+                  <option value="en">English (Default)</option>
                 </select>
               </div>
 

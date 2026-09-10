@@ -61,7 +61,6 @@ export function LocationSearch({
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [userGps, setUserGps] = useState<UserGpsCoordinates | null>(null);
-  const [isGpsOrigin, setIsGpsOrigin] = useState(false);
   const [gpsErrorMessage, setGpsErrorMessage] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -130,7 +129,7 @@ export function LocationSearch({
   };
 
   // Explicit user selection (never silent auto-select)
-  const handleSelectResult = async (item: GeocodedLocationResult, isGps = false) => {
+  const handleSelectResult = async (item: GeocodedLocationResult) => {
     setIsResolving(true);
     setSearchError(null);
 
@@ -149,7 +148,6 @@ export function LocationSearch({
       };
 
       setInternalSelectedLocation(selected);
-      setIsGpsOrigin(isGps);
       setResults([]);
       setQuery("");
       setHasSearched(false);
@@ -189,7 +187,7 @@ export function LocationSearch({
         try {
           const reverseRes = await reverseGeocodeLocationAction(lat, lng);
           if (reverseRes) {
-            await handleSelectResult(reverseRes, true);
+            await handleSelectResult(reverseRes);
           } else {
             // Even if reverse geocoding has no place name, use actual coordinates
             const directHierarchy = await resolveLocationHierarchyAction({
@@ -202,7 +200,6 @@ export function LocationSearch({
               displayName: `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
             };
             setInternalSelectedLocation(selected);
-            setIsGpsOrigin(true);
             setMode("landing");
             onLocationSelect(selected);
           }
@@ -488,7 +485,7 @@ export function LocationSearch({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => handleSelectResult(item, false)}
+                onClick={() => handleSelectResult(item)}
                 disabled={isResolving}
                 className="w-full text-left p-3.5 hover:bg-emerald-50/60 transition-colors flex items-start gap-3 cursor-pointer group"
               >

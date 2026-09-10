@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { defaultLocale, getDictionary, Locale } from "@/lib/i18n";
+import { getDictionary, Locale } from "@/lib/i18n";
 
 interface LocaleContextValue {
   locale: Locale;
@@ -14,32 +14,30 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({
   children,
-  initialLocale = defaultLocale,
 }: {
   children: React.ReactNode;
   initialLocale?: Locale;
 }) {
   const router = useRouter();
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    document.documentElement.lang = "en";
+    // Clear any stale non-English locale cookies or localStorage
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("maitri-locale", "en");
+      document.cookie = "maitri-locale=en;path=/;max-age=31536000;samesite=lax";
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return;
 
     const channel = new BroadcastChannel("maitri-locale");
     channelRef.current = channel;
-    channel.onmessage = (event: MessageEvent<unknown>) => {
-      if (typeof event.data !== "string") return;
-      if (event.data !== "en" && event.data !== "bn" && event.data !== "hi" && event.data !== "mr") return;
-      setLocaleState(event.data);
-      window.localStorage.setItem("maitri-locale", event.data);
-      document.cookie = `maitri-locale=${event.data};path=/;max-age=31536000;samesite=lax`;
-      document.documentElement.lang = event.data;
-      router.refresh();
+    channel.onmessage = () => {
+      // Force "en" across tabs
+      document.documentElement.lang = "en";
     };
 
     return () => {
@@ -48,18 +46,16 @@ export function LocaleProvider({
     };
   }, [router]);
 
-  const setLocale = (nextLocale: Locale) => {
-    setLocaleState(nextLocale);
-    window.localStorage.setItem("maitri-locale", nextLocale);
-    document.cookie = `maitri-locale=${nextLocale};path=/;max-age=31536000;samesite=lax`;
-    document.documentElement.lang = nextLocale;
-    channelRef.current?.postMessage(nextLocale);
-    window.dispatchEvent(new CustomEvent("maitri-locale-change", { detail: nextLocale }));
-    router.refresh();
+  const setLocale = (_nextLocale?: Locale) => {
+    // English-only lock: no-op to prevent changing away from English
+    void _nextLocale;
+    document.documentElement.lang = "en";
+    window.localStorage.setItem("maitri-locale", "en");
+    document.cookie = "maitri-locale=en;path=/;max-age=31536000;samesite=lax";
   };
 
   return (
-    <LocaleContext.Provider value={{ locale, dictionary: getDictionary(locale), setLocale }}>
+    <LocaleContext.Provider value={{ locale: "en", dictionary: getDictionary("en"), setLocale }}>
       {children}
     </LocaleContext.Provider>
   );
