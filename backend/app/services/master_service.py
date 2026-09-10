@@ -31,15 +31,20 @@ class MasterAnalysisEngine:
         iot_input = payload.get("iot_telemetry", {})
         animal_id = iot_input.get("animal_id", "ESP32-SIM-01") if iot_input else "ESP32-SIM-01"
         
-        if iot_input and "temperature" in iot_input and iot_input["temperature"] is not None:
-            iot_temp = float(iot_input["temperature"])
-            raw_act = iot_input.get("activity")
-            iot_act = int(raw_act) if raw_act is not None else 50
-        else:
-            simulated = generate_simulated_telemetry(
-                animal_id=animal_id, 
-                simulate_fever=iot_input.get("simulate_fever", False) if iot_input else False
-            )
+        try:
+            if iot_input and "temperature" in iot_input and iot_input["temperature"] is not None:
+                iot_temp = float(iot_input["temperature"])
+                raw_act = iot_input.get("activity")
+                iot_act = int(raw_act) if raw_act is not None else 50
+            else:
+                simulated = generate_simulated_telemetry(
+                    animal_id=animal_id, 
+                    simulate_fever=iot_input.get("simulate_fever", False) if iot_input else False
+                )
+                iot_temp = simulated["temperature"]
+                iot_act = simulated["activity_index"]
+        except (ValueError, TypeError):
+            simulated = generate_simulated_telemetry(animal_id=animal_id)
             iot_temp = simulated["temperature"]
             iot_act = simulated["activity_index"]
 
@@ -56,14 +61,25 @@ class MasterAnalysisEngine:
         raw_herd = health_report.get("herd_size")
         raw_mortality = health_report.get("mortality_count")
         
+        try:
+            heart_rate_val = float(raw_heart_rate) if raw_heart_rate is not None else 85.0
+            affected_val = int(raw_affected) if raw_affected is not None else 1
+            herd_val = int(raw_herd) if raw_herd is not None else 10
+            mortality_val = int(raw_mortality) if raw_mortality is not None else 0
+        except (ValueError, TypeError):
+            heart_rate_val = 85.0
+            affected_val = 1
+            herd_val = 10
+            mortality_val = 0
+
         ml_res = predictor.predict(
             symptoms=symptoms,
             animal_type=species if isinstance(species, str) else "Cow",
             body_temp=iot_temp,
-            heart_rate=float(raw_heart_rate) if raw_heart_rate is not None else 85.0,
-            affected_count=int(raw_affected) if raw_affected is not None else 1,
-            herd_size=int(raw_herd) if raw_herd is not None else 10,
-            mortality_count=int(raw_mortality) if raw_mortality is not None else 0
+            heart_rate=heart_rate_val,
+            affected_count=affected_val,
+            herd_size=herd_val,
+            mortality_count=mortality_val
         )
 
         ml_confidence = float(ml_res.get("confidence", 0) or 0)

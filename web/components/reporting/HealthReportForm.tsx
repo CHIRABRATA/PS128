@@ -704,7 +704,7 @@ export function HealthReportForm({
               selectedAnimal?.species?.toUpperCase().includes("CAT") || 
               selectedAnimal?.species?.toUpperCase().includes("PET") 
                 ? "pet" 
-                : "cow"
+                : selectedAnimal?.species || "cow"
             }
           />
         )}

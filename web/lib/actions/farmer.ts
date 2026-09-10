@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from "@/lib/db/prisma";
+import prisma, { hasField, hasModel, isRelation } from "@/lib/db/prisma";
 import { requireFarmer } from "@/lib/auth/permissions";
 
 /**
@@ -8,6 +8,76 @@ import { requireFarmer } from "@/lib/auth/permissions";
  */
 export async function getFarmerDashboardMetricsAction() {
   const farmer = await requireFarmer();
+
+  // Dynamically build Case include to prevent crashes on stale Prisma clients
+  const caseInclude: any = {};
+  
+  if (isRelation("Case", "createdByUser")) {
+    caseInclude.createdByUser = { select: { id: true, name: true, phone: true } };
+  }
+  if (isRelation("Case", "reviewedByUser")) {
+    caseInclude.reviewedByUser = { select: { id: true, name: true, phone: true } };
+  }
+  if (isRelation("Case", "treatments")) {
+    caseInclude.treatments = {
+      include: {
+        administeredByUser: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { dateGiven: "desc" },
+    };
+  }
+  if (isRelation("Case", "samples")) {
+    caseInclude.samples = {
+      include: {
+        collectedByUser: { select: { id: true, name: true } },
+      },
+      orderBy: { collectedAt: "desc" },
+    };
+  }
+  if (isRelation("Case", "assignedVeterinarianUser")) {
+    caseInclude.assignedVeterinarianUser = { select: { id: true, name: true, phone: true } };
+  }
+  if (isRelation("Case", "veterinaryReports")) {
+    caseInclude.veterinaryReports = {
+      include: {
+        vetUser: { select: { id: true, name: true, phone: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    };
+  }
+  if (isRelation("Case", "animal")) {
+    caseInclude.animal = {
+      select: {
+        id: true,
+        tag: true,
+        species: true,
+        herd: {
+          select: {
+            farm: {
+              select: {
+                name: true,
+                village: {
+                  select: {
+                    name: true,
+                    block: {
+                      select: {
+                        name: true,
+                        district: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
 
   const [farms, assistanceRequests, unreadNotificationsCount] = await Promise.all([
     prisma.farm.findMany({
@@ -44,54 +114,17 @@ export async function getFarmerDashboardMetricsAction() {
                   },
                 },
                 cases: {
-                  include: {
-                    assignedVeterinarianUser: { select: { id: true, name: true, phone: true } },
-                    veterinaryReports: {
-                      include: {
-                        vetUser: { select: { id: true, name: true, phone: true } },
-                      },
-                      orderBy: { createdAt: "desc" },
-                    },
-                    animal: {
-                      select: {
-                        id: true,
-                        tag: true,
-                        species: true,
-                        herd: {
-                          select: {
-                            farm: {
-                              select: {
-                                name: true,
-                                village: {
-                                  select: {
-                                    name: true,
-                                    block: {
-                                      select: {
-                                        name: true,
-                                        district: {
-                                          select: {
-                                            name: true,
-                                          },
-                                        },
-                                      },
-                                    },
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
+                  include: caseInclude,
                   orderBy: { reportedAt: "desc" },
                 },
-                veterinaryReports: {
-                  include: {
-                    vetUser: { select: { name: true, phone: true } },
-                  },
-                  orderBy: { createdAt: "desc" },
-                },
+                veterinaryReports: isRelation("Animal", "veterinaryReports")
+                  ? {
+                      include: {
+                        vetUser: { select: { name: true, phone: true } },
+                      },
+                      orderBy: { createdAt: "desc" },
+                    }
+                  : undefined,
                 vaccinations: {
                   orderBy: { dateGiven: "desc" },
                   take: 1,
@@ -102,7 +135,7 @@ export async function getFarmerDashboardMetricsAction() {
         },
       },
     }),
-    prisma.assistanceRequest
+    hasModel("AssistanceRequest")
       ? prisma.assistanceRequest.findMany({
           where: { farmerUserId: farmer.id },
           include: {
@@ -134,7 +167,7 @@ export async function getFarmerDashboardMetricsAction() {
           orderBy: { requestedAt: "desc" },
         })
       : Promise.resolve([]),
-    prisma.inAppNotification
+    hasModel("InAppNotification")
       ? prisma.inAppNotification.count({
           where: { userId: farmer.id, read: false },
         })
@@ -174,22 +207,22 @@ export async function getFarmerDashboardMetricsAction() {
 export async function getFarmerCaseDetailAction(caseId: string) {
   const farmer = await requireFarmer();
 
-  const healthCase = await prisma.case.findUnique({
-    where: { id: caseId },
-    include: {
-      animal: {
-        include: {
-          herd: {
-            include: {
-              farm: {
-                include: {
-                  farmerUser: { select: { id: true, name: true, phone: true } },
-                  village: {
-                    include: {
-                      block: {
-                        include: {
-                          district: true,
-                        },
+  // Dynamically build Case include to prevent crashes on stale Prisma clients
+  const detailInclude: any = {};
+
+  if (isRelation("Case", "animal")) {
+    detailInclude.animal = {
+      include: {
+        herd: {
+          include: {
+            farm: {
+              include: {
+                farmerUser: { select: { id: true, name: true, phone: true } },
+                village: {
+                  include: {
+                    block: {
+                      include: {
+                        district: true,
                       },
                     },
                   },
@@ -199,86 +232,119 @@ export async function getFarmerCaseDetailAction(caseId: string) {
           },
         },
       },
-      createdByUser: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          role: true,
-        },
+    };
+  }
+
+  if (isRelation("Case", "createdByUser")) {
+    detailInclude.createdByUser = {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
       },
-      reviewedByUser: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
+    };
+  }
+
+  if (isRelation("Case", "reviewedByUser")) {
+    detailInclude.reviewedByUser = {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
       },
-      assignedVeterinarianUser: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-      veterinaryReports: {
-        include: {
-          vetUser: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      fieldVisit: {
-        include: {
-          fieldAgentUser: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
+    };
+  }
+
+  if (isRelation("Case", "treatments")) {
+    detailInclude.treatments = {
+      include: {
+        administeredByUser: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
           },
         },
       },
-      assistanceRequest: {
-        include: {
-          assignedFieldAgentUser: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
+      orderBy: { dateGiven: "desc" },
+    };
+  }
+
+  if (isRelation("Case", "samples")) {
+    detailInclude.samples = {
+      include: {
+        collectedByUser: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { collectedAt: "desc" },
+    };
+  }
+
+  if (isRelation("Case", "assignedVeterinarianUser")) {
+    detailInclude.assignedVeterinarianUser = {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+      },
+    };
+  }
+
+  if (isRelation("Case", "veterinaryReports")) {
+    detailInclude.veterinaryReports = {
+      include: {
+        vetUser: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    };
+  }
+
+  if (isRelation("Case", "fieldVisit")) {
+    detailInclude.fieldVisit = {
+      include: {
+        fieldVisit: {
+          include: {
+            fieldAgentUser: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
             },
           },
         },
       },
-      treatments: {
-        include: {
-          administeredByUser: {
-            select: {
-              id: true,
-              name: true,
-              role: true,
-            },
+    };
+  }
+
+  if (isRelation("Case", "assistanceRequest")) {
+    detailInclude.assistanceRequest = {
+      include: {
+        assignedFieldAgentUser: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
           },
         },
-        orderBy: { dateGiven: "desc" },
       },
-      samples: {
-        include: {
-          collectedByUser: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: { collectedAt: "desc" },
-      },
-    },
+    };
+  }
+
+  const healthCase = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: detailInclude,
   });
 
   if (!healthCase) {

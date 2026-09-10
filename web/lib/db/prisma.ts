@@ -26,14 +26,57 @@ function createPrismaClient(): PrismaClient {
 
 function getValidClient(): PrismaClient {
   const cached = globalForPrisma.prisma;
-  const runtimeModel = (cached as unknown as { _runtimeDataModel?: { models?: Record<string, { fields?: Array<{ name: string }> }> } })?._runtimeDataModel;
-  const hasAssignedVetField = runtimeModel?.models?.Case?.fields?.some((f) => f.name === "assignedVeterinarianUserId");
-  const hasAssistanceRequest = typeof (cached as unknown as Record<string, unknown> | undefined)?.assistanceRequest === "object";
+  const runtimeModel = (cached as any)?._runtimeDataModel;
+  const hasAssignedVetField = runtimeModel?.models?.Case?.fields?.some((f: any) => f.name === "assignedVeterinarianUserId");
+  const hasAssistanceRequest = typeof (cached as any)?.assistanceRequest === "object";
 
   if (!cached || !hasAssignedVetField || !hasAssistanceRequest) {
     globalForPrisma.prisma = createPrismaClient();
   }
   return globalForPrisma.prisma as PrismaClient;
+}
+
+/**
+ * Safely checks if a model or field exists in the current Prisma runtime client.
+ */
+export function hasModel(modelName: string): boolean {
+  const client = getValidClient() as any;
+  const runtimeModel = client?._runtimeDataModel;
+  if (!runtimeModel?.models) return !!client[modelName] || !!client[modelName.toLowerCase()];
+  
+  return !!(runtimeModel.models[modelName] || 
+            Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase()));
+}
+
+export function hasField(modelName: string, fieldName: string): boolean {
+  const client = getValidClient() as any;
+  const runtimeModel = client?._runtimeDataModel;
+  if (!runtimeModel?.models) return false;
+  
+  const model = runtimeModel.models[modelName] || 
+                Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase());
+                
+  if (!model?.fields) return false;
+  
+  const field = model.fields.find((f: any) => f.name === fieldName);
+  return !!field;
+}
+
+/**
+ * Checks if a field is a relation (object kind) and thus includable.
+ */
+export function isRelation(modelName: string, fieldName: string): boolean {
+  const client = getValidClient() as any;
+  const runtimeModel = client?._runtimeDataModel;
+  if (!runtimeModel?.models) return false;
+  
+  const model = runtimeModel.models[modelName] || 
+                Object.values(runtimeModel.models).find((m: any) => m.name?.toLowerCase() === modelName.toLowerCase());
+                
+  if (!model?.fields) return false;
+  
+  const field = model.fields.find((f: any) => f.name === fieldName);
+  return field?.kind === "object";
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
