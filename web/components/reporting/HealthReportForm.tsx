@@ -269,7 +269,7 @@ export function HealthReportForm({ mode }: HealthReportFormProps) {
           </div>
 
           <Badge className="text-xs px-3 py-1 bg-amber-100 text-amber-900 border-amber-300 font-semibold">
-            Saved offline (Queued Locally)
+            Saved on this device (QUEUED_OFFLINE)
           </Badge>
 
           <CardTitle className="text-xl font-bold text-[#191F1C]">

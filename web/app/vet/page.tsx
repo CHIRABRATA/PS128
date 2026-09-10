@@ -1,24 +1,40 @@
 import React from "react";
 import Link from "next/link";
-import { getVetQueueAction } from "@/lib/actions/vet";
+import { getVetQueueAction, getVetDashboardMetricsAction } from "@/lib/actions/vet";
 import { RiskBadge } from "@/components/ai/RiskBadge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MotionFadeIn } from "@/components/motion/MotionFadeIn";
-import { Activity, Camera, Cpu, ArrowRight, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  Camera,
+  Cpu,
+  ArrowRight,
+  Clock,
+  AlertTriangle,
+  ShieldCheck,
+  CalendarCheck,
+  RotateCcw,
+} from "lucide-react";
 
-export default async function VetDashboardPage() {
-  const queue = await getVetQueueAction();
+export default async function VetDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ status?: string; risk?: string; villageId?: string; species?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
+  const statusFilter = params.status;
+  const riskFilter = params.risk;
+  const speciesFilter = params.species;
 
-  const criticalCount = queue.filter((c) => {
-    const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
-    return analysis.overall_risk_level === "CRITICAL";
-  }).length;
-
-  const pendingCount = queue.filter((c) => c.status === "PENDING_REVIEW").length;
-  const underExamCount = queue.filter((c) => c.status === "UNDER_EXAMINATION").length;
-  const labRefCount = queue.filter((c) => c.status === "LAB_REFERRAL").length;
+  const [metrics, queue] = await Promise.all([
+    getVetDashboardMetricsAction(),
+    getVetQueueAction({
+      status: statusFilter,
+      riskLevel: riskFilter,
+      species: speciesFilter,
+    }),
+  ]);
 
   return (
     <div className="space-y-6 text-[#191F1C]">
@@ -26,7 +42,7 @@ export default async function VetDashboardPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-4">
         <div>
           <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono">
-            Clinical Priority Queue
+            Clinical Priority Workstation
           </Badge>
           <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight mt-1">
             Veterinary Triage Queue
@@ -35,61 +51,110 @@ export default async function VetDashboardPage() {
             Prioritized by clinical severity (CRITICAL &gt; HIGH &gt; ELEVATED &gt; MEDIUM &gt; LOW) and reporting time.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Link href="/vet/follow-ups">
+            <Button variant="outline" size="sm" className="text-xs border-purple-200 bg-purple-50 text-purple-900 hover:bg-purple-100 rounded-xl min-h-[36px] gap-1.5">
+              <CalendarCheck className="h-4 w-4 text-purple-700" />
+              <span>Follow-ups ({metrics.followUpsDueCount})</span>
+            </Button>
+          </Link>
+          <Link href="/vet/samples">
+            <Button variant="outline" size="sm" className="text-xs border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100 rounded-xl min-h-[36px] gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-sky-700" />
+              <span>Lab Samples ({metrics.labRefCount})</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Summary Metrics Grid with Soft Pastel Surfaces */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MotionFadeIn delay={0} direction="up">
-          <div className="p-4 rounded-2xl border border-red-200 bg-red-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
+      {/* REAL DATABASE KPI METRICS (CLICKABLE FILTERS) */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <Link href="/vet?risk=CRITICAL" className="block">
+          <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-2xs hover-lift h-full transition-all ${
+            riskFilter === "CRITICAL" ? "ring-2 ring-red-600 bg-red-100/90 border-red-300" : "bg-red-50/80 border-red-200"
+          }`}>
             <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider">Critical Cases</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-red-900">{criticalCount}</span>
+              <span className="text-2xl font-bold text-red-900">{metrics.criticalCount}</span>
               <AlertTriangle className="h-5 w-5 text-red-600 animate-pulse" />
             </div>
           </div>
-        </MotionFadeIn>
+        </Link>
 
-        <MotionFadeIn delay={80} direction="up">
-          <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
+        <Link href="/vet?status=PENDING_REVIEW" className="block">
+          <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-2xs hover-lift h-full transition-all ${
+            statusFilter === "PENDING_REVIEW" ? "ring-2 ring-amber-600 bg-amber-100/90 border-amber-300" : "bg-amber-50/80 border-amber-200"
+          }`}>
             <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">Pending Review</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-amber-950">{pendingCount}</span>
+              <span className="text-2xl font-bold text-amber-950">{metrics.pendingCount}</span>
               <Clock className="h-5 w-5 text-amber-700" />
             </div>
           </div>
-        </MotionFadeIn>
+        </Link>
 
-        <MotionFadeIn delay={160} direction="up">
-          <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
-            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Under Examination</span>
+        <Link href="/vet?status=UNDER_EXAMINATION" className="block">
+          <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-2xs hover-lift h-full transition-all ${
+            statusFilter === "UNDER_EXAMINATION" ? "ring-2 ring-emerald-600 bg-emerald-100/90 border-emerald-300" : "bg-emerald-50/80 border-emerald-200"
+          }`}>
+            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Under Exam</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-emerald-950">{underExamCount}</span>
+              <span className="text-2xl font-bold text-emerald-950">{metrics.underExamCount}</span>
               <Activity className="h-5 w-5 text-emerald-700" />
             </div>
           </div>
-        </MotionFadeIn>
+        </Link>
 
-        <MotionFadeIn delay={240} direction="up">
-          <div className="p-4 rounded-2xl border border-sky-200 bg-sky-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
+        <Link href="/vet?status=LAB_REFERRAL" className="block">
+          <div className={`p-4 rounded-2xl border flex flex-col justify-between shadow-2xs hover-lift h-full transition-all ${
+            statusFilter === "LAB_REFERRAL" ? "ring-2 ring-sky-600 bg-sky-100/90 border-sky-300" : "bg-sky-50/80 border-sky-200"
+          }`}>
             <span className="text-[11px] font-bold text-sky-900 uppercase tracking-wider">Lab Referrals</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-sky-950">{labRefCount}</span>
+              <span className="text-2xl font-bold text-sky-950">{metrics.labRefCount}</span>
               <ShieldCheck className="h-5 w-5 text-sky-700" />
             </div>
           </div>
-        </MotionFadeIn>
+        </Link>
+
+        <Link href="/vet/follow-ups" className="block">
+          <div className="p-4 rounded-2xl border border-purple-200 bg-purple-50/80 flex flex-col justify-between shadow-2xs hover-lift h-full">
+            <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">Follow-ups Due</span>
+            <div className="flex items-baseline justify-between mt-2">
+              <span className="text-2xl font-bold text-purple-950">{metrics.followUpsDueCount}</span>
+              <CalendarCheck className="h-5 w-5 text-purple-700" />
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Queue Section */}
       <Card className="border-[#E5E0D8] bg-white rounded-3xl shadow-xs">
         <CardHeader className="border-b border-[#E5E0D8] pb-3">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-base font-bold text-[#191F1C]">Active Triage Register</CardTitle>
+              <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
+                <span>Active Triage Register</span>
+                {(statusFilter || riskFilter || speciesFilter) && (
+                  <Badge className="bg-stone-100 text-stone-800 border-stone-300 text-[10px]">
+                    Filtered: {statusFilter || riskFilter || speciesFilter}
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription className="text-xs text-stone-500">
-                {queue.length} cases awaiting clinical veterinary action
+                {queue.length} cases currently match your clinical workstation filters
               </CardDescription>
             </div>
+
+            {(statusFilter || riskFilter || speciesFilter) && (
+              <Link href="/vet">
+                <Button size="sm" variant="ghost" className="text-xs text-stone-600 hover:text-stone-900 gap-1 h-8">
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Reset Filters</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </CardHeader>
 
@@ -98,7 +163,7 @@ export default async function VetDashboardPage() {
             <div className="p-8 text-center text-xs text-stone-500 space-y-2">
               <ShieldCheck className="h-8 w-8 text-emerald-700 mx-auto" />
               <p className="font-bold text-stone-900">Triage Queue is Clear</p>
-              <p>No pending health cases currently require veterinary action.</p>
+              <p>No health cases match the selected filter criteria.</p>
             </div>
           ) : (
             <>

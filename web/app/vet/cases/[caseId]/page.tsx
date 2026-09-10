@@ -66,30 +66,30 @@ export default async function VetCaseDetailPage({
           <Link href="/vet">
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 gap-1.5 min-h-[36px] rounded-xl">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>तपासणी यादीकडे परत</span>
+              <span>Back to Queue</span>
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-[#191F1C]">
-                प्रकरण #{healthCase.caseNumber}
+                Case #{healthCase.caseNumber}
               </h1>
               <Badge className="text-[10px] border-emerald-200 text-emerald-800 bg-emerald-50">
                 {healthCase.status}
               </Badge>
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
-              जनावर टॅग: <strong className="text-stone-900 font-mono">{healthCase.animal.tag}</strong> ({healthCase.animal.species}) • शेत: <strong className="text-stone-900">{farm.name}</strong> ({village.name}, {district.name})
+              Animal Tag: <strong className="text-stone-900 font-mono">{healthCase.animal.tag}</strong> ({healthCase.animal.species}) • Farm: <strong className="text-stone-900">{farm.name}</strong> ({village.name}, {district.name})
             </p>
           </div>
         </div>
 
         <div className="text-right text-xs text-stone-500 space-y-0.5">
-          <div>नोंदणी वेळ: <span className="text-stone-800 font-medium">{new Date(healthCase.reportedAt).toLocaleString()}</span></div>
+          <div>Reported: <span className="text-stone-800 font-medium">{new Date(healthCase.reportedAt).toLocaleString()}</span></div>
           {healthCase.reviewedAt && (
             <div className="flex items-center gap-1 text-[11px] text-emerald-800 font-medium justify-end">
               <UserCheck className="h-3.5 w-3.5 text-emerald-700" />
-              <span>डॉक्टरांनी तपासले: {new Date(healthCase.reviewedAt).toLocaleString()}</span>
+              <span>Reviewed: {new Date(healthCase.reviewedAt).toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -104,40 +104,40 @@ export default async function VetCaseDetailPage({
             <CardHeader className="border-b border-[#E5E0D8] pb-3">
               <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-emerald-700" />
-                <span>१. प्राथमिक पशु व क्षेत्रीय तपासणी तपशील</span>
+                <span>1. Primary Animal & Field Intake Details</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-[#FAF8F3] p-3.5 rounded-2xl border border-[#E5E0D8]">
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">जनावराचा प्रकार</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">Species</span>
                   <span className="font-bold text-[#191F1C]">{healthCase.animal.species}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">कान-टॅग (Tag ID)</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">Tag ID</span>
                   <span className="font-bold text-emerald-800 font-mono">{healthCase.animal.tag}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">IoT सेन्सर ID</span>
-                  <span className="font-mono text-stone-700">{healthCase.animal.iotDeviceId || "नोंद नाही"}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">IoT Sensor ID</span>
+                  <span className="font-mono text-stone-700">{healthCase.animal.iotDeviceId || "None"}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">तक्रार नोंदवणारे</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">Reported By</span>
                   <span className="text-stone-800 font-medium">{healthCase.createdByUser.name} ({healthCase.reportSource})</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">लक्षण कालावधी</span>
-                  <span className="text-stone-800 font-medium">{healthCase.durationDays} दिवस</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">Symptom Duration</span>
+                  <span className="text-stone-800 font-medium">{healthCase.durationDays} days</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">कळप प्रादुर्भाव स्थिती</span>
-                  <span className="text-stone-800 font-medium">{healthCase.affectedCount} बाधित / {healthCase.mortalityCount} मृत्यू</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">Herd Impact</span>
+                  <span className="text-stone-800 font-medium">{healthCase.affectedCount} affected / {healthCase.mortalityCount} dead</span>
                 </div>
               </div>
 
               {/* Reported Symptoms */}
               <div className="space-y-1.5">
-                <span className="text-xs font-semibold text-stone-700">नोंदवलेली लक्षणे:</span>
+                <span className="text-xs font-semibold text-stone-700">Reported Symptoms:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {healthCase.symptoms.map((sym, idx) => (
                     <Badge key={idx} className="bg-amber-50 text-amber-900 border-amber-200 text-xs px-2.5 py-0.5">
@@ -151,14 +151,14 @@ export default async function VetCaseDetailPage({
               <div className="flex items-center gap-2 text-xs text-stone-600 bg-[#FAF8F3] p-2.5 rounded-xl border border-[#E5E0D8]">
                 <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
                 <span>
-                  स्थान: {healthCase.gpsLat && healthCase.gpsLng ? `${healthCase.gpsLat.toFixed(4)}, ${healthCase.gpsLng.toFixed(4)}` : `${village.name}, ${block.name}, ${district.name}`}
+                  Location: {healthCase.gpsLat && healthCase.gpsLng ? `${healthCase.gpsLat.toFixed(4)}, ${healthCase.gpsLng.toFixed(4)}` : `${village.name}, ${block.name}, ${district.name}`}
                 </span>
               </div>
 
               {/* Private Case Photo Viewer */}
               {healthCase.photoUrl && (
                 <div className="space-y-1.5">
-                  <span className="text-xs font-semibold text-stone-700">तपासणी छायाचित्र (Lesion Photo):</span>
+                  <span className="text-xs font-semibold text-stone-700">Lesion / Clinical Photo:</span>
                   <CasePhotoViewer caseId={healthCase.id} photoUrl={healthCase.photoUrl} alt={`Case ${healthCase.caseNumber} photo`} />
                 </div>
               )}
@@ -178,18 +178,70 @@ export default async function VetCaseDetailPage({
             <CardHeader className="border-b border-[#E5E0D8] pb-3">
               <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
                 <History className="h-4 w-4 text-emerald-700" />
-                <span>३. जनावराचा पूर्व वैद्यकीय व लसीकरण इतिहास</span>
+                <span>3. Longitudinal Health History & Past Records</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4 text-xs">
-              {/* Vaccinations */}
+              {/* Previous Cases / Health Sessions */}
               <div className="space-y-2">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
-                  <Syringe className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>लसीकरण इतिहास (Vaccination Records)</span>
+                  <History className="h-3.5 w-3.5 text-emerald-700" />
+                  <span>Previous Health Sessions</span>
+                </h5>
+                {healthCase.animal.cases.length === 0 ? (
+                  <p className="text-stone-500 italic pl-5">No previous health sessions recorded for this animal.</p>
+                ) : (
+                  <div className="space-y-1.5 pl-5">
+                    {healthCase.animal.cases.map((pc) => (
+                      <div key={pc.id} className="p-2.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D8] space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-stone-900">#{pc.caseNumber}</span>
+                          <span className="text-stone-500 text-[10px]">{new Date(pc.reportedAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-stone-600 text-[11px]">
+                          Symptoms: {pc.symptoms.join(", ")}
+                          {pc.vetDiagnosis ? ` • Diagnosis: ${pc.vetDiagnosis}` : ` • Status: ${pc.status}`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Previous Veterinary Reports */}
+              <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
+                <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
+                  <Stethoscope className="h-3.5 w-3.5 text-emerald-700" />
+                  <span>Past Clinical Reports</span>
+                </h5>
+                {healthCase.animal.veterinaryReports.length === 0 ? (
+                  <p className="text-stone-500 italic pl-5">No prior veterinary clinical reports available.</p>
+                ) : (
+                  <div className="space-y-1.5 pl-5">
+                    {healthCase.animal.veterinaryReports.map((vr) => (
+                      <div key={vr.id} className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-emerald-950">{vr.diagnosis}</span>
+                          <span className="text-emerald-800 text-[10px]">{new Date(vr.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-emerald-900 text-[11px]">
+                          Veterinarian: Dr. {vr.vetUser.name} • Action: {vr.action}
+                          {vr.notes ? ` • ${vr.notes}` : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Vaccinations */}
+              <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
+                <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
+                  <Syringe className="h-3.5 w-3.5 text-amber-700" />
+                  <span>Vaccination Records</span>
                 </h5>
                 {healthCase.animal.vaccinations.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">या जनावरासाठी पूर्वीची लसीकरण नोंद आढळली नाही.</p>
+                  <p className="text-stone-500 italic pl-5">No vaccination records found for this animal.</p>
                 ) : (
                   <div className="space-y-1 pl-5">
                     {healthCase.animal.vaccinations.map((vac) => (
@@ -205,11 +257,11 @@ export default async function VetCaseDetailPage({
               {/* Treatments */}
               <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
-                  <Pill className="h-3.5 w-3.5 text-amber-700" />
-                  <span>मागील औषधोपचार (Past Treatments)</span>
+                  <Pill className="h-3.5 w-3.5 text-purple-700" />
+                  <span>Past Treatments</span>
                 </h5>
                 {healthCase.animal.treatments.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">कोणतीही मागील उपचार नोंद नाही.</p>
+                  <p className="text-stone-500 italic pl-5">No previous treatment records found.</p>
                 ) : (
                   <div className="space-y-1 pl-5">
                     {healthCase.animal.treatments.map((t) => (

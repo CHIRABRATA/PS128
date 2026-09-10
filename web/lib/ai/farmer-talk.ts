@@ -129,14 +129,9 @@ function buildSafeHistoryFallback(animalContext: AnimalContextPacket, preferredL
 }
 
 /**
- * Primary LLM Call: Gemini REST API
+ * LLM Call: Gemini REST API for a specific API Key
  */
-async function callGeminiProvider(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1;
-  if (!apiKey) {
-    throw new Error("CONFIG_ERROR: GEMINI_API_KEY is missing from environment");
-  }
-
+async function callGeminiWithKey(prompt: string, apiKey: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: "POST",
@@ -254,7 +249,7 @@ export function inspectOutputSafety(text: string): { isSafe: boolean; reason?: s
 }
 
 /**
- * Main Executable GenAI Service for Farmer Talk with Fallback & Safety Layers
+ * Main Executable GenAI Service for Farmer Talk with Two-Gemini-Key Failover, Groq Fallback & Safety Layers
  */
 export async function generateFarmerTalkResponse(
   animalContext: AnimalContextPacket,
@@ -267,20 +262,34 @@ export async function generateFarmerTalkResponse(
   let rawJsonText: string | null = null;
   let providerUsed: string = "Static Fallback";
 
-  // Attempt 1: Gemini
-  try {
-    rawJsonText = await callGeminiProvider(prompt);
-    providerUsed = "Gemini";
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    if (errorMsg.startsWith("CONFIG_ERROR")) {
-      console.error("[Farmer Talk] Configuration error in primary provider:", errorMsg);
-      // Permanent config error: Do NOT fallback silently, attempt Groq only if configured
-    } else {
-      console.warn("[Farmer Talk] Gemini transient failure, failing over to Groq:", errorMsg);
+  // Step 1: Attempt Gemini Key 1
+  const geminiKey1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
+  if (geminiKey1) {
+    try {
+      rawJsonText = await callGeminiWithKey(prompt, geminiKey1);
+      providerUsed = "Gemini (Key 1)";
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.warn("[Farmer Talk] Gemini Key 1 failed, failing over to Key 2:", errorMsg);
     }
+  }
 
-    // Attempt 2: Groq Fallback
+  // Step 2: Attempt Gemini Key 2 if Key 1 failed or was not configured
+  if (!rawJsonText) {
+    const geminiKey2 = process.env.GEMINI_API_KEY_2;
+    if (geminiKey2) {
+      try {
+        rawJsonText = await callGeminiWithKey(prompt, geminiKey2);
+        providerUsed = "Gemini (Key 2)";
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.warn("[Farmer Talk] Gemini Key 2 failed, failing over to Groq:", errorMsg);
+      }
+    }
+  }
+
+  // Step 3: Attempt Groq Fallback if both Gemini keys failed or were not configured
+  if (!rawJsonText) {
     try {
       rawJsonText = await callGroqProvider(prompt);
       providerUsed = "Groq";

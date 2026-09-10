@@ -50,6 +50,16 @@ enum VetAction {
   NONE
 }
 
+enum AssistanceRequestStatus {
+  REQUESTED
+  ASSIGNED
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 enum SampleStatus {
   COLLECTED
   SENT
@@ -96,15 +106,20 @@ model User {
   block    Block?    @relation(fields: [blockId], references: [id], onDelete: SetNull)
   village  Village?  @relation(fields: [villageId], references: [id], onDelete: SetNull)
 
-  ownedFarms             Farm[]                 @relation("FarmOwner")
-  assignedFarms          Farm[]                 @relation("FarmAgent")
-  createdCases           Case[]                 @relation("CaseCreatedBy")
-  reviewedCases          Case[]                 @relation("CaseReviewedBy")
-  givenVaccinations      VaccinationRecord[]    @relation("VaccinationAdministeredBy")
-  givenTreatments        TreatmentRecord[]      @relation("TreatmentAdministeredBy")
-  collectedSamples       Sample[]               @relation("SampleCollectedBy")
-  chatConversations      ChatConversation[]
-  notificationDeliveries NotificationDelivery[]
+  ownedFarms                 Farm[]                 @relation("FarmOwner")
+  assignedFarms              Farm[]                 @relation("FarmAgent")
+  createdCases               Case[]                 @relation("CaseCreatedBy")
+  reviewedCases              Case[]                 @relation("CaseReviewedBy")
+  givenVaccinations          VaccinationRecord[]    @relation("VaccinationAdministeredBy")
+  givenTreatments            TreatmentRecord[]      @relation("TreatmentAdministeredBy")
+  collectedSamples           Sample[]               @relation("SampleCollectedBy")
+  chatConversations          ChatConversation[]
+  notificationDeliveries     NotificationDelivery[]
+  farmerAssistanceRequests   AssistanceRequest[]    @relation("FarmerAssistanceRequests")
+  assignedAssistanceRequests AssistanceRequest[]    @relation("AgentAssistanceRequests")
+  fieldVisits                FieldVisit[]           @relation("AgentFieldVisits")
+  authoredVetReports         VeterinaryReport[]     @relation("VetAuthoredReports")
+  appNotifications           InAppNotification[]
 
   @@index([clerkId])
   @@index([role])
@@ -120,8 +135,9 @@ model District {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  blocks Block[]
-  users  User[]
+  blocks             Block[]
+  users              User[]
+  assistanceRequests AssistanceRequest[]
 }
 
 model Block {
@@ -131,9 +147,10 @@ model Block {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  district District  @relation(fields: [districtId], references: [id], onDelete: Cascade)
-  villages Village[]
-  users    User[]
+  district           District            @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  villages           Village[]
+  users              User[]
+  assistanceRequests AssistanceRequest[]
 
   @@unique([districtId, name])
   @@index([districtId])
@@ -146,30 +163,32 @@ model Village {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  block  Block   @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  farms  Farm[]
-  users  User[]
-  alerts Alert[]
+  block              Block               @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  farms              Farm[]
+  users              User[]
+  alerts             Alert[]
+  assistanceRequests AssistanceRequest[]
 
   @@unique([blockId, name])
   @@index([blockId])
 }
 
 model Farm {
-  id               String   @id @default(cuid())
-  villageId        String
-  farmerUserId     String?
-  fieldAgentUserId String?
-  name             String
-  latitude         Float
-  longitude        Float
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                 String              @id @default(cuid())
+  villageId          String
+  farmerUserId       String?
+  fieldAgentUserId   String?
+  name               String
+  latitude           Float
+  longitude          Float
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
-  village        Village @relation(fields: [villageId], references: [id], onDelete: Restrict)
-  farmerUser     User?   @relation("FarmOwner", fields: [farmerUserId], references: [id], onDelete: SetNull)
-  fieldAgentUser User?   @relation("FarmAgent", fields: [fieldAgentUserId], references: [id], onDelete: SetNull)
-  herds          Herd[]
+  village            Village             @relation(fields: [villageId], references: [id], onDelete: Restrict)
+  farmerUser         User?               @relation("FarmOwner", fields: [farmerUserId], references: [id], onDelete: SetNull)
+  fieldAgentUser     User?               @relation("FarmAgent", fields: [fieldAgentUserId], references: [id], onDelete: SetNull)
+  herds              Herd[]
+  assistanceRequests AssistanceRequest[]
 
   @@index([villageId])
   @@index([farmerUserId])
@@ -201,11 +220,13 @@ model Animal {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  herd          Herd                @relation(fields: [herdId], references: [id], onDelete: Restrict)
-  cases         Case[]
-  vaccinations  VaccinationRecord[]
-  treatments    TreatmentRecord[]
-  conversations ChatConversation[]
+  herd               Herd                @relation(fields: [herdId], references: [id], onDelete: Restrict)
+  cases              Case[]
+  vaccinations       VaccinationRecord[]
+  treatments         TreatmentRecord[]
+  conversations      ChatConversation[]
+  veterinaryReports  VeterinaryReport[]
+  assistanceRequests AssistanceRequest[]
 
   @@unique([herdId, tag])
   @@index([herdId])
@@ -234,20 +255,25 @@ model Case {
   vetDiagnosis         String?
   vetRecommendedAction VetAction?
 
-  vetFollowUpDate DateTime?
-  vetNotes        String?
-  reportedAt      DateTime  @default(now())
-  reviewedAt      DateTime?
-  confirmedAt     DateTime?
-  closedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  vetFollowUpDate     DateTime?
+  followUpCompleted   Boolean            @default(false)
+  followUpCompletedAt DateTime?
+  vetNotes            String?
+  reportedAt          DateTime           @default(now())
+  reviewedAt          DateTime?
+  confirmedAt         DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
-  animal         Animal            @relation(fields: [animalId], references: [id], onDelete: Restrict)
-  createdByUser  User              @relation("CaseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  reviewedByUser User?             @relation("CaseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  treatments     TreatmentRecord[]
-  samples        Sample[]
+  animal            Animal             @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  createdByUser     User               @relation("CaseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  reviewedByUser    User?              @relation("CaseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  assistanceRequest AssistanceRequest?
+  fieldVisit        FieldVisit?
+  treatments        TreatmentRecord[]
+  samples           Sample[]
+  veterinaryReports VeterinaryReport[]
 
   @@index([animalId])
   @@index([createdByUserId])
@@ -255,6 +281,112 @@ model Case {
   @@index([reportedAt])
   @@index([reviewedAt])
   @@index([confirmedAt])
+  @@index([vetFollowUpDate])
+}
+
+model AssistanceRequest {
+  id                  String                  @id @default(cuid())
+  farmerUserId        String
+  animalId            String?
+  farmId              String
+  villageId           String?
+  blockId             String?
+  districtId          String?
+  reason              String
+  status              AssistanceRequestStatus @default(REQUESTED)
+  assignedAgentUserId String?
+  requestedAt         DateTime                @default(now())
+  scheduledAt         DateTime?
+  notes               String?
+  caseId              String?                 @unique
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  farmerUser          User                    @relation("FarmerAssistanceRequests", fields: [farmerUserId], references: [id], onDelete: Cascade)
+  assignedAgentUser   User?                   @relation("AgentAssistanceRequests", fields: [assignedAgentUserId], references: [id], onDelete: SetNull)
+  animal              Animal?                 @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  farm                Farm                    @relation(fields: [farmId], references: [id], onDelete: Restrict)
+  village             Village?                @relation(fields: [villageId], references: [id], onDelete: SetNull)
+  block               Block?                  @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  district            District?               @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  case                Case?                   @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  visit               FieldVisit?
+
+  @@index([farmerUserId])
+  @@index([assignedAgentUserId])
+  @@index([villageId])
+  @@index([blockId])
+  @@index([districtId])
+  @@index([status])
+}
+
+model FieldVisit {
+  id                  String            @id @default(cuid())
+  assistanceRequestId String            @unique
+  fieldAgentUserId    String
+  acceptedAt          DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  observations        String?
+  measurements        Json?
+  photos              String[]          @default([])
+  notes               String?
+  caseId              String?           @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  assistanceRequest   AssistanceRequest @relation(fields: [assistanceRequestId], references: [id], onDelete: Cascade)
+  fieldAgentUser      User              @relation("AgentFieldVisits", fields: [fieldAgentUserId], references: [id], onDelete: Restrict)
+  case                Case?             @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([fieldAgentUserId])
+  @@index([createdAt])
+}
+
+model VeterinaryReport {
+  id                  String     @id @default(cuid())
+  caseId              String
+  animalId            String
+  vetUserId           String
+  diagnosis           String
+  action              VetAction
+  followUpDate        DateTime?
+  followUpCompleted   Boolean    @default(false)
+  followUpCompletedAt DateTime?
+  followUpNotes       String?
+  instructions        String?
+  prescription        String?
+  notes               String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  case                Case       @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  animal              Animal     @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  vetUser             User       @relation("VetAuthoredReports", fields: [vetUserId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([animalId])
+  @@index([vetUserId])
+  @@index([followUpDate])
+  @@index([followUpCompleted])
+  @@index([createdAt])
+}
+
+model InAppNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  type      String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
 }
 
 model VaccinationRecord {

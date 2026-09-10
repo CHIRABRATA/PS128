@@ -45,7 +45,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
   if (districts.length === 0) {
     return (
       <Card className="p-6 bg-[#FAF8F3] border-[#E5E0D8] text-center text-xs text-stone-500 rounded-2xl">
-        सध्याच्या कार्यकक्षेत कोणतीही भौगोलिक माहिती उपलब्ध नाही.
+        No geographic surveillance data available in the current jurisdiction.
       </Card>
     );
   }
@@ -61,15 +61,15 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
           <div>
             <CardTitle className="text-base text-[#191F1C] flex items-center gap-2 font-bold">
               <MapPin className="h-4 w-4 text-emerald-700" />
-              <span>जिल्हा भौगोलिक रचना व रोग देखरेख | Geographic Surveillance</span>
+              <span>District Geographic Hierarchy & Disease Surveillance</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              जिल्हा &rarr; तालुका (Block) &rarr; गाव (Village) &rarr; गोठा (Farm) &rarr; कळप (Herd)
+              District &rarr; Block &rarr; Village &rarr; Farm &rarr; Herd
             </CardDescription>
           </div>
 
           <Badge variant="outline" className="text-xs text-emerald-800 border-emerald-300 bg-emerald-50 w-fit">
-            {district.name} जिल्हा
+            {district.name} District
           </Badge>
         </div>
 
@@ -97,7 +97,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
                 className="h-6 px-2 text-xs text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50 cursor-pointer"
                 onClick={() => setSelectedVillageId(null)}
               >
-                तालुका: {selectedBlock.name}
+                Block: {selectedBlock.name}
               </Button>
             </>
           )}
@@ -105,7 +105,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
           {selectedVillage && (
             <>
               <ChevronRight className="h-3 w-3 text-stone-400 shrink-0" />
-              <span className="font-semibold text-[#191F1C] px-2">गाव: {selectedVillage.name}</span>
+              <span className="font-semibold text-[#191F1C] px-2">Village: {selectedVillage.name}</span>
             </>
           )}
         </div>
@@ -114,7 +114,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
       <CardContent className="space-y-4 pt-4">
         {/* Block Selection Grid */}
         <div className="space-y-2">
-          <label className="text-xs text-stone-600 font-medium">तालुका निवडा (Select Block/Taluka):</label>
+          <label className="text-xs text-stone-600 font-medium">Select Block / Sub-District:</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {district.blocks.map((block) => (
               <Button
@@ -133,7 +133,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
               >
                 <span>{block.name}</span>
                 <Badge variant="secondary" className="text-[10px] bg-[#FAF8F3] text-stone-600 border border-[#E5E0D8]">
-                  {block.villages.length} गावे
+                  {block.villages.length} Villages
                 </Badge>
               </Button>
             ))}
@@ -143,7 +143,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
         {/* Village Selection Grid */}
         {selectedBlock && (
           <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
-            <label className="text-xs text-stone-600 font-medium">तालुक्यातील गावे ({selectedBlock.name}):</label>
+            <label className="text-xs text-stone-600 font-medium">Villages in {selectedBlock.name}:</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {selectedBlock.villages.map((village) => (
                 <div
@@ -160,15 +160,15 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
                     {village.alerts.length > 0 && (
                       <Badge variant="destructive" className="text-[10px] gap-1 bg-red-100 text-red-800 border-red-200">
                         <ShieldAlert className="h-3 w-3" />
-                        अलर्ट सक्रिय
+                        Active Alert
                       </Badge>
                     )}
                   </div>
 
                   <div className="text-xs text-stone-500 mt-2 flex justify-between">
-                    <span>गोठे / शेत: {village.farms.length}</span>
+                    <span>Farms: {village.farms.length}</span>
                     <span>
-                      एकूण जनावरे:{" "}
+                      Total Animals:{" "}
                       {village.farms.reduce(
                         (sum, f) => sum + f.herds.reduce((hSum, h) => hSum + h.animals.length, 0),
                         0
@@ -185,12 +185,12 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
         {selectedVillage && (
           <div className="space-y-3 pt-3 border-t border-[#E5E0D8]">
             <h4 className="text-xs font-semibold text-stone-700">
-              {selectedVillage.name} गावातील गोठे व जनावरे
+              Farms & Animals in {selectedVillage.name}
             </h4>
 
             {selectedVillage.farms.length === 0 ? (
               <div className="p-4 rounded-xl bg-[#FAF8F3] border border-[#E5E0D8] text-xs text-stone-500">
-                या गावात अद्याप शेतकरी नोंदणी झालेली नाही.
+                No farms registered in this village yet.
               </div>
             ) : (
               <div className="space-y-3">
@@ -199,7 +199,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm text-[#191F1C]">{farm.name}</span>
                       <Badge variant="outline" className="text-[10px] text-stone-600 border-[#D9D3C7] bg-white">
-                        {farm.herds.length} कळप
+                        {farm.herds.length} Herds
                       </Badge>
                     </div>
 
@@ -210,7 +210,7 @@ export function GeographicDrilldown({ districts }: GeographicDrilldownProps) {
                             <span className="text-[#191F1C] font-medium">{herd.name || herd.species}</span>
                             <span className="text-stone-500 ml-2 font-mono">({herd.species})</span>
                           </div>
-                          <span className="text-emerald-800 font-semibold font-mono">{herd.animals.length} जनावरे</span>
+                          <span className="text-emerald-800 font-semibold font-mono">{herd.animals.length} Animals</span>
                         </div>
                       ))}
                     </div>

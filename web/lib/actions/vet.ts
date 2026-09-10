@@ -18,6 +18,7 @@ import {
   UpdateSampleStatusInput,
 } from "@/lib/vet/schemas";
 import { evaluateVillageOutbreakAlert } from "@/lib/authority/alerts";
+import { createInAppNotification } from "./notifications";
 
 /**
  * Requires the current user to be an ACTIVE VETERINARIAN.
@@ -31,15 +32,102 @@ async function requireActiveVeterinarian(): Promise<FullAppUser> {
 }
 
 /**
+ * Retrieves real database metrics for the veterinarian dashboard.
+ */
+export async function getVetDashboardMetricsAction() {
+  const vet = await requireActiveVeterinarian();
+
+  const baseWhere: Prisma.CaseWhereInput = {};
+  if (vet.districtId) {
+    baseWhere.animal = {
+      herd: {
+        farm: {
+          village: {
+            block: {
+              districtId: vet.districtId,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const [pendingCount, underExamCount, labRefCount, followUpsDueCount, activeCases] = await Promise.all([
+    prisma.case.count({
+      where: { ...baseWhere, status: "PENDING_REVIEW" },
+    }),
+    prisma.case.count({
+      where: { ...baseWhere, status: "UNDER_EXAMINATION" },
+    }),
+    prisma.case.count({
+      where: { ...baseWhere, status: "LAB_REFERRAL" },
+    }),
+    prisma.case.count({
+      where: {
+        ...baseWhere,
+        vetFollowUpDate: { not: null },
+        status: { not: "CLOSED_HARMLESS" },
+      },
+    }),
+    prisma.case.findMany({
+      where: {
+        ...baseWhere,
+        status: { in: ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"] },
+      },
+      select: {
+        id: true,
+        analysisResult: true,
+      },
+    }),
+  ]);
+
+  let criticalCount = 0;
+  let highCount = 0;
+  for (const c of activeCases) {
+    const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+    const level = analysis.overall_risk_level as string;
+    if (level === "CRITICAL") criticalCount++;
+    else if (level === "HIGH") highCount++;
+  }
+
+  const recentlyReviewedCount = await prisma.case.count({
+    where: {
+      ...baseWhere,
+      reviewedAt: {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+    },
+  });
+
+  return {
+    pendingCount,
+    underExamCount,
+    labRefCount,
+    followUpsDueCount,
+    criticalCount,
+    highCount,
+    recentlyReviewedCount,
+    totalActiveCount: activeCases.length,
+  };
+}
+
+/**
  * Retrieves the priority triage queue for an active veterinarian.
  * Filtered by district jurisdiction and ordered by risk rank, score, and oldest reportedAt.
  */
-export async function getVetQueueAction() {
+export async function getVetQueueAction(filters?: {
+  status?: string;
+  riskLevel?: string;
+  villageId?: string;
+  species?: string;
+}) {
   const vet = await requireActiveVeterinarian();
 
   const whereClause: Prisma.CaseWhereInput = {
     status: {
-      in: ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"],
+      in: filters?.status
+        ? [filters.status as Prisma.EnumCaseStatusFilter["in"] extends readonly (infer T)[] ? T : never]
+        : ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"],
     },
   };
 
@@ -55,6 +143,24 @@ export async function getVetQueueAction() {
           },
         },
       },
+    };
+  }
+
+  if (filters?.villageId) {
+    whereClause.animal = {
+      ...(whereClause.animal as Prisma.AnimalWhereInput),
+      herd: {
+        farm: {
+          villageId: filters.villageId,
+        },
+      },
+    };
+  }
+
+  if (filters?.species) {
+    whereClause.animal = {
+      ...(whereClause.animal as Prisma.AnimalWhereInput),
+      species: filters.species as Prisma.EnumSpeciesFilter["equals"],
     };
   }
 
@@ -77,8 +183,17 @@ export async function getVetQueueAction() {
     },
   });
 
+  // Filter by risk if requested
+  let filteredCases = cases;
+  if (filters?.riskLevel) {
+    filteredCases = cases.filter((c) => {
+      const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+      return analysis.overall_risk_level === filters.riskLevel;
+    });
+  }
+
   // Sort queue: Risk Rank DESC -> Risk Score DESC -> reportedAt ASC (oldest first)
-  const sortedCases = cases.sort((a, b) => {
+  return filteredCases.sort((a, b) => {
     const analysisA = (a.analysisResult as Record<string, unknown> | null) || {};
     const analysisB = (b.analysisResult as Record<string, unknown> | null) || {};
 
@@ -101,8 +216,6 @@ export async function getVetQueueAction() {
 
     return new Date(a.reportedAt).getTime() - new Date(b.reportedAt).getTime();
   });
-
-  return sortedCases;
 }
 
 /**
@@ -171,7 +284,7 @@ export async function markCaseReviewedAction(caseId: string) {
 }
 
 /**
- * Retrieves full clinical dossier for a specific case.
+ * Retrieves full clinical dossier for a specific case with complete longitudinal animal history.
  */
 export async function getVetCaseDetailAction(caseId: string) {
   const vet = await requireActiveVeterinarian();
@@ -185,6 +298,9 @@ export async function getVetCaseDetailAction(caseId: string) {
             include: {
               farm: {
                 include: {
+                  farmerUser: {
+                    select: { id: true, name: true, phone: true },
+                  },
                   village: {
                     include: {
                       block: {
@@ -197,6 +313,12 @@ export async function getVetCaseDetailAction(caseId: string) {
                 },
               },
             },
+          },
+          veterinaryReports: {
+            include: {
+              vetUser: { select: { id: true, name: true, phone: true } },
+            },
+            orderBy: { createdAt: "desc" },
           },
           vaccinations: {
             include: {
@@ -220,11 +342,13 @@ export async function getVetCaseDetailAction(caseId: string) {
               id: true,
               caseNumber: true,
               status: true,
+              symptoms: true,
               reportedAt: true,
               vetDiagnosis: true,
+              vetRecommendedAction: true,
+              vetNotes: true,
             },
             orderBy: { reportedAt: "desc" },
-            take: 5,
           },
         },
       },
@@ -237,6 +361,12 @@ export async function getVetCaseDetailAction(caseId: string) {
       samples: {
         include: {
           collectedByUser: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      veterinaryReports: {
+        include: {
+          vetUser: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -256,6 +386,7 @@ export async function getVetCaseDetailAction(caseId: string) {
 
 /**
  * Saves structured veterinary feedback (diagnosis, action, follow-up, notes) with optimistic concurrency.
+ * Atomically creates a permanent VeterinaryReport record, updates the Case, and notifies the farmer.
  */
 export async function saveVetFeedbackAction(input: VetFeedbackInput) {
   const vet = await requireActiveVeterinarian();
@@ -271,12 +402,16 @@ export async function saveVetFeedbackAction(input: VetFeedbackInput) {
     where: { id: caseId },
     select: {
       id: true,
+      caseNumber: true,
+      animalId: true,
       photoUrl: true,
       status: true,
       updatedAt: true,
       createdByUserId: true,
       animal: {
         select: {
+          tag: true,
+          species: true,
           herd: {
             select: {
               farm: {
@@ -316,23 +451,53 @@ export async function saveVetFeedbackAction(input: VetFeedbackInput) {
   }
 
   const parsedFollowUp = vetFollowUpDate ? new Date(vetFollowUpDate) : null;
+  const actionEnum = (vetRecommendedAction as VetAction) || "MONITOR";
 
-  await prisma.case.update({
-    where: { id: caseId },
-    data: {
-      vetDiagnosis,
-      vetRecommendedAction: vetRecommendedAction as VetAction,
-      vetFollowUpDate: parsedFollowUp,
-      vetNotes: vetNotes || null,
-      reviewedByUserId: vet.id,
-    },
-  });
+  // Atomically update Case and create VeterinaryReport
+  await prisma.$transaction([
+    prisma.case.update({
+      where: { id: caseId },
+      data: {
+        vetDiagnosis: vetDiagnosis || null,
+        vetRecommendedAction: actionEnum,
+        vetFollowUpDate: parsedFollowUp,
+        vetNotes: vetNotes || null,
+        reviewedByUserId: vet.id,
+        reviewedAt: new Date(),
+        status: "UNDER_EXAMINATION",
+      },
+    }),
+    prisma.veterinaryReport.create({
+      data: {
+        caseId,
+        animalId: currentCase.animalId,
+        vetUserId: vet.id,
+        diagnosis: vetDiagnosis || "Clinical assessment recorded",
+        action: actionEnum,
+        followUpDate: parsedFollowUp,
+        notes: vetNotes || null,
+        instructions: `Recommended clinical action: ${actionEnum}`,
+      },
+    }),
+  ]);
+
+  // Notify farmer
+  const farmerUserId = currentCase.animal.herd.farm.farmerUserId;
+  if (farmerUserId) {
+    await createInAppNotification({
+      userId: farmerUserId,
+      title: "Veterinary Report Available",
+      message: `Dr. ${vet.name} submitted a clinical assessment for Animal ${currentCase.animal.tag} (${currentCase.animal.species}): "${vetDiagnosis || actionEnum}".`,
+      link: `/farmer/animals/${currentCase.animalId}`,
+      type: "VET_REPORT_SUBMITTED",
+    });
+  }
 
   return { success: true };
 }
 
 /**
- * Atomic transaction to transition case to LAB_REFERRAL and create a Sample record.
+ * Atomic transaction to transition case to LAB_REFERRAL, create Sample record, and VeterinaryReport.
  */
 export async function referCaseToLabAction(input: ReferToLabInput) {
   const vet = await requireActiveVeterinarian();
@@ -348,12 +513,16 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
     where: { id: caseId },
     select: {
       id: true,
+      caseNumber: true,
+      animalId: true,
       photoUrl: true,
       status: true,
       updatedAt: true,
       createdByUserId: true,
       animal: {
         select: {
+          tag: true,
+          species: true,
           herd: {
             select: {
               farm: {
@@ -374,12 +543,10 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
   if (!currentCase) return { success: false, error: "Case not found." };
   if (!canUserAccessCase(vet, currentCase)) return { success: false, error: "Unauthorized." };
 
-  // State Machine Validation: PENDING_REVIEW or UNDER_EXAMINATION -> LAB_REFERRAL
   if (currentCase.status !== "PENDING_REVIEW" && currentCase.status !== "UNDER_EXAMINATION") {
     return { success: false, error: `Cannot refer to lab from state: ${currentCase.status}` };
   }
 
-  // Optimistic concurrency check
   if (currentCase.updatedAt.toISOString() !== expectedUpdatedAt) {
     return { success: false, error: "This case was updated by another user. Please refresh." };
   }
@@ -394,6 +561,7 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
         vetDiagnosis: vetDiagnosis || undefined,
         vetNotes: vetNotes || undefined,
         reviewedByUserId: vet.id,
+        reviewedAt: new Date(),
       },
     }),
     prisma.sample.create({
@@ -404,13 +572,35 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
         status: "COLLECTED",
       },
     }),
+    prisma.veterinaryReport.create({
+      data: {
+        caseId,
+        animalId: currentCase.animalId,
+        vetUserId: vet.id,
+        diagnosis: vetDiagnosis || "Referred to laboratory for confirmatory testing",
+        action: "REFER_LAB",
+        notes: `Referred to lab: ${labName}. ${vetNotes || ""}`,
+      },
+    }),
   ]);
+
+  // Notify farmer
+  const farmerUserId = currentCase.animal.herd.farm.farmerUserId;
+  if (farmerUserId) {
+    await createInAppNotification({
+      userId: farmerUserId,
+      title: "Lab Referral Scheduled",
+      message: `Sample for Animal ${currentCase.animal.tag} has been referred to ${labName} for testing.`,
+      link: `/farmer/animals/${currentCase.animalId}`,
+      type: "LAB_REFERRAL",
+    });
+  }
 
   return { success: true };
 }
 
 /**
- * Transitions case to CONFIRMED.
+ * Transitions case to CONFIRMED and appends VeterinaryReport to permanent animal history.
  */
 export async function confirmCaseAction(input: ConfirmCaseInput) {
   const vet = await requireActiveVeterinarian();
@@ -424,12 +614,16 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
     where: { id: caseId },
     select: {
       id: true,
+      caseNumber: true,
+      animalId: true,
       photoUrl: true,
       status: true,
       updatedAt: true,
       createdByUserId: true,
       animal: {
         select: {
+          tag: true,
+          species: true,
           herd: {
             select: {
               farm: {
@@ -450,7 +644,6 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
   if (!currentCase) return { success: false, error: "Case not found." };
   if (!canUserAccessCase(vet, currentCase)) return { success: false, error: "Unauthorized." };
 
-  // State Machine Validation: UNDER_EXAMINATION or LAB_REFERRAL -> CONFIRMED
   if (currentCase.status !== "UNDER_EXAMINATION" && currentCase.status !== "LAB_REFERRAL" && currentCase.status !== "PENDING_REVIEW") {
     return { success: false, error: `Invalid transition to CONFIRMED from state ${currentCase.status}` };
   }
@@ -459,27 +652,52 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
     return { success: false, error: "Case was updated by another user. Please refresh." };
   }
 
-  await prisma.case.update({
-    where: { id: caseId },
-    data: {
-      status: "CONFIRMED",
-      confirmedAt: new Date(),
-      vetDiagnosis,
-      vetNotes: vetNotes || undefined,
-      reviewedByUserId: vet.id,
-    },
-  });
+  await prisma.$transaction([
+    prisma.case.update({
+      where: { id: caseId },
+      data: {
+        status: "CONFIRMED",
+        confirmedAt: new Date(),
+        vetDiagnosis,
+        vetNotes: vetNotes || undefined,
+        reviewedByUserId: vet.id,
+      },
+    }),
+    prisma.veterinaryReport.create({
+      data: {
+        caseId,
+        animalId: currentCase.animalId,
+        vetUserId: vet.id,
+        diagnosis: vetDiagnosis,
+        action: "TREAT",
+        notes: `Confirmed disease: ${vetDiagnosis}. ${vetNotes || ""}`,
+        instructions: "Follow prescribed treatment regimen and maintain quarantine.",
+      },
+    }),
+  ]);
 
   const villageId = currentCase.animal.herd.farm.villageId;
   if (villageId) {
     await evaluateVillageOutbreakAlert(villageId);
   }
 
+  // Notify farmer
+  const farmerUserId = currentCase.animal.herd.farm.farmerUserId;
+  if (farmerUserId) {
+    await createInAppNotification({
+      userId: farmerUserId,
+      title: "Diagnosis Confirmed",
+      message: `Dr. ${vet.name} confirmed diagnosis: "${vetDiagnosis}" for Animal ${currentCase.animal.tag}.`,
+      link: `/farmer/animals/${currentCase.animalId}`,
+      type: "DIAGNOSIS_CONFIRMED",
+    });
+  }
+
   return { success: true };
 }
 
 /**
- * Transitions case to CLOSED_HARMLESS.
+ * Transitions case to CLOSED_HARMLESS and saves concluding report.
  */
 export async function closeCaseAction(input: CloseCaseInput) {
   const vet = await requireActiveVeterinarian();
@@ -493,12 +711,16 @@ export async function closeCaseAction(input: CloseCaseInput) {
     where: { id: caseId },
     select: {
       id: true,
+      caseNumber: true,
+      animalId: true,
       photoUrl: true,
       status: true,
       updatedAt: true,
       createdByUserId: true,
       animal: {
         select: {
+          tag: true,
+          species: true,
           herd: {
             select: {
               farm: {
@@ -527,15 +749,39 @@ export async function closeCaseAction(input: CloseCaseInput) {
     return { success: false, error: "Case was updated by another user. Please refresh." };
   }
 
-  await prisma.case.update({
-    where: { id: caseId },
-    data: {
-      status: "CLOSED_HARMLESS",
-      closedAt: new Date(),
-      vetNotes: vetNotes || undefined,
-      reviewedByUserId: vet.id,
-    },
-  });
+  await prisma.$transaction([
+    prisma.case.update({
+      where: { id: caseId },
+      data: {
+        status: "CLOSED_HARMLESS",
+        closedAt: new Date(),
+        vetNotes: vetNotes || undefined,
+        reviewedByUserId: vet.id,
+      },
+    }),
+    prisma.veterinaryReport.create({
+      data: {
+        caseId,
+        animalId: currentCase.animalId,
+        vetUserId: vet.id,
+        diagnosis: "Case closed / Condition resolved harmlessly",
+        action: "NONE",
+        notes: vetNotes || "Routine recovery verified.",
+      },
+    }),
+  ]);
+
+  // Notify farmer
+  const farmerUserId = currentCase.animal.herd.farm.farmerUserId;
+  if (farmerUserId) {
+    await createInAppNotification({
+      userId: farmerUserId,
+      title: "Case Closed / Resolved",
+      message: `Case #${currentCase.caseNumber} for Animal ${currentCase.animal.tag} has been closed by Dr. ${vet.name}.`,
+      link: `/farmer/animals/${currentCase.animalId}`,
+      type: "CASE_CLOSED",
+    });
+  }
 
   return { success: true };
 }
@@ -563,7 +809,7 @@ export async function getVetSamplesAction() {
     };
   }
 
-  const samples = await prisma.sample.findMany({
+  return await prisma.sample.findMany({
     where: whereClause,
     include: {
       case: {
@@ -587,8 +833,6 @@ export async function getVetSamplesAction() {
     },
     orderBy: { createdAt: "desc" },
   });
-
-  return samples;
 }
 
 /**
@@ -634,7 +878,6 @@ export async function updateSampleStatusAction(input: UpdateSampleStatusInput) {
   if (!currentSample) return { success: false, error: "Sample record not found." };
   if (!canUserAccessCase(vet, currentSample.case)) return { success: false, error: "Unauthorized sample access." };
 
-  // Optimistic concurrency check
   if (currentSample.updatedAt.toISOString() !== expectedUpdatedAt) {
     return { success: false, error: "Sample was updated by another user. Please refresh." };
   }
@@ -662,14 +905,32 @@ export async function updateSampleStatusAction(input: UpdateSampleStatusInput) {
 }
 
 /**
- * Retrieves follow-up cases sorted by nearest vetFollowUpDate.
+ * Retrieves follow-up cases sorted by nearest vetFollowUpDate with categorization filters.
+ * Categories: 'all' | 'due_today' | 'upcoming' | 'overdue' | 'completed'
  */
-export async function getVetFollowUpsAction() {
+export async function getVetFollowUpsAction(category: "all" | "due_today" | "upcoming" | "overdue" | "completed" = "all") {
   const vet = await requireActiveVeterinarian();
 
-  const whereClause: Prisma.CaseWhereInput = {
-    vetFollowUpDate: { not: null },
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const whereClause: Prisma.VeterinaryReportWhereInput = {
+    followUpDate: { not: null },
   };
+
+  if (category === "due_today") {
+    whereClause.followUpDate = { gte: startOfToday, lte: endOfToday };
+    whereClause.followUpCompleted = false;
+  } else if (category === "overdue") {
+    whereClause.followUpDate = { lt: startOfToday };
+    whereClause.followUpCompleted = false;
+  } else if (category === "upcoming") {
+    whereClause.followUpDate = { gt: endOfToday };
+    whereClause.followUpCompleted = false;
+  } else if (category === "completed") {
+    whereClause.followUpCompleted = true;
+  }
 
   if (vet.districtId) {
     whereClause.animal = {
@@ -685,9 +946,18 @@ export async function getVetFollowUpsAction() {
     };
   }
 
-  const followUps = await prisma.case.findMany({
+  return await prisma.veterinaryReport.findMany({
     where: whereClause,
     include: {
+      case: {
+        select: {
+          id: true,
+          caseNumber: true,
+          status: true,
+          symptoms: true,
+          updatedAt: true,
+        },
+      },
       animal: {
         include: {
           herd: {
@@ -695,6 +965,66 @@ export async function getVetFollowUpsAction() {
               farm: {
                 include: {
                   village: true,
+                  farmerUser: { select: { name: true, phone: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      vetUser: {
+        select: { id: true, name: true },
+      },
+    },
+    orderBy: { followUpDate: "asc" },
+  });
+}
+
+/**
+ * Marks a scheduled follow-up as completed by the veterinarian.
+ */
+export async function completeFollowUpAction(reportId: string, notes?: string) {
+  const vet = await requireActiveVeterinarian();
+
+  const report = await prisma.veterinaryReport.findUnique({
+    where: { id: reportId },
+    include: {
+      case: {
+        include: {
+          animal: {
+            include: {
+              herd: {
+                include: {
+                  farm: {
+                    include: {
+                      village: {
+                        include: {
+                          block: {
+                            include: {
+                              district: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      animal: {
+        include: {
+          herd: {
+            include: {
+              farm: {
+                include: {
+                  village: {
+                    include: {
+                      block: true,
+                    },
+                  },
                 },
               },
             },
@@ -702,8 +1032,46 @@ export async function getVetFollowUpsAction() {
         },
       },
     },
-    orderBy: { vetFollowUpDate: "asc" },
   });
 
-  return followUps;
+  if (!report) {
+    return { success: false, error: "Veterinary report not found." };
+  }
+
+  if (!canUserAccessCase(vet, report.case)) {
+    return { success: false, error: "Unauthorized." };
+  }
+
+  const completedAt = new Date();
+
+  await prisma.$transaction([
+    prisma.veterinaryReport.update({
+      where: { id: reportId },
+      data: {
+        followUpCompleted: true,
+        followUpCompletedAt: completedAt,
+        followUpNotes: notes || "Follow-up examination completed successfully.",
+      },
+    }),
+    prisma.case.update({
+      where: { id: report.caseId },
+      data: {
+        followUpCompleted: true,
+        followUpCompletedAt: completedAt,
+      },
+    }),
+  ]);
+
+  const farmerUserId = report.animal.herd.farm.farmerUserId;
+  if (farmerUserId) {
+    await createInAppNotification({
+      userId: farmerUserId,
+      title: "Follow-up Examination Completed",
+      message: `Dr. ${vet.name} completed the follow-up examination for Animal ${report.animal.tag}.`,
+      link: `/farmer/animals/${report.animalId}`,
+      type: "FOLLOW_UP_COMPLETED",
+    });
+  }
+
+  return { success: true };
 }

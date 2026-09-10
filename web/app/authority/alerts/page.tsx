@@ -10,9 +10,9 @@ export default async function AuthorityAlertsPage() {
   return (
     <div className="space-y-6 text-[#191F1C]">
       <div>
-        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">जिल्हा रोग प्रादुर्भाव सूचना | Outbreak Surveillance</h1>
+        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">District Disease Outbreak Alerts | Outbreak Surveillance</h1>
         <p className="text-stone-500 text-xs mt-1">
-          गावांमध्ये अल्प कालावधीत उद्भवणारे रोग क्लस्टर्स आणि सक्रिय प्रादुर्भाव सूचना.
+          Cluster outbreak detection and real-time surveillance across district villages.
         </p>
       </div>
 

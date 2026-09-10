@@ -64,7 +64,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
             onClick={() => setFilterTab("all")}
             className="h-8 text-xs rounded-xl"
           >
-            सर्व अलर्ट ({alerts.length})
+            All Alerts ({alerts.length})
           </Button>
           <Button
             size="sm"
@@ -72,7 +72,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
             onClick={() => setFilterTab("active")}
             className="h-8 text-xs rounded-xl"
           >
-            सक्रिय ({activeAlerts.length})
+            Active ({activeAlerts.length})
           </Button>
           <Button
             size="sm"
@@ -80,7 +80,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
             onClick={() => setFilterTab("historical")}
             className="h-8 text-xs rounded-xl"
           >
-            मागील इतिहास ({historicalAlerts.length})
+            Historical ({historicalAlerts.length})
           </Button>
         </div>
 
@@ -88,7 +88,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
           <Input
             type="text"
-            placeholder="गाव किंवा रोगाचे नाव शोधा..."
+            placeholder="Search village or disease..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-9 pl-8 text-xs bg-white border-[#D9D3C7] rounded-xl"
@@ -102,21 +102,21 @@ export function AlertsList({ alerts }: AlertsListProps) {
           <div>
             <CardTitle className="text-base text-red-900 flex items-center gap-2 font-bold">
               <ShieldAlert className="h-5 w-5 text-red-600" />
-              <span>सक्रिय जिल्हा रोग प्रादुर्भाव सूचना ({activeAlerts.length})</span>
+              <span>Active District Outbreak Alerts ({activeAlerts.length})</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-600">
-              गावात ७ दिवसांच्या कालावधीत ३ किंवा अधिक समान रोग प्रकरणे आढळल्यास स्वयंचलित अलर्ट.
+              Automated trigger on 3+ cases of the same disease detected in a village within a 7-day rolling window.
             </CardDescription>
           </div>
           <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200">
-            स्वयंचलित प्रणाली
+            Automated Alert
           </Badge>
         </CardHeader>
         <CardContent className="pt-4">
           {displayedAlerts.length === 0 ? (
             <div className="p-6 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] text-center text-xs text-stone-600 flex flex-col items-center gap-2">
               <ShieldCheck className="h-8 w-8 text-emerald-600" />
-              <span>कोणताही जुळणारा रोग प्रादुर्भाव अलर्ट आढळला नाही.</span>
+              <span>No matching outbreak alerts found.</span>
             </div>
           ) : (
             <div className="space-y-3">
@@ -133,7 +133,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-red-900 text-sm flex items-center gap-1.5">
                         <AlertTriangle className={`h-4 w-4 ${alert.active ? "text-red-600 animate-pulse" : "text-stone-400"}`} />
-                        <span>{alert.diseaseName || "संशयित प्रादुर्भाव क्लस्टर"}</span>
+                        <span>{alert.diseaseName || "Suspected Outbreak Cluster"}</span>
                       </h4>
                       <Badge
                         variant={alert.active ? "destructive" : "outline"}
@@ -143,7 +143,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                             : "bg-white text-stone-600 border-[#D9D3C7]"
                         }`}
                       >
-                        {alert.caseCount} बाधित जनावरे
+                        {alert.caseCount} Affected Animals
                       </Badge>
                     </div>
 
@@ -154,7 +154,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                       </span>
                       <span className="flex items-center gap-1 text-stone-500 font-mono">
                         <Calendar className="h-3.5 w-3.5 text-stone-400" />
-                        कालावधी: {new Date(alert.windowStart).toLocaleDateString()} — {new Date(alert.windowEnd).toLocaleDateString()}
+                        Window: {new Date(alert.windowStart).toLocaleDateString()} — {new Date(alert.windowEnd).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -162,7 +162,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                   <div className="flex items-center gap-2 self-end md:self-center">
                     <Link href="/authority">
                       <Button size="sm" variant="outline" className="h-8 text-xs border-red-200 text-red-800 hover:bg-red-50 rounded-xl gap-1">
-                        <span>नकाशावर पहा</span>
+                        <span>View on Map</span>
                         <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>

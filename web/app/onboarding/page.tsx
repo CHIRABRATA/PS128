@@ -172,7 +172,7 @@ export default function OnboardingPage() {
       });
 
       if (!res.success) {
-        setErrorMessage(res.error || "नोंदणी पूर्ण करण्यात त्रुटी आली.");
+        setErrorMessage(res.error || "Failed to complete registration.");
         setSubmitting(false);
         return;
       }
@@ -183,7 +183,7 @@ export default function OnboardingPage() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "अनपेक्षित सर्व्हर त्रुटी आली.";
+      const errorMsg = err instanceof Error ? err.message : "An unexpected server error occurred.";
       setErrorMessage(errorMsg);
       setSubmitting(false);
     }
@@ -192,31 +192,31 @@ export default function OnboardingPage() {
   const roles = [
     {
       id: "FARMER",
-      title: "पशुपालक / शेतकरी (Farmer)",
-      badge: "त्वरित सक्रिय (Auto-Approved)",
+      title: "Farmer / Livestock Owner",
+      badge: "Instant Access (Auto-Approved)",
       icon: UserCheck,
-      description: "जनावरांची कान-टॅग नोंदणी, आजारपण लक्षणे नोंद, पशु संवाद AI सहाय्यक व पशुवैद्यकीय सल्ला.",
+      description: "Ear-tag registration, symptom reporting, AI health assistant, and veterinary guidance.",
     },
     {
       id: "FIELD_AGENT",
-      title: "पशुसखी / फील्ड एजंट (Field Agent)",
-      badge: "पडताळणी आवश्यक",
+      title: "Pashu Sakhi / Field Agent",
+      badge: "Verification Required",
       icon: ShieldCheck,
-      description: "गावनिहाय गोठा भेटी, फोटो व GPS संकलन, ऑफलाइन तपासणी अहवाल व पशुपालक सहाय्य.",
+      description: "Village-level farm visits, photo & GPS intake, offline field inspection, and farmer assistance.",
     },
     {
       id: "VETERINARIAN",
-      title: "पशुवैद्यकीय अधिकारी (Veterinarian)",
-      badge: "पडताळणी आवश्यक",
+      title: "Veterinary Officer",
+      badge: "Verification Required",
       icon: Stethoscope,
-      description: "प्रकरण तपासणी, नैदानिक निर्णय, औषधोपचार शिफारशी व लॅब नमुना वर्गवारी.",
+      description: "Case triage, clinical diagnosis, prescription management, and diagnostic lab sampling.",
     },
     {
       id: "DISTRICT_AUTHORITY",
-      title: "जिल्हा नियंत्रण अधिकारी (District Authority)",
-      badge: "पडताळणी आवश्यक",
+      title: "District Authority / Admin",
+      badge: "Verification Required",
       icon: Building2,
-      description: "जिल्हास्तरीय रोग प्रादुर्भाव देखरेख, क्लस्टर मॅपिंग, टेलिग्राम अलर्ट व पद मंजुऱ्या.",
+      description: "District disease outbreak surveillance, cluster mapping, emergency alerts, and approvals.",
     },
   ];
 
@@ -225,13 +225,13 @@ export default function OnboardingPage() {
       <div className="max-w-3xl w-full flex flex-col gap-6">
         <div className="text-center flex flex-col items-center gap-2">
           <Badge variant="outline" className="border-emerald-300 text-emerald-800 bg-emerald-50 text-xs px-3 py-1">
-            मैत्री खाते नोंदणी | Maitri Setup
+            Maitri Account Setup
           </Badge>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#191F1C] tracking-tight">
-            आपली अधिकृत भूमिका निवडा
+            Select Your Role
           </h1>
           <p className="text-stone-600 text-xs md:text-sm max-w-md">
-            पशु आरोग्य नेटवर्कवर आपली व्यावसायिक भूमिका आणि कार्यकक्षेची निवड करा.
+            Choose your professional role and operating jurisdiction on the animal health surveillance platform.
           </p>
         </div>
 
@@ -296,26 +296,26 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit}>
           <Card className="border-[#E5E0D8] bg-white rounded-3xl shadow-xs overflow-hidden">
             <CardHeader className="bg-[#FAF8F3] border-b border-[#E5E0D8]">
-              <CardTitle className="text-base text-[#191F1C] font-bold">वैयक्तिक व क्षेत्रीय माहिती | Profile & Jurisdiction</CardTitle>
+              <CardTitle className="text-base text-[#191F1C] font-bold">Profile & Jurisdiction</CardTitle>
               <CardDescription className="text-xs text-stone-500">
-                ही माहिती आपले खाते नजीकच्या गोठ्यांशी, गावाशी आणि जिल्हा अधिकाऱ्यांशी जोडते.
+                This links your account to local farms, villages, and district administrative authorities.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="name" className="text-xs text-stone-700 font-medium">पूर्ण नाव (Full Name) *</Label>
+                  <Label htmlFor="name" className="text-xs text-stone-700 font-medium">Full Name *</Label>
                   <Input
                     id="name"
                     required
-                    placeholder="उदा. रमेश तानाजी पाटील किंवा डॉ. अंजली कुलकर्णी"
+                    placeholder="e.g. Ramesh Patil or Dr. Anjali Kulkarni"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="bg-[#FAF8F3] border-[#D9D3C7] text-xs text-[#191F1C]"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="phone" className="text-xs text-stone-700 font-medium">मोबाईल नंबर (Outbreak SMS/Alerts) *</Label>
+                  <Label htmlFor="phone" className="text-xs text-stone-700 font-medium">Mobile Number (SMS / Alerts) *</Label>
                   <Input
                     id="phone"
                     required
@@ -328,7 +328,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="language" className="text-xs text-stone-700 font-medium">पसंतीची भाषा (Interface Language)</Label>
+                <Label htmlFor="language" className="text-xs text-stone-700 font-medium">Preferred Interface Language</Label>
                 <select
                   id="language"
                   value={language}
@@ -339,10 +339,10 @@ export default function OnboardingPage() {
                   }}
                   className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
                 >
-                      <option value="mr">मराठी (Maharashtra / Marathi)</option>
-                      <option value="bn">বাংলা (Bengali)</option>
-                  <option value="hi">हिंदी (Hindi)</option>
                   <option value="en">English</option>
+                  <option value="hi">हिंदी (Hindi)</option>
+                  <option value="mr">मराठी (Marathi)</option>
+                  <option value="bn">বাংলা (Bengali)</option>
                 </select>
               </div>
 
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
               {(
                 <div className="border-t border-[#E5E0D8] pt-4 space-y-4">
                   <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    नेमून दिलेली कार्यकक्षा (Assigned Scope)
+                    Assigned Jurisdiction
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* District Select */}
@@ -393,7 +393,7 @@ export default function OnboardingPage() {
                     {/* Block Select */}
                     {(selectedRole === "FIELD_AGENT" || selectedRole === "VETERINARIAN") && (
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="block" className="text-xs text-stone-700">तालुका (Block)</Label>
+                        <Label htmlFor="block" className="text-xs text-stone-700">Block / Taluka</Label>
                         <select
                           id="block"
                           disabled={!selectedDistrict}
@@ -401,7 +401,7 @@ export default function OnboardingPage() {
                           onChange={(e) => handleBlockChange(e.target.value)}
                           className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none disabled:opacity-50 min-h-[44px]"
                         >
-                          <option value="">तालुका निवडा...</option>
+                          <option value="">Select block...</option>
                           {blocks.map((b) => (
                             <option key={b.id} value={b.id}>
                               {b.name}
@@ -414,7 +414,7 @@ export default function OnboardingPage() {
                     {/* Village Select */}
                     {selectedRole === "FIELD_AGENT" && (
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="village" className="text-xs text-stone-700">गाव (Village)</Label>
+                        <Label htmlFor="village" className="text-xs text-stone-700">Village</Label>
                         <select
                           id="village"
                           disabled={!selectedBlock}
@@ -422,7 +422,7 @@ export default function OnboardingPage() {
                           onChange={(e) => setSelectedVillage(e.target.value)}
                           className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none disabled:opacity-50 min-h-[44px]"
                         >
-                          <option value="">गाव निवडा...</option>
+                          <option value="">Select village...</option>
                           {villages.map((v) => (
                             <option key={v.id} value={v.id}>
                               {v.name}
@@ -438,18 +438,18 @@ export default function OnboardingPage() {
             <CardFooter className="flex justify-between items-center border-t border-[#E5E0D8] pt-4 pb-4">
               <span className="text-xs text-stone-500">
                 {selectedRole === "FARMER"
-                  ? "पशुपालक खाती नोंदणीनंतर लगेच सुरू होतात."
-                  : "अधिकारी खात्यांना जिल्हा मंजुरी आवश्यक असते."}
+                  ? "Farmer accounts are activated immediately upon registration."
+                  : "Officer accounts require district authority approval."}
               </span>
               <Button type="submit" disabled={submitting} className="gap-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold min-h-[44px] shadow-xs cursor-pointer">
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>नोंदणी जतन होत आहे...</span>
+                    <span>Saving registration...</span>
                   </>
                 ) : (
                   <>
-                    <span>नोंदणी पूर्ण करा</span>
+                    <span>Complete Registration</span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

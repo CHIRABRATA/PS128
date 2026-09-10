@@ -5,7 +5,7 @@ import { PrintableAnimalOption, getFarmerAnimals, getFarmerRegistrationVillages,
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Cpu, Loader2, AlertCircle, Plus, X } from "lucide-react";
+import { Cpu, Loader2, AlertCircle, Plus, X } from "lucide-react";
 
 interface FarmerAnimalSelectorProps {
   selectedAnimal: PrintableAnimalOption | null;

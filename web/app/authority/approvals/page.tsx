@@ -12,9 +12,9 @@ export default async function AuthorityApprovalsPage() {
   return (
     <div className="space-y-6 text-[#191F1C]">
       <div>
-        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">प्रलंबित पद मंजुऱ्या | Credential Approvals</h1>
+        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">Credential & Role Approvals | Jurisdiction Verification</h1>
         <p className="text-stone-500 text-xs mt-1">
-          पशुसखी, पशुवैद्यक व क्षेत्रीय कर्मचाऱ्यांच्या कार्यकक्षेची अधिकृत पडताळणी.
+          Verification and jurisdiction approval for Pashu Sakhis, Field Agents, and Veterinarians.
         </p>
       </div>
 
@@ -23,17 +23,17 @@ export default async function AuthorityApprovalsPage() {
           <div>
             <CardTitle className="text-base text-[#191F1C] flex items-center gap-2 font-bold">
               <UserCheck className="h-5 w-5 text-amber-600" />
-              <span>पडताळणी प्रलंबित खाती ({pendingApprovals.length})</span>
+              <span>Pending Credential Approvals ({pendingApprovals.length})</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              खात्याची खात्री करून अधिकृत भूमिका मंजूर (Approve) किंवा नामंजूर (Reject) करा.
+              Review credential registrations and approve or reject authority access.
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
           {pendingApprovals.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-              सध्या या जिल्ह्यात कोणतीही पडताळणी प्रलंबित नाही.
+              No pending credential approvals in this district at this time.
             </div>
           ) : (
             <div className="space-y-3">
@@ -50,7 +50,7 @@ export default async function AuthorityApprovalsPage() {
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-stone-600">
-                      <span>फोन: <strong className="text-[#191F1C]">{user.phone}</strong></span>
+                      <span>Phone: <strong className="text-[#191F1C]">{user.phone}</strong></span>
                       <span className="flex items-center gap-1 text-emerald-800 font-medium">
                         <MapPin className="h-3 w-3" />
                         {user.district?.name || "Assigned District"}

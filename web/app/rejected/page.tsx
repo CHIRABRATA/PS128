@@ -17,13 +17,13 @@ export default async function RejectedPage() {
           </div>
 
           <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs px-3 py-1">
-            नोंदणी नामंजूर (Access Rejected)
+            Access Rejected
           </Badge>
 
-          <CardTitle className="text-xl font-bold text-[#191F1C]">अर्ज नामंजूर केला गेला आहे</CardTitle>
+          <CardTitle className="text-xl font-bold text-[#191F1C]">Application Rejected</CardTitle>
 
           <CardDescription className="text-xs text-stone-600">
-            आपला मैत्री प्लॅटफॉर्मवरील व्यावसायिक पद मंजुरीचा अर्ज जिल्हा पशुसंवर्धन विभागाकडून नामंजूर करण्यात आला आहे.
+            Your role verification request on the Maitri platform has been rejected by the District Animal Husbandry Authority.
           </CardDescription>
         </CardHeader>
 
@@ -31,15 +31,15 @@ export default async function RejectedPage() {
           <CardContent className="space-y-3 text-left pt-5">
             <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2 text-stone-600">
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">अर्जदाराचे नाव:</span>
+                <span className="text-stone-500">Applicant Name:</span>
                 <span className="font-semibold text-[#191F1C]">{appUser.name}</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">मागितलेले पद:</span>
+                <span className="text-stone-500">Requested Role:</span>
                 <span className="font-medium text-stone-700">{appUser.role}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">कार्यकक्षा:</span>
+                <span className="text-stone-500">Jurisdiction:</span>
                 <span className="font-medium text-stone-700">
                   {appUser.district?.name || "Unassigned"}
                 </span>
@@ -49,7 +49,7 @@ export default async function RejectedPage() {
             <div className="bg-red-50/70 p-3.5 rounded-2xl border border-red-200 text-xs text-red-800 flex items-start gap-2.5">
               <ShieldX className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-[11px] leading-relaxed text-red-800">
-                हा निर्णय चुकीने झाला असल्यास कृपया आपल्या अधिकृत परवाना प्रमाणपत्रासह जिल्हा पशुवैद्यकीय अधिकाऱ्यांशी थेट संपर्क साधा.
+                If you believe this was an error, please contact your District Animal Husbandry Officer with your professional licensing credentials.
               </p>
             </div>
           </CardContent>
@@ -59,7 +59,7 @@ export default async function RejectedPage() {
           <SignOutButton>
             <Button variant="secondary" size="sm" className="w-full gap-2 text-xs bg-[#FAF8F3] hover:bg-stone-200 border border-[#E5E0D8] text-stone-700 min-h-[40px]">
               <LogOut className="h-4 w-4" />
-              <span>खात्यातून बाहेर पडा (Sign Out)</span>
+              <span>Sign Out</span>
             </Button>
           </SignOutButton>
         </CardFooter>
