@@ -632,3 +632,119 @@ export async function updateFarmerProfileAction(input: UpdateFarmerProfileInput)
   }
 }
 
+/**
+ * Ensures the farmer has a primary Farm record with strict idempotency and concurrency protection.
+ * - If a farm already exists for the farmer, returns the existing farm.
+ * - If zero farms exist AND farmer has a valid registered village, provisions exactly one primary farm.
+ * - If farmer has no registered village, does NOT create a farm and returns 'unable_to_be_provisioned'.
+ */
+export type FarmProvisioningStatus = "already_existing" | "newly_provisioned" | "unable_to_be_provisioned";
+
+export interface EnsureFarmerPrimaryFarmResult {
+  farm: {
+    id: string;
+    name: string;
+    villageId: string;
+  } | null;
+  status: FarmProvisioningStatus;
+  message?: string;
+}
+
+export async function ensureFarmerPrimaryFarmAction(farmerId?: string): Promise<EnsureFarmerPrimaryFarmResult> {
+  try {
+    const farmer = await requireFarmer();
+    const targetUserId = farmerId && farmer.id === farmerId ? farmerId : farmer.id;
+
+    // 1. Check if farmer already has ANY farm registered
+    const existingFarm = await prisma.farm.findFirst({
+      where: { farmerUserId: targetUserId },
+      select: { id: true, name: true, villageId: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (existingFarm) {
+      console.log(`[Farm Provisioning]: Farmer ${farmer.name} (${targetUserId}) already has farm "${existingFarm.name}" (${existingFarm.id}). Status: already_existing`);
+      return {
+        farm: existingFarm,
+        status: "already_existing",
+        message: `Farmer already has registered farm: ${existingFarm.name}`,
+      };
+    }
+
+    // 2. Check if farmer has a valid registered village
+    if (!farmer.villageId) {
+      console.log(`[Farm Provisioning]: Farmer ${farmer.name} (${targetUserId}) has no registered village location. Status: unable_to_be_provisioned`);
+      return {
+        farm: null,
+        status: "unable_to_be_provisioned",
+        message: "No registered village location found on farmer profile.",
+      };
+    }
+
+    const village = await prisma.village.findUnique({
+      where: { id: farmer.villageId },
+    });
+
+    if (!village) {
+      console.log(`[Farm Provisioning]: Registered villageId ${farmer.villageId} does not exist in database. Status: unable_to_be_provisioned`);
+      return {
+        farm: null,
+        status: "unable_to_be_provisioned",
+        message: "Registered village does not exist in database.",
+      };
+    }
+
+    // 3. Atomically check and provision inside a transaction with PostgreSQL advisory lock to prevent race conditions
+    const result = await prisma.$transaction(async (tx) => {
+      try {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${targetUserId}))`;
+      } catch (lockErr) {
+        // Fallback gracefully if database engine is not Postgres in isolated mock environments
+        console.warn("[Advisory Lock Fallback]:", lockErr);
+      }
+
+      const concurrencyCheck = await tx.farm.findFirst({
+        where: { farmerUserId: targetUserId },
+        select: { id: true, name: true, villageId: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (concurrencyCheck) {
+        return {
+          farm: concurrencyCheck,
+          status: "already_existing" as const,
+          message: `Farmer already has registered farm: ${concurrencyCheck.name}`,
+        };
+      }
+
+      const newFarm = await tx.farm.create({
+        data: {
+          name: `${farmer.name || "My"} Farm`,
+          villageId: farmer.villageId!,
+          farmerUserId: targetUserId,
+          latitude: 18.5793,
+          longitude: 73.9806,
+        },
+        select: { id: true, name: true, villageId: true },
+      });
+
+      return {
+        farm: newFarm,
+        status: "newly_provisioned" as const,
+        message: `Successfully provisioned primary farm: ${newFarm.name}`,
+      };
+    });
+
+    console.log(`[Farm Provisioning]: Provisioning result for farmer ${farmer.name} (${targetUserId}): ${result.status} (farmId: ${result.farm?.id})`);
+    return result;
+  } catch (err: unknown) {
+    console.error("[Ensure Farmer Primary Farm Error]:", err);
+    return {
+      farm: null,
+      status: "unable_to_be_provisioned",
+      message: err instanceof Error ? err.message : "Failed to ensure primary farm.",
+    };
+  }
+}
+
+

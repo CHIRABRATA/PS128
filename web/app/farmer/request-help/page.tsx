@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireFarmer } from "@/lib/auth/permissions";
 import prisma from "@/lib/db/prisma";
 import { AssistanceRequestForm } from "@/components/farmer/AssistanceRequestForm";
+import { ensureFarmerPrimaryFarmAction } from "@/lib/actions/farmer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -14,7 +15,8 @@ export default async function FarmerRequestHelpPage({
   const params = searchParams ? await searchParams : {};
   const preSelectedAnimalId = params.animalId || null;
 
-  const farms = await prisma.farm.findMany({
+  // 1. Query all registered farms belonging to the authenticated farmer
+  let farms = await prisma.farm.findMany({
     where: { farmerUserId: farmer.id },
     include: {
       village: true,
@@ -30,12 +32,40 @@ export default async function FarmerRequestHelpPage({
         },
       },
     },
+    orderBy: { createdAt: "asc" },
   });
+
+  // 2. If zero farms exist, check whether the farmer has a registered village location to auto-provision strictly idempotently
+  if (farms.length === 0 && farmer.villageId) {
+    const provisionResult = await ensureFarmerPrimaryFarmAction(farmer.id);
+    if (provisionResult.farm) {
+      const freshFarm = await prisma.farm.findUnique({
+        where: { id: provisionResult.farm.id },
+        include: {
+          village: true,
+          herds: {
+            include: {
+              animals: {
+                select: {
+                  id: true,
+                  tag: true,
+                  species: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (freshFarm) {
+        farms = [freshFarm];
+      }
+    }
+  }
 
   const farmOptions = farms.map((f) => ({
     id: f.id,
     name: f.name,
-    villageName: f.village.name,
+    villageName: f.village ? f.village.name : "Registered Location",
     animals: f.herds.flatMap((h) => h.animals),
   }));
 
