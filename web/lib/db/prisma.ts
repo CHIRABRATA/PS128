@@ -24,16 +24,26 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-// In development with hot-reloading (Turbopack), ensure cached instance is fresh and has all generated model delegates
-const isCachedClientValid =
-  globalForPrisma.prisma &&
-  typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).assistanceRequest === "object" &&
-  typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).case === "object";
+function getValidClient(): PrismaClient {
+  if (
+    !globalForPrisma.prisma ||
+    typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).assistanceRequest !== "object" ||
+    typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).case !== "object"
+  ) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
-export const prisma = isCachedClientValid
-  ? (globalForPrisma.prisma as PrismaClient)
-  : createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getValidClient();
+    const value = Reflect.get(client, prop, receiver);
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
 
 export default prisma;
