@@ -24,6 +24,15 @@ export const metadata: Metadata = {
   title: "Maitri — Livestock Health & Veterinary Surveillance Platform",
   description: "Livestock disease early detection, rural field surveillance, and clinical decision support for farmers, veterinarians, and district authorities.",
   manifest: "/manifest.json",
+  alternates: {
+    languages: {
+      en: "/",
+      bn: "/",
+      hi: "/",
+      mr: "/",
+      "x-default": "/",
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -51,6 +60,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#FAF8F3] text-[#191F1C] selection:bg-emerald-700 selection:text-white pb-16 lg:pb-0">
+        <meta name="language" content={initialLocale} />
         <ClerkProvider>
           <LocaleProvider initialLocale={initialLocale}>
             <PwaRegister />

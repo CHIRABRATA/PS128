@@ -35,13 +35,13 @@ export function Navbar() {
         </div>
         <div className="flex flex-col text-left">
           <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
-            MAITRI • Livestock Health
+            {dictionary.app.title}
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Livestock Health Services
+              {dictionary.roles.FARMER}
             </span>
           </span>
           <span className="text-[11px] text-stone-500 hidden sm:inline leading-tight">
-            Veterinary Field Care & District Surveillance Platform
+            {dictionary.app.subtitle}
           </span>
         </div>
       </Link>

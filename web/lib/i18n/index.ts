@@ -16,6 +16,27 @@ export const dictionaries = {
 
 export type Dictionary = typeof en;
 
-export function getDictionary(locale: Locale = defaultLocale): Dictionary {
-  return dictionaries[locale] || dictionaries.en;
+export function isLocale(value: string | undefined | null): value is Locale {
+  return value === "en" || value === "bn" || value === "hi" || value === "mr";
 }
+
+function mergeDictionary<T>(fallback: T, value: Partial<T>): T {
+  if (typeof fallback !== "object" || fallback === null) {
+    return (value === undefined ? fallback : value) as T;
+  }
+
+  const merged = { ...(fallback as Record<string, unknown>) };
+  for (const [key, fallbackValue] of Object.entries(fallback as Record<string, unknown>)) {
+    const valueAtKey = (value as Record<string, unknown> | undefined)?.[key];
+    if (valueAtKey && typeof valueAtKey === "object" && !Array.isArray(valueAtKey)) {
+      merged[key] = mergeDictionary(fallbackValue, valueAtKey as Partial<typeof fallbackValue>);
+    }
+  }
+
+  return { ...merged, ...(value as Record<string, unknown>) } as T;
+}
+
+export function getDictionary(locale: Locale = defaultLocale): Dictionary {
+  return mergeDictionary(dictionaries.en, dictionaries[locale] || dictionaries.en);
+}
+
