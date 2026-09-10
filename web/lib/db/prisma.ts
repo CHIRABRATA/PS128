@@ -25,14 +25,15 @@ function createPrismaClient(): PrismaClient {
 }
 
 function getValidClient(): PrismaClient {
-  if (
-    !globalForPrisma.prisma ||
-    typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).assistanceRequest !== "object" ||
-    typeof (globalForPrisma.prisma as unknown as Record<string, unknown>).case !== "object"
-  ) {
+  const cached = globalForPrisma.prisma;
+  const runtimeModel = (cached as unknown as { _runtimeDataModel?: { models?: Record<string, { fields?: Array<{ name: string }> }> } })?._runtimeDataModel;
+  const hasAssignedVetField = runtimeModel?.models?.Case?.fields?.some((f) => f.name === "assignedVeterinarianUserId");
+  const hasAssistanceRequest = typeof (cached as unknown as Record<string, unknown> | undefined)?.assistanceRequest === "object";
+
+  if (!cached || !hasAssignedVetField || !hasAssistanceRequest) {
     globalForPrisma.prisma = createPrismaClient();
   }
-  return globalForPrisma.prisma;
+  return globalForPrisma.prisma as PrismaClient;
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
