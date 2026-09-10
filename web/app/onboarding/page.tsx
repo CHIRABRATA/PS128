@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, UserCheck, Stethoscope, Building2, CheckCircle2, ArrowRight, Loader2, AlertCircle, MapPin, LocateFixed } from "lucide-react";
+import { ShieldCheck, UserCheck, Stethoscope, Building2, CheckCircle2, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { completeOnboardingAction } from "@/lib/actions/auth";
-import { getDistricts, getBlocks, getVillages, detectDistrictFromCoordinates, searchLocations, resolveLocation } from "@/lib/actions/geo";
+import { getDistricts, getBlocks, getVillages } from "@/lib/actions/geo";
+import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { Locale } from "@/lib/i18n";
 
@@ -34,14 +35,10 @@ export default function OnboardingPage() {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedVillage, setSelectedVillage] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocationData | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [detectingDistrict, setDetectingDistrict] = useState(false);
-  const [gpsMessage, setGpsMessage] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
-  const [locationResults, setLocationResults] = useState<Array<{ displayName: string; latitude: number; longitude: number }>>([]);
-  const [searchingLocation, setSearchingLocation] = useState(false);
 
   // Load districts on mount
   useEffect(() => {
@@ -70,82 +67,24 @@ export default function OnboardingPage() {
     }
   };
 
-  const detectDistrict = () => {
-    setGpsMessage("");
-    if (!navigator.geolocation) {
-      setGpsMessage("GPS is not available in this browser. Please select your district manually.");
-      return;
-    }
-
-    setDetectingDistrict(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const result = await detectDistrictFromCoordinates(position.coords.latitude, position.coords.longitude);
-          if (!result.districtId) {
-            setGpsMessage(`GPS detected ${result.districtName || "a location"}, but it is not in the district list. Please select manually.`);
-            return;
-          }
-          setDistricts(await getDistricts());
-          handleDistrictChange(result.districtId);
-          if (result.blockId) {
-            setSelectedBlock(result.blockId);
-            const nextVillages = await getVillages(result.blockId);
+  const handleLocationSearchResult = (loc: SelectedLocationData) => {
+    setSelectedLocation(loc);
+    if (loc.districtId) {
+      setSelectedDistrict(loc.districtId);
+      getBlocks(loc.districtId).then((nextBlocks) => {
+        setBlocks(nextBlocks);
+        if (loc.blockId) {
+          setSelectedBlock(loc.blockId);
+          getVillages(loc.blockId).then((nextVillages) => {
             setVillages(nextVillages);
-            if (result.villageId) setSelectedVillage(result.villageId);
-          }
-          setGpsMessage(`District detected from GPS: ${result.districtName}`);
-        } catch (error: unknown) {
-          setGpsMessage(error instanceof Error ? error.message : "Unable to detect district from GPS. Please select manually.");
-        } finally {
-          setDetectingDistrict(false);
+            if (loc.villageId) {
+              setSelectedVillage(loc.villageId);
+            } else {
+              setSelectedVillage("");
+            }
+          });
         }
-      },
-      (error) => {
-        setDetectingDistrict(false);
-        setGpsMessage(error.code === error.PERMISSION_DENIED
-          ? "GPS permission was denied. Please select your district manually."
-          : "Unable to read GPS location. Please select your district manually.");
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 },
-    );
-  };
-
-  const searchForLocation = async () => {
-    if (locationQuery.trim().length < 3) return;
-    setSearchingLocation(true);
-    setGpsMessage("");
-    try {
-      setLocationResults(await searchLocations(locationQuery));
-    } catch (error: unknown) {
-      setGpsMessage(error instanceof Error ? error.message : "Unable to search for this location.");
-    } finally {
-      setSearchingLocation(false);
-    }
-  };
-
-  const chooseLocation = async (latitude: number, longitude: number, displayName: string) => {
-    setSearchingLocation(true);
-    try {
-      const result = await resolveLocation(latitude, longitude);
-      if (!result.districtId) {
-        setGpsMessage("This location could not be matched to a district.");
-        return;
-      }
-      setDistricts(await getDistricts());
-      handleDistrictChange(result.districtId);
-      if (result.blockId) {
-        setSelectedBlock(result.blockId);
-        setVillages(await getVillages(result.blockId));
-      }
-      if (result.villageId) setSelectedVillage(result.villageId);
-      setLocationResults([]);
-      setLocationQuery(displayName);
-      setGpsMessage(`Location selected: ${result.districtName}`);
-    } catch (error: unknown) {
-      setGpsMessage(error instanceof Error ? error.message : "Unable to use this location.");
-    } finally {
-      setSearchingLocation(false);
+      });
     }
   };
 
@@ -346,48 +285,39 @@ export default function OnboardingPage() {
                 </select>
               </div>
 
-              {/* Geographic Hierarchy Selects */}
-              {(
-                <div className="border-t border-[#E5E0D8] pt-4 space-y-4">
-                  <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Assigned Jurisdiction
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Geographic Hierarchy & Location Search */}
+              <div className="border-t border-[#E5E0D8] pt-4 space-y-4">
+                <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Assigned Jurisdiction & Location
+                </h4>
+
+                <div className="space-y-4">
+                  <LocationSearch
+                    label="Search Operating Village / Block / District"
+                    required={selectedRole !== "FARMER"}
+                    value={selectedLocation}
+                    onLocationSelect={handleLocationSearchResult}
+                    showMapPreview={true}
+                  />
+
+                  {/* Administrative Hierarchy Dropdowns (Verified / Refined) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-[#E5E0D8]/60">
                     {/* District Select */}
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label htmlFor="district" className="text-xs text-stone-700">District *</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={detectDistrict} disabled={detectingDistrict} className="h-7 gap-1 px-2 text-[11px]">
-                          {detectingDistrict ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                          {detectingDistrict ? "Detecting..." : "Use GPS"}
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          value={locationQuery}
-                          onChange={(event) => setLocationQuery(event.target.value)}
-                          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchForLocation(); } }}
-                          placeholder="Search city, village, or district"
-                          className="text-xs"
-                        />
-                        <Button type="button" variant="outline" onClick={() => void searchForLocation()} disabled={searchingLocation} className="shrink-0 text-xs">
-                          {searchingLocation ? "Searching..." : "Search"}
-                        </Button>
-                      </div>
-                      {locationResults.length > 0 && (
-                        <div className="space-y-1 rounded-xl border border-[#D9D3C7] bg-white p-1">
-                          {locationResults.map((result) => (
-                            <button key={`${result.latitude}-${result.longitude}`} type="button" onClick={() => void chooseLocation(result.latitude, result.longitude, result.displayName)} className="block w-full rounded-lg p-2 text-left text-xs text-stone-700 hover:bg-emerald-50">
-                              {result.displayName}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <select id="district" value={selectedDistrict} onChange={(e) => handleDistrictChange(e.target.value)} className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]">
+                      <Label htmlFor="district" className="text-xs text-stone-700">District *</Label>
+                      <select
+                        id="district"
+                        value={selectedDistrict}
+                        onChange={(e) => handleDistrictChange(e.target.value)}
+                        className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+                      >
                         <option value="">Select district...</option>
-                        {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        {districts.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
                       </select>
-                      {gpsMessage && <p className="flex items-start gap-1 text-[11px] text-emerald-800"><MapPin className="mt-0.5 h-3 w-3 shrink-0" />{gpsMessage}</p>}
                     </div>
 
                     {/* Block Select */}
@@ -433,7 +363,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </div>
-              )}
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center border-t border-[#E5E0D8] pt-4 pb-4">
               <span className="text-xs text-stone-500">

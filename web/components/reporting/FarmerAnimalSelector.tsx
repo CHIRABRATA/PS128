@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { PrintableAnimalOption, getFarmerAnimals, getFarmerRegistrationVillages, registerFarmerAnimal } from "@/lib/actions/reporting_data";
+import { PrintableAnimalOption, getFarmerAnimals, registerFarmerAnimal } from "@/lib/actions/reporting_data";
+import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,19 +24,24 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
   const [species, setSpecies] = useState<"COW" | "BUFFALO" | "SHEEP" | "GOAT" | "PET" | "OTHER">("COW");
   const [breed, setBreed] = useState("");
   const [registering, setRegistering] = useState(false);
-  const [villages, setVillages] = useState<Array<{ id: string; name: string; block: { name: string; district: { name: string } } }>>([]);
-  const [villageId, setVillageId] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocationData | null>(null);
 
   const registerAnimal = async () => {
     setRegistering(true);
     setError("");
-    const result = await registerFarmerAnimal({ tag, species, breed: breed || null, villageId: villageId || null });
+    const result = await registerFarmerAnimal({
+      tag,
+      species,
+      breed: breed || null,
+      villageId: selectedLocation?.villageId || null,
+    });
     if (result.success && result.animal) {
       setAnimals((current) => [...current, result.animal!]);
       onSelectAnimal(result.animal);
       setShowRegister(false);
       setTag("");
       setBreed("");
+      setSelectedLocation(null);
     } else {
       setError(result.error || "Unable to register animal.");
     }
@@ -61,17 +67,24 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
       </select>
       <label className="text-xs font-semibold text-stone-700">Breed (optional)</label>
       <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder="e.g. Gir" className="text-xs" />
-      {villages.length > 0 && (
-        <>
-          <label className="text-xs font-semibold text-stone-700">Village *</label>
-          <select value={villageId} onChange={(event) => setVillageId(event.target.value)} className="w-full rounded-xl border border-[#D9D3C7] bg-white p-2.5 text-xs">
-            <option value="">Select your village...</option>
-            {villages.map((village) => <option key={village.id} value={village.id}>{village.name} ({village.block.name})</option>)}
-          </select>
-        </>
-      )}
+      
+      <div className="pt-1">
+        <LocationSearch
+          label="Farm / Village Location"
+          required={false}
+          value={selectedLocation}
+          onLocationSelect={(loc) => setSelectedLocation(loc)}
+          showMapPreview={false}
+        />
+      </div>
+
       {error && <p className="text-xs text-red-700">{error}</p>}
-      <Button type="button" disabled={registering || !tag.trim() || (villages.length > 0 && !villageId)} onClick={() => void registerAnimal()} className="w-full bg-emerald-700 text-xs text-white hover:bg-emerald-800">
+      <Button
+        type="button"
+        disabled={registering || !tag.trim()}
+        onClick={() => void registerAnimal()}
+        className="w-full bg-emerald-700 text-xs text-white hover:bg-emerald-800 mt-2"
+      >
         {registering ? "Registering..." : "Create animal"}
       </Button>
     </div>
@@ -87,7 +100,6 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
         setError(err.message || "Failed to load your registered animals.");
         setLoading(false);
       });
-    getFarmerRegistrationVillages().then(setVillages).catch(() => setVillages([]));
   }, []);
 
   if (loading) {
