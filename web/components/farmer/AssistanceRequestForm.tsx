@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createAssistanceRequestAction } from "@/lib/actions/assistance";
+import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,8 @@ export function AssistanceRequestForm({
   const [reason, setReason] = useState<string>("");
   const [scheduledDate, setScheduledDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [showLocationSearch, setShowLocationSearch] = useState(false);
+  const [customLocation, setCustomLocation] = useState<SelectedLocationData | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,9 @@ export function AssistanceRequestForm({
         animalId: selectedAnimalId || null,
         reason: reason.trim(),
         scheduledAt: scheduledDate || null,
-        notes: notes.trim() || null,
+        notes: customLocation
+          ? `${notes ? notes + "\n" : ""}Location: ${customLocation.displayName || customLocation.placeName}`
+          : notes.trim() || null,
       });
 
       if (!res.success) {
@@ -102,7 +107,7 @@ export function AssistanceRequestForm({
         </Badge>
         <h2 className="text-xl font-bold text-[#191F1C]">Field Agent Assistance Dispatched</h2>
         <p className="text-xs text-stone-600 max-w-md mx-auto">
-          Your request has been routed to the field agents in <strong>{selectedFarm?.villageName}</strong>. You will be notified as soon as an agent accepts your request.
+          Your request has been routed to the field agents in <strong>{selectedFarm?.villageName || customLocation?.displayName}</strong>. You will be notified as soon as an agent accepts your request.
         </p>
       </div>
     );
@@ -134,49 +139,74 @@ export function AssistanceRequestForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Farm Selection */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-emerald-700" />
-            <span>Select Farm / Shed Location *</span>
-          </Label>
-          <select
-            value={selectedFarmId}
-            onChange={(e) => {
-              setSelectedFarmId(e.target.value);
-              setSelectedAnimalId("");
-            }}
-            required
-            className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
-          >
-            {farms.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.villageName})
-              </option>
-            ))}
-          </select>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Farm Selection */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-stone-800 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-emerald-700" />
+                <span>Select Farm / Shed Location *</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLocationSearch(!showLocationSearch)}
+                className="text-[11px] font-medium text-emerald-700 hover:underline cursor-pointer"
+              >
+                {showLocationSearch ? "Use standard farm" : "Search / GPS"}
+              </button>
+            </Label>
+            <select
+              value={selectedFarmId}
+              onChange={(e) => {
+                setSelectedFarmId(e.target.value);
+                setSelectedAnimalId("");
+              }}
+              required
+              className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+            >
+              {farms.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name} ({f.villageName})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Animal Selection (Optional) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-amber-700" />
+              <span>Specific Animal (Optional)</span>
+            </Label>
+            <select
+              value={selectedAnimalId}
+              onChange={(e) => setSelectedAnimalId(e.target.value)}
+              className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
+            >
+              <option value="">General Herd / Multiple Animals</option>
+              {farmAnimals.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.tag} ({a.species})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Animal Selection (Optional) */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-amber-700" />
-            <span>Specific Animal (Optional)</span>
-          </Label>
-          <select
-            value={selectedAnimalId}
-            onChange={(e) => setSelectedAnimalId(e.target.value)}
-            className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
-          >
-            <option value="">General Herd / Multiple Animals</option>
-            {farmAnimals.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.tag} ({a.species})
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Optional Location Search */}
+        {showLocationSearch && (
+          <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 space-y-2 animate-fade-in">
+            <LocationSearch
+              value={customLocation}
+              onLocationSelect={(loc) => setCustomLocation(loc)}
+              onClear={() => setCustomLocation(null)}
+              label="Specify visit location (if different from registered farm):"
+              required={false}
+              showMapPreview={true}
+            />
+          </div>
+        )}
       </div>
 
       {/* Reason for Request */}

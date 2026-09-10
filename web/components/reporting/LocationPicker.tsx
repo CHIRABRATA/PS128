@@ -6,8 +6,8 @@ import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationS
 
 export interface LocationData {
   village: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   districtId?: string | null;
   blockId?: string | null;
   villageId?: string | null;

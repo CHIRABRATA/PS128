@@ -10,8 +10,8 @@ export interface GeocodedLocationResult {
   subdistrict?: string | null;
   district?: string | null;
   state?: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   distanceKm?: number | null;
   isUrban?: boolean;
 }
@@ -24,8 +24,8 @@ export interface ResolvedLocationHierarchy {
   villageId: string | null;
   villageName: string | null;
   isUrban: boolean;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   displayName: string;
   placeName?: string;
 }
@@ -96,6 +96,7 @@ async function searchMapboxV6(
     url.searchParams.set("limit", "6");
     url.searchParams.set("language", "en");
 
+    // Proximity ONLY if user explicitly provided/allowed GPS
     if (userGps && typeof userGps.lat === "number" && typeof userGps.lng === "number") {
       url.searchParams.set("proximity", `${userGps.lng},${userGps.lat}`);
     }
@@ -136,15 +137,21 @@ async function searchMapboxV6(
     }
 
     return data.features.map((feat) => {
-      const lng = feat.geometry.coordinates[0];
-      const lat = feat.geometry.coordinates[1];
+      const lng = feat.geometry?.coordinates?.[0] ?? null;
+      const lat = feat.geometry?.coordinates?.[1] ?? null;
       const placeName = feat.properties.name_preferred || feat.properties.name;
       const district = feat.properties.context?.district?.name || feat.properties.context?.place?.name || null;
       const subdistrict = feat.properties.context?.locality?.name || feat.properties.context?.neighborhood?.name || null;
       const state = feat.properties.context?.region?.name || "Maharashtra";
 
       let distanceKm: number | null = null;
-      if (userGps && typeof userGps.lat === "number" && typeof userGps.lng === "number") {
+      if (
+        userGps &&
+        typeof userGps.lat === "number" &&
+        typeof userGps.lng === "number" &&
+        lat !== null &&
+        lng !== null
+      ) {
         distanceKm = computeHaversine(userGps.lat, userGps.lng, lat, lng);
       }
 
@@ -173,6 +180,7 @@ async function searchMapboxV6(
 /**
  * Fallback local search against authoritative Prisma records (District, Block, Village).
  * Never creates duplicate Village rows.
+ * Never uses Pune or 0,0 coordinates when no real coordinates exist.
  */
 async function searchLocalPrismaHierarchy(
   query: string,
@@ -203,11 +211,12 @@ async function searchLocalPrismaHierarchy(
   const results: GeocodedLocationResult[] = [];
 
   for (const v of villages) {
-    const lat = v.farms[0]?.latitude ?? 18.5204;
-    const lng = v.farms[0]?.longitude ?? 73.8567;
-    const distanceKm = userGps
-      ? computeHaversine(userGps.lat, userGps.lng, lat, lng)
-      : null;
+    const lat = v.farms[0]?.latitude ?? null;
+    const lng = v.farms[0]?.longitude ?? null;
+    const distanceKm =
+      userGps && lat !== null && lng !== null
+        ? computeHaversine(userGps.lat, userGps.lng, lat, lng)
+        : null;
 
     results.push({
       id: `local_village_${v.id}`,
@@ -223,7 +232,7 @@ async function searchLocalPrismaHierarchy(
     });
   }
 
-  // 2. If needed, search existing Blocks
+  // 2. If needed, search existing Blocks (no fake coords)
   if (results.length < 6) {
     const blocks = await prisma.block.findMany({
       where: {
@@ -236,12 +245,6 @@ async function searchLocalPrismaHierarchy(
     });
 
     for (const b of blocks) {
-      const lat = 18.5204;
-      const lng = 73.8567;
-      const distanceKm = userGps
-        ? computeHaversine(userGps.lat, userGps.lng, lat, lng)
-        : null;
-
       results.push({
         id: `local_block_${b.id}`,
         placeName: b.name,
@@ -249,15 +252,15 @@ async function searchLocalPrismaHierarchy(
         subdistrict: b.name,
         district: b.district.name,
         state: "Maharashtra",
-        latitude: lat,
-        longitude: lng,
-        distanceKm,
+        latitude: null,
+        longitude: null,
+        distanceKm: null,
         isUrban: true,
       });
     }
   }
 
-  // 3. Search Districts if still room
+  // 3. Search Districts if still room (no fake coords)
   if (results.length < 6) {
     const districts = await prisma.district.findMany({
       where: {
@@ -267,12 +270,6 @@ async function searchLocalPrismaHierarchy(
     });
 
     for (const d of districts) {
-      const lat = 18.5204;
-      const lng = 73.8567;
-      const distanceKm = userGps
-        ? computeHaversine(userGps.lat, userGps.lng, lat, lng)
-        : null;
-
       results.push({
         id: `local_district_${d.id}`,
         placeName: d.name,
@@ -280,20 +277,25 @@ async function searchLocalPrismaHierarchy(
         subdistrict: null,
         district: d.name,
         state: "Maharashtra",
-        latitude: lat,
-        longitude: lng,
-        distanceKm,
+        latitude: null,
+        longitude: null,
+        distanceKm: null,
         isUrban: true,
       });
     }
   }
 
-  // If GPS is provided, sort by distance
+  // If GPS is provided, sort by distance: valid distance results first, then others
   if (userGps) {
     results.sort((a, b) => {
-      const distA = a.distanceKm ?? Infinity;
-      const distB = b.distanceKm ?? Infinity;
-      return distA - distB;
+      const hasA = typeof a.distanceKm === "number";
+      const hasB = typeof b.distanceKm === "number";
+      if (hasA && hasB) {
+        return (a.distanceKm as number) - (b.distanceKm as number);
+      }
+      if (hasA) return -1;
+      if (hasB) return 1;
+      return 0;
     });
   }
 
@@ -311,6 +313,10 @@ export async function searchLocationsAction(
   const trimmed = (query || "").trim();
   if (trimmed.length < 3) return [];
 
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`SEARCH\nquery=${trimmed}\ngps=${userGps ? `${userGps.lat},${userGps.lng}` : "null"}`);
+  }
+
   const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN;
 
   // 1. Try Mapbox Geocoding v6
@@ -326,12 +332,17 @@ export async function searchLocationsAction(
 }
 
 /**
- * Reverse geocoding via Mapbox v6 or local district fallback for "Use my current location".
+ * Reverse geocoding via Mapbox v6 or actual GPS detection for "Use my current location".
+ * NEVER defaults to Pune or fake coordinates.
  */
 export async function reverseGeocodeLocationAction(
   latitude: number,
   longitude: number
 ): Promise<GeocodedLocationResult | null> {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`REVERSE GEOCODE\nlatitude=${latitude}\nlongitude=${longitude}`);
+  }
+
   const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN;
 
   if (mapboxToken) {
@@ -397,32 +408,10 @@ export async function reverseGeocodeLocationAction(
     }
   }
 
-  // Fallback: match nearest local district / village in database
-  const firstDistrict = await prisma.district.findFirst({
-    include: { blocks: { include: { villages: true } } },
-  });
-
-  if (firstDistrict) {
-    const firstBlock = firstDistrict.blocks[0];
-    const firstVillage = firstBlock?.villages[0];
-
-    return {
-      id: `detected_${latitude}_${longitude}`,
-      placeName: firstVillage?.name || firstBlock?.name || firstDistrict.name,
-      displayName: `${firstVillage?.name || firstBlock?.name || firstDistrict.name}, ${firstDistrict.name}`,
-      subdistrict: firstBlock?.name || null,
-      district: firstDistrict.name,
-      state: "Maharashtra",
-      latitude,
-      longitude,
-      distanceKm: 0,
-      isUrban: !firstVillage,
-    };
-  }
-
+  // Fallback: Return actual detected GPS location coordinates without fabricating administrative values
   return {
     id: `detected_${latitude}_${longitude}`,
-    placeName: "Detected GPS Location",
+    placeName: "Current GPS Location",
     displayName: `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
     subdistrict: null,
     district: null,
@@ -440,8 +429,8 @@ export async function reverseGeocodeLocationAction(
  * Supports urban locations where villageId is null.
  */
 export async function resolveLocationHierarchyAction(input: {
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   placeName: string;
   districtName?: string | null;
   blockName?: string | null;
@@ -548,21 +537,6 @@ export async function resolveLocationHierarchyAction(input: {
       resolvedBlockName = village.block.name;
       resolvedDistrictId = village.block.districtId;
       resolvedDistrictName = village.block.district.name;
-    }
-  }
-
-  // If no district is resolved, pick default/first district if exists
-  if (!resolvedDistrictId) {
-    const fallbackDistrict = await prisma.district.findFirst({
-      include: { blocks: true },
-    });
-    if (fallbackDistrict) {
-      resolvedDistrictId = fallbackDistrict.id;
-      resolvedDistrictName = fallbackDistrict.name;
-      if (!resolvedBlockId && fallbackDistrict.blocks.length > 0) {
-        resolvedBlockId = fallbackDistrict.blocks[0].id;
-        resolvedBlockName = fallbackDistrict.blocks[0].name;
-      }
     }
   }
 
