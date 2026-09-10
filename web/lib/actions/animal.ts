@@ -251,6 +251,7 @@ export async function getAnimalDetailHistoryAction(animalId: string) {
       badgeVariant: r.action === "ISOLATE" ? "destructive" : "default",
       details: {
         reportId: r.id,
+        caseId: r.caseId,
         diagnosis: r.diagnosis,
         action: r.action,
         instructions: r.instructions,

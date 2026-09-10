@@ -532,7 +532,7 @@ export async function saveVetFeedbackAction(input: VetFeedbackInput) {
       userId: farmerUserId,
       title: "Veterinary Report Available",
       message: `Dr. ${vet.name} submitted a clinical assessment for Animal ${currentCase.animal.tag} (${currentCase.animal.species}): "${vetDiagnosis || actionEnum}".`,
-      link: `/farmer/animals/${currentCase.animalId}`,
+      link: `/farmer/cases/${caseId}`,
       type: "VET_REPORT_SUBMITTED",
     });
   }
@@ -543,6 +543,7 @@ export async function saveVetFeedbackAction(input: VetFeedbackInput) {
     revalidatePath(`/vet/cases/${caseId}`);
     revalidatePath("/vet/follow-ups");
     revalidatePath("/farmer");
+    revalidatePath(`/farmer/cases/${caseId}`);
     revalidatePath(`/farmer/animals/${currentCase.animalId}`);
     revalidatePath("/authority");
   } catch {
@@ -647,7 +648,7 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
       userId: farmerUserId,
       title: "Lab Referral Scheduled",
       message: `Sample for Animal ${currentCase.animal.tag} has been referred to ${labName} for testing.`,
-      link: `/farmer/animals/${currentCase.animalId}`,
+      link: `/farmer/cases/${caseId}`,
       type: "LAB_REFERRAL",
     });
   }
@@ -658,6 +659,7 @@ export async function referCaseToLabAction(input: ReferToLabInput) {
     revalidatePath(`/vet/cases/${caseId}`);
     revalidatePath("/vet/samples");
     revalidatePath("/farmer");
+    revalidatePath(`/farmer/cases/${caseId}`);
     revalidatePath(`/farmer/animals/${currentCase.animalId}`);
     revalidatePath("/authority");
   } catch {
@@ -756,7 +758,7 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
       userId: farmerUserId,
       title: "Diagnosis Confirmed",
       message: `Dr. ${vet.name} confirmed diagnosis: "${vetDiagnosis}" for Animal ${currentCase.animal.tag}.`,
-      link: `/farmer/animals/${currentCase.animalId}`,
+      link: `/farmer/cases/${caseId}`,
       type: "DIAGNOSIS_CONFIRMED",
     });
   }
@@ -766,6 +768,7 @@ export async function confirmCaseAction(input: ConfirmCaseInput) {
     revalidatePath("/vet/cases");
     revalidatePath(`/vet/cases/${caseId}`);
     revalidatePath("/farmer");
+    revalidatePath(`/farmer/cases/${caseId}`);
     revalidatePath(`/farmer/animals/${currentCase.animalId}`);
     revalidatePath("/authority");
   } catch {
@@ -857,7 +860,7 @@ export async function closeCaseAction(input: CloseCaseInput) {
       userId: farmerUserId,
       title: "Case Closed / Resolved",
       message: `Case #${currentCase.caseNumber} for Animal ${currentCase.animal.tag} has been closed by Dr. ${vet.name}.`,
-      link: `/farmer/animals/${currentCase.animalId}`,
+      link: `/farmer/cases/${caseId}`,
       type: "CASE_CLOSED",
     });
   }
@@ -867,6 +870,7 @@ export async function closeCaseAction(input: CloseCaseInput) {
     revalidatePath("/vet/cases");
     revalidatePath(`/vet/cases/${caseId}`);
     revalidatePath("/farmer");
+    revalidatePath(`/farmer/cases/${caseId}`);
     revalidatePath(`/farmer/animals/${currentCase.animalId}`);
     revalidatePath("/authority");
   } catch {
@@ -1168,7 +1172,7 @@ export async function completeFollowUpAction(reportId: string, notes?: string) {
       userId: farmerUserId,
       title: "Follow-up Examination Completed",
       message: `Dr. ${vet.name} completed the follow-up examination for Animal ${report.animal.tag}.`,
-      link: `/farmer/animals/${report.animalId}`,
+      link: `/farmer/cases/${report.caseId}`,
       type: "FOLLOW_UP_COMPLETED",
     });
   }
@@ -1178,8 +1182,10 @@ export async function completeFollowUpAction(reportId: string, notes?: string) {
     revalidatePath("/vet/follow-ups");
     if (report.caseId) {
       revalidatePath(`/vet/cases/${report.caseId}`);
+      revalidatePath(`/farmer/cases/${report.caseId}`);
     }
     revalidatePath("/farmer");
+    revalidatePath(`/farmer/animals/${report.animalId}`);
   } catch {
     // Safe fallback
   }

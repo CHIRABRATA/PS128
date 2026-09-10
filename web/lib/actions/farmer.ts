@@ -46,6 +46,12 @@ export async function getFarmerDashboardMetricsAction() {
                 cases: {
                   include: {
                     assignedVeterinarianUser: { select: { id: true, name: true, phone: true } },
+                    veterinaryReports: {
+                      include: {
+                        vetUser: { select: { id: true, name: true, phone: true } },
+                      },
+                      orderBy: { createdAt: "desc" },
+                    },
                     animal: {
                       select: {
                         id: true,
@@ -159,4 +165,133 @@ export async function getFarmerDashboardMetricsAction() {
     upcomingFollowUps,
     farms,
   };
+}
+
+/**
+ * Retrieves a full Case detail and associated Veterinary Reports for the authenticated farmer.
+ * Strictly verifies that the authenticated farmer owns the animal/farm or created the report.
+ */
+export async function getFarmerCaseDetailAction(caseId: string) {
+  const farmer = await requireFarmer();
+
+  const healthCase = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: {
+      animal: {
+        include: {
+          herd: {
+            include: {
+              farm: {
+                include: {
+                  farmerUser: { select: { id: true, name: true, phone: true } },
+                  village: {
+                    include: {
+                      block: {
+                        include: {
+                          district: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      createdByUser: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          role: true,
+        },
+      },
+      reviewedByUser: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      assignedVeterinarianUser: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      veterinaryReports: {
+        include: {
+          vetUser: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      fieldVisit: {
+        include: {
+          fieldAgentUser: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      assistanceRequest: {
+        include: {
+          assignedFieldAgentUser: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      treatments: {
+        include: {
+          administeredByUser: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: { dateGiven: "desc" },
+      },
+      samples: {
+        include: {
+          collectedByUser: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { collectedAt: "desc" },
+      },
+    },
+  });
+
+  if (!healthCase) {
+    throw new Error("Case record not found.");
+  }
+
+  const farm = healthCase.animal.herd.farm;
+  const isOwner = farm.farmerUserId === farmer.id;
+  const isCreator = healthCase.createdByUserId === farmer.id;
+
+  if (!isOwner && !isCreator) {
+    throw new Error("Unauthorized: You do not have permission to view this case.");
+  }
+
+  return healthCase;
 }
