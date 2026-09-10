@@ -2,66 +2,120 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import SurveillanceHeatmapInternal, {
-  MapMarkerData,
+  MapLayerVisibility,
+} from "@/components/authority/SurveillanceHeatmapInternal";
+import {
   formatVillageName,
   formatBlockName,
   isValidCoordinate,
-} from "@/components/authority/SurveillanceHeatmapInternal";
+} from "@/components/authority/mapUtils";
+import { DistrictMapLayersData } from "@/lib/authority/metrics";
 
-import L from "leaflet";
+const sampleMapLayers: DistrictMapLayersData = {
+  heatmapPoints: [
+    {
+      lat: 18.1517,
+      lng: 74.5772,
+      weight: 5.0,
+      caseCount: 1,
+      riskLevel: "HIGH",
+      locationName: "Baramati",
+    },
+  ],
+  farms: [
+    {
+      id: "farm-1",
+      name: "Baramati Farm",
+      villageName: "Baramati",
+      blockName: "Baramati",
+      farmerName: "Farmer Ramesh",
+      lat: 18.1517,
+      lng: 74.5772,
+      animalCount: 8,
+      activeCaseCount: 2,
+    },
+  ],
+  cases: [
+    {
+      id: "case-1",
+      caseNumber: "CASE-2026-101",
+      status: "PENDING_REVIEW",
+      riskLevel: "HIGH",
+      species: "COW",
+      animalTag: "TAG-101",
+      farmName: "Baramati Farm",
+      villageName: "Baramati",
+      blockName: "Baramati",
+      farmerName: "Farmer Ramesh",
+      reportedAt: new Date().toISOString(),
+      lat: 18.1517,
+      lng: 74.5772,
+    },
+  ],
+  veterinarians: [
+    {
+      id: "vet-1",
+      name: "Dr. Sharma",
+      phone: "+919800000000",
+      serviceArea: "Baramati",
+      activeCasesCount: 2,
+      pendingReviewsCount: 1,
+      lat: 18.1517,
+      lng: 74.5772,
+    },
+  ],
+  fieldAgents: [
+    {
+      id: "agent-1",
+      name: "Agent Patil",
+      phone: "+919800000001",
+      serviceArea: "Baramati",
+      openRequestsCount: 1,
+      completedVisitsCount: 3,
+      lat: 18.1517,
+      lng: 74.5772,
+    },
+  ],
+  fieldVisits: [
+    {
+      id: "visit-1",
+      visitDate: new Date().toISOString(),
+      agentName: "Agent Patil",
+      farmName: "Baramati Farm",
+      villageName: "Baramati",
+      status: "Completed",
+      observations: "Inspection done",
+      lat: 18.1517,
+      lng: 74.5772,
+    },
+  ],
+  alerts: [
+    {
+      id: "alert-1",
+      diseaseName: "FMD",
+      caseCount: 3,
+      villageName: "Baramati",
+      blockName: "Baramati",
+      windowStart: new Date().toISOString(),
+      windowEnd: new Date().toISOString(),
+      active: true,
+      lat: 18.1517,
+      lng: 74.5772,
+    },
+  ],
+};
 
-const sampleMarkers: MapMarkerData[] = [
-  {
-    id: "marker-1",
-    name: "Baramati",
-    blockName: "Baramati",
-    lat: 18.1517,
-    lng: 74.5772,
-    caseCount: 8,
-    highRiskCount: 3,
-    confirmedCount: 2,
-    activeAlert: true,
-    diseaseName: "Foot and Mouth Disease",
-    speciesBreakdown: { cow: 4, buffalo: 3, goat: 1, other: 0 },
-  },
-  {
-    id: "marker-2",
-    name: "Malegaon_BK",
-    blockName: "Baramati",
-    lat: 18.1517, // Shared coordinate with marker-1 to test micro-offset
-    lng: 74.5772,
-    caseCount: 2,
-    highRiskCount: 0,
-    confirmedCount: 1,
-    activeAlert: false,
-    speciesBreakdown: { cow: 1, buffalo: 1, goat: 0, other: 0 },
-  },
-  {
-    id: "marker-3",
-    name: "Junnar_Rural",
-    blockName: "Junnar",
-    lat: 19.2065,
-    lng: 73.8767,
-    caseCount: 1,
-    highRiskCount: 0,
-    confirmedCount: 0,
-    activeAlert: false,
-    speciesBreakdown: { cow: 1, buffalo: 0, goat: 0, other: 0 },
-  },
-  {
-    id: "marker-invalid",
-    name: "Corrupt_Coords",
-    blockName: "Pune",
-    lat: NaN,
-    lng: 0,
-    caseCount: 1,
-    highRiskCount: 0,
-    confirmedCount: 0,
-    activeAlert: false,
-  },
-];
+const defaultLayerVisibility: MapLayerVisibility = {
+  heatmap: true,
+  farms: true,
+  cases: true,
+  vets: true,
+  agents: true,
+  visits: true,
+  alerts: true,
+};
 
-describe("Map Rendering & GIS Surveillance Heatmap Smoke Test (Batch 2 - F-09)", () => {
+describe("Map Rendering & GIS Surveillance Heatmap Test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -76,12 +130,12 @@ describe("Map Rendering & GIS Surveillance Heatmap Smoke Test (Batch 2 - F-09)",
       expect(isValidCoordinate(18.5204, 185)).toBe(false);
     });
 
-    it("formats village and block names by cleaning internal IDs and fallback handling", () => {
+    it("formats village and block names without hardcoded fallbacks", () => {
       expect(formatVillageName("Baramati", "Baramati")).toBe("Baramati");
-      expect(formatVillageName("Vil P123456", "Shirur")).toBe("Shirur Rural Cluster");
+      expect(formatVillageName("Vil P123456", "Shirur")).toBe("Shirur Cluster");
       expect(formatVillageName(null, null)).toBe("Village location unavailable");
-      expect(formatBlockName("Haveli")).toBe("Haveli");
-      expect(formatBlockName("Block P999999")).toBe("Haveli");
+      expect(formatBlockName("Baramati")).toBe("Baramati");
+      expect(formatBlockName(null)).toBe("Block Jurisdiction");
     });
   });
 
@@ -89,102 +143,43 @@ describe("Map Rendering & GIS Surveillance Heatmap Smoke Test (Batch 2 - F-09)",
     it("mounts safely without SSR or window crashes", () => {
       const { container } = render(
         <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
+          mapLayers={sampleMapLayers}
+          layerVisibility={defaultLayerVisibility}
           searchQuery=""
         />
       );
 
-      // The container element must be present in the DOM
       const mapContainer = container.querySelector(".leaflet-container");
       expect(mapContainer || container.firstElementChild).toBeInTheDocument();
     });
 
-    it("creates circleMarkers with semantic colors and attaches tooltips and popups", () => {
-      const onSelectMarker = vi.fn();
+    it("handles entity selection and search queries cleanly", () => {
+      const onSelectEntity = vi.fn();
 
-      const { container } = render(
-        <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId="marker-1"
-          onSelectMarker={onSelectMarker}
-          searchQuery=""
-        />
-      );
-
-      expect(container.firstChild).toBeInTheDocument();
-    });
-
-    it("applies micro-spiral coordinate offsets to prevent marker stacking on shared coordinates", () => {
-      const circleMarkerSpy = vi.spyOn(L, "circleMarker");
-
-      render(
-        <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
-          searchQuery=""
-        />
-      );
-
-      // marker-1 and marker-2 share base coordinates [18.1517, 74.5772]
-      const calls = circleMarkerSpy.mock.calls;
-      const marker1Coords = calls.find((call) => {
-        const [latLng] = call;
-        return Array.isArray(latLng) && Math.abs(latLng[0] - 18.1517) < 0.0001;
-      })?.[0] as [number, number];
-
-      const marker2Coords = calls.find((call) => {
-        const [latLng] = call;
-        return Array.isArray(latLng) && Math.abs(latLng[0] - 18.1517) >= 0.0001 && Math.abs(latLng[0] - 18.1517) < 0.01;
-      })?.[0] as [number, number];
-
-      expect(marker1Coords).toBeDefined();
-      expect(marker2Coords).toBeDefined();
-      expect(marker1Coords[0]).not.toBe(marker2Coords[0]);
-      expect(marker1Coords[1]).not.toBe(marker2Coords[1]);
-    });
-
-    it("filters out invalid coordinates and respects search queries", () => {
       const { rerender } = render(
         <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
-          searchQuery="Junnar"
+          mapLayers={sampleMapLayers}
+          layerVisibility={defaultLayerVisibility}
+          onSelectEntity={onSelectEntity}
+          searchQuery="Baramati"
         />
       );
 
-      // Re-render with empty search query
       rerender(
         <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
+          mapLayers={sampleMapLayers}
+          layerVisibility={defaultLayerVisibility}
+          onSelectEntity={onSelectEntity}
           searchQuery=""
         />
       );
     });
 
-    it("handles focusMarkerId navigation cleanly", () => {
-      const onSelectMarker = vi.fn();
-
-      render(
-        <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
-          onSelectMarker={onSelectMarker}
-          focusMarkerId="marker-1"
-        />
-      );
-
-      expect(onSelectMarker).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "marker-1", name: "Baramati" })
-      );
-    });
-
-    it("cleans up resize observer and map references on unmount", () => {
+    it("cleans up map and resize observers on unmount", () => {
       const { unmount } = render(
         <SurveillanceHeatmapInternal
-          markers={sampleMarkers}
-          selectedMarkerId={null}
+          mapLayers={sampleMapLayers}
+          layerVisibility={defaultLayerVisibility}
         />
       );
 

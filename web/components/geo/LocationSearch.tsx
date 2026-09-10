@@ -268,6 +268,11 @@ export function LocationSearch({
                     Urban / Town
                   </Badge>
                 )}
+                {isGpsOrigin && (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
+                    GPS Source
+                  </Badge>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2 text-[11px] text-stone-600 pt-0.5">

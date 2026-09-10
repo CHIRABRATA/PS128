@@ -1,3 +1,88 @@
+export interface HeatmapPointData {
+  lat: number;
+  lng: number;
+  weight: number;
+  caseCount: number;
+  riskLevel?: string | null;
+  locationName?: string;
+}
+
+export interface FarmMapMarker {
+  id: string;
+  name: string;
+  villageName: string;
+  blockName: string;
+  farmerName: string;
+  lat: number;
+  lng: number;
+  animalCount: number;
+  activeCaseCount: number;
+}
+
+export interface CaseMapMarker {
+  id: string;
+  caseNumber: string;
+  status: string;
+  riskLevel: string;
+  species: string;
+  animalTag: string;
+  farmName: string;
+  villageName: string;
+  blockName: string;
+  farmerName: string;
+  reportedAt: string;
+  diagnosis?: string | null;
+  lat: number;
+  lng: number;
+}
+
+export interface VetMapMarker {
+  id: string;
+  name: string;
+  phone: string;
+  serviceArea: string;
+  activeCasesCount: number;
+  pendingReviewsCount: number;
+  lat: number;
+  lng: number;
+}
+
+export interface FieldAgentMapMarker {
+  id: string;
+  name: string;
+  phone: string;
+  serviceArea: string;
+  openRequestsCount: number;
+  completedVisitsCount: number;
+  lat: number;
+  lng: number;
+}
+
+export interface FieldVisitMapMarker {
+  id: string;
+  visitDate: string;
+  agentName: string;
+  farmName: string;
+  villageName: string;
+  status: string;
+  observations?: string | null;
+  lat: number;
+  lng: number;
+}
+
+export interface AlertMapMarker {
+  id: string;
+  diseaseName: string;
+  caseCount: number;
+  villageName: string;
+  blockName: string;
+  windowStart: string;
+  windowEnd: string;
+  active: boolean;
+  lat: number;
+  lng: number;
+}
+
 export interface MapMarkerData {
   id: string;
   name: string;
@@ -44,26 +129,23 @@ export function isInternalIdentifier(str?: string | null): boolean {
   );
 }
 
-// Clean up raw block / taluka identifiers into human-readable names
+// Clean up raw block / taluka identifiers into human-readable names without fake defaults
 export function formatBlockName(rawBlockName?: string | null): string {
-  if (!rawBlockName || isInternalIdentifier(rawBlockName)) {
-    return "Haveli";
+  if (!rawBlockName) {
+    return "Block Jurisdiction";
   }
   return rawBlockName.trim();
 }
 
-// Clean up raw test identifiers into professional human-readable village names
+// Clean up raw village names into human-readable village names without fake defaults
 export function formatVillageName(rawVillageName?: string | null, rawBlockName?: string | null): string {
   if (!rawVillageName) return "Village location unavailable";
-
   if (!isInternalIdentifier(rawVillageName)) {
     return rawVillageName.trim();
   }
-
   const cleanBlock = formatBlockName(rawBlockName);
-  if (cleanBlock && !isInternalIdentifier(cleanBlock)) {
-    return `${cleanBlock} Rural Cluster`;
+  if (cleanBlock && cleanBlock !== "Block Jurisdiction") {
+    return `${cleanBlock} Cluster`;
   }
-
-  return "Pune Rural Sector";
+  return rawVillageName.trim();
 }

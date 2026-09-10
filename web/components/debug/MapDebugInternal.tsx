@@ -12,10 +12,10 @@ export default function MapDebugInternal() {
     if (!containerRef.current) return;
     if (mapRef.current) return;
 
-    // Standard Maharashtra / Pune center
+    // Standard geographic center
     const map = L.map(containerRef.current, {
-      center: [18.5204, 73.8567],
-      zoom: 11,
+      center: [20.5937, 78.9629],
+      zoom: 5,
       zoomControl: true,
       attributionControl: true,
     });

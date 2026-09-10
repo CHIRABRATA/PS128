@@ -55,25 +55,27 @@ export default async function Home() {
     block?: { name: string; district?: { name: string } } | null;
     farms: Array<{ latitude?: number | null; longitude?: number | null }>;
     alerts: Array<{ diseaseName?: string | null }>;
-  }>).map((v) => {
-    const lat = v.farms[0]?.latitude || 18.5793;
-    const lng = v.farms[0]?.longitude || 73.9806;
-    const activeAlert = v.alerts.length > 0;
-    const cleanBlock = formatBlockName(v.block?.name);
-    const cleanVillage = formatVillageName(v.name, cleanBlock);
-    return {
-      id: v.id,
-      name: cleanVillage,
-      blockName: cleanBlock,
-      lat,
-      lng,
-      activeAlert,
-      diseaseName: activeAlert ? v.alerts[0].diseaseName || "Cluster" : null,
-      caseCount: activeAlert ? 3 : 1,
-      highRiskCount: activeAlert ? 1 : 0,
-      confirmedCount: activeAlert ? 1 : 0,
-    };
-  });
+  }>)
+    .filter((v) => typeof v.farms[0]?.latitude === "number" && typeof v.farms[0]?.longitude === "number")
+    .map((v) => {
+      const lat = v.farms[0].latitude as number;
+      const lng = v.farms[0].longitude as number;
+      const activeAlert = v.alerts.length > 0;
+      const cleanBlock = formatBlockName(v.block?.name);
+      const cleanVillage = formatVillageName(v.name, cleanBlock);
+      return {
+        id: v.id,
+        name: cleanVillage,
+        blockName: cleanBlock,
+        lat,
+        lng,
+        activeAlert,
+        diseaseName: activeAlert ? v.alerts[0].diseaseName || "Cluster" : null,
+        caseCount: activeAlert ? 3 : 1,
+        highRiskCount: activeAlert ? 1 : 0,
+        confirmedCount: activeAlert ? 1 : 0,
+      };
+    });
 
   return (
     <div className="flex-1 flex flex-col w-full bg-[#FAF8F3] text-[#191F1C] overflow-x-hidden">
