@@ -61,6 +61,7 @@ export function LocationSearch({
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [userGps, setUserGps] = useState<UserGpsCoordinates | null>(null);
+  const [isGpsOrigin, setIsGpsOrigin] = useState(false);
   const [gpsErrorMessage, setGpsErrorMessage] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -225,6 +226,7 @@ export function LocationSearch({
 
   const handleClearSelection = () => {
     setInternalSelectedLocation(null);
+    setIsGpsOrigin(false);
     setQuery("");
     setResults([]);
     setHasSearched(false);
@@ -266,6 +268,11 @@ export function LocationSearch({
                 {selectedLocation.isUrban && (
                   <Badge className="bg-stone-200 text-stone-700 border-stone-300 text-[10px]">
                     Urban / Town
+                  </Badge>
+                )}
+                {isGpsOrigin && (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
+                    GPS Source
                   </Badge>
                 )}
               </div>

@@ -3,8 +3,48 @@
 import prisma from "@/lib/db/prisma";
 import { requireDistrictAuthority } from "@/lib/auth/permissions";
 import { syncClerkApplicationState } from "@/lib/auth/metadata";
-import { getAuthorityDashboardMetrics } from "@/lib/authority/metrics";
+import { getAuthorityDashboardMetrics, getDistrictAuthorityCommandData } from "@/lib/authority/metrics";
 import { revalidatePath } from "next/cache";
+
+/**
+ * Retrieves the complete, production-ready, database-backed District Command Center data.
+ * Strictly derives the district from the authenticated authority session.
+ */
+export async function getDistrictAuthorityCommandDataAction(filters?: {
+  timeRange?: "today" | "7d" | "30d" | "90d" | "custom" | "all";
+  customStartDate?: string | null;
+  customEndDate?: string | null;
+  blockId?: string | null;
+  villageId?: string | null;
+}) {
+  const authority = await requireDistrictAuthority();
+
+  let safeBlockId = filters?.blockId || null;
+  let safeVillageId = filters?.villageId || null;
+
+  if (authority.districtId && safeBlockId) {
+    const block = await prisma.block.findFirst({
+      where: { id: safeBlockId, districtId: authority.districtId },
+    });
+    if (!block) safeBlockId = null;
+  }
+
+  if (authority.districtId && safeVillageId) {
+    const village = await prisma.village.findFirst({
+      where: { id: safeVillageId, block: { districtId: authority.districtId } },
+    });
+    if (!village) safeVillageId = null;
+  }
+
+  return await getDistrictAuthorityCommandData({
+    districtId: authority.districtId,
+    timeRange: filters?.timeRange || "30d",
+    customStartDate: filters?.customStartDate,
+    customEndDate: filters?.customEndDate,
+    blockId: safeBlockId,
+    villageId: safeVillageId,
+  });
+}
 
 /**
  * Lists all users with PENDING_APPROVAL status within the authority's jurisdiction.

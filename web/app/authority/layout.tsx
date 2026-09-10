@@ -6,7 +6,7 @@ import { UserButton } from "@clerk/nextjs";
 
 export default async function AuthorityLayout({ children }: { children: React.ReactNode }) {
   const authority = await requireDistrictAuthority();
-  const districtName = authority.district?.name || "Pune District";
+  const districtName = authority.district?.name || "Authorized District";
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#191F1C] flex flex-col font-sans">

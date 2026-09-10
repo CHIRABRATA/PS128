@@ -1,167 +1,1492 @@
 import prisma from "@/lib/db/prisma";
 import { getRiskRank } from "@/lib/vet/schemas";
 import { Prisma } from "@prisma/client";
+import { isValidCoordinate } from "@/components/authority/mapUtils";
 
-export interface AuthorityDashboardMetrics {
-  districtName: string;
-  animalsMonitored: number;
-  reportsThisWeek: number;
-  highRiskCases: number;
+export interface DistrictCommandFilterOptions {
+  districtId: string | null;
+  timeRange?: "today" | "7d" | "30d" | "90d" | "custom" | "all";
+  customStartDate?: string | null;
+  customEndDate?: string | null;
+  blockId?: string | null;
+  villageId?: string | null;
+}
+
+export interface KpiSummaryMetrics {
+  totalFarmers: number;
+  totalFarms: number;
+  totalAnimals: number;
+  activeCases: number;
+  pendingReviews: number;
+  underExamination: number;
+  labReferrals: number;
   confirmedCases: number;
+  closedHarmlessCases: number;
+  activeAssistanceRequests: number;
+  activeFieldVisits: number;
+  totalVeterinarians: number;
+  totalFieldAgents: number;
   activeAlerts: number;
-  pendingApprovalsCount: number;
+  followUpsDue: number;
   avgTimeToReviewHours: number | null;
   avgTimeToConfirmationHours: number | null;
 }
 
+export interface VetCoverageItem {
+  id: string;
+  name: string;
+  phone: string;
+  serviceArea: string;
+  assignedCases: number;
+  activeCases: number;
+  pendingReviews: number;
+  underExam: number;
+  labReferrals: number;
+  followUps: number;
+  farmersUnderCare: number;
+  animalsUnderCare: number;
+  workloadScore: number;
+  assignedCasesList: {
+    id: string;
+    caseNumber: string;
+    status: string;
+    riskLevel: string;
+    species: string;
+    animalTag: string;
+    farmerName: string;
+    farmName: string;
+    villageName: string;
+    blockName: string;
+    reportedAt: string;
+    diagnosis?: string | null;
+    followUpDate?: string | null;
+    followUpCompleted: boolean;
+  }[];
+}
+
+export interface FieldAgentCoverageItem {
+  id: string;
+  name: string;
+  phone: string;
+  serviceArea: string;
+  pendingRequests: number;
+  acceptedRequests: number;
+  scheduledVisits: number;
+  completedVisits: number;
+  farmersAssisted: number;
+  animalsVisited: number;
+  openRequests: number;
+  workloadScore: number;
+  activeRequestsList: {
+    id: string;
+    reason: string;
+    status: string;
+    requestedAt: string;
+    scheduledAt?: string | null;
+    farmerName: string;
+    farmName: string;
+    villageName: string;
+    blockName: string;
+    animalTag?: string | null;
+    species?: string | null;
+    caseNumber?: string | null;
+    visitObservations?: string | null;
+    visitCompletedAt?: string | null;
+  }[];
+}
+
+export interface DistrictPipelineStage {
+  status: string;
+  label: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+  secondaryValue?: number;
+  color?: string;
+  meta?: string;
+}
+
+export interface VillageAnalysisRow {
+  villageId: string;
+  villageName: string;
+  blockName: string;
+  farmersCount: number;
+  farmsCount: number;
+  animalsCount: number;
+  totalCases: number;
+  activeCases: number;
+  activeAlerts: number;
+  highestRisk: string;
+}
+
+export interface DistrictMapLayersData {
+  heatmapPoints: {
+    lat: number;
+    lng: number;
+    weight: number;
+    caseCount: number;
+    riskLevel: string;
+    locationName: string;
+  }[];
+  farms: {
+    id: string;
+    name: string;
+    villageName: string;
+    blockName: string;
+    farmerName: string;
+    lat: number;
+    lng: number;
+    animalCount: number;
+    activeCaseCount: number;
+  }[];
+  cases: {
+    id: string;
+    caseNumber: string;
+    status: string;
+    riskLevel: string;
+    species: string;
+    animalTag: string;
+    farmName: string;
+    villageName: string;
+    blockName: string;
+    farmerName: string;
+    reportedAt: string;
+    diagnosis?: string | null;
+    lat: number;
+    lng: number;
+  }[];
+  veterinarians: {
+    id: string;
+    name: string;
+    phone: string;
+    serviceArea: string;
+    activeCasesCount: number;
+    pendingReviewsCount: number;
+    lat: number;
+    lng: number;
+  }[];
+  fieldAgents: {
+    id: string;
+    name: string;
+    phone: string;
+    serviceArea: string;
+    openRequestsCount: number;
+    completedVisitsCount: number;
+    lat: number;
+    lng: number;
+  }[];
+  fieldVisits: {
+    id: string;
+    visitDate: string;
+    agentName: string;
+    farmName: string;
+    villageName: string;
+    status: string;
+    observations?: string | null;
+    lat: number;
+    lng: number;
+  }[];
+  alerts: {
+    id: string;
+    diseaseName: string;
+    caseCount: number;
+    villageName: string;
+    blockName: string;
+    windowStart: string;
+    windowEnd: string;
+    active: boolean;
+    lat: number;
+    lng: number;
+  }[];
+}
+
+export interface RecentActivityItem {
+  id: string;
+  type: "CASE" | "VISIT" | "REPORT" | "ALERT";
+  title: string;
+  subtitle: string;
+  timestamp: string;
+  statusBadge: string;
+  statusVariant?: string;
+  linkUrl?: string;
+}
+
+export interface DistrictCommandCenterData {
+  districtName: string;
+  districtId: string | null;
+  activeFilters: {
+    timeRange: string;
+    blockId: string | null;
+    villageId: string | null;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  filterOptions: {
+    blocks: { id: string; name: string; villageCount: number }[];
+    villages: { id: string; name: string; blockId: string }[];
+  };
+  kpis: KpiSummaryMetrics;
+  pipeline: DistrictPipelineStage[];
+  veterinarians: VetCoverageItem[];
+  fieldAgents: FieldAgentCoverageItem[];
+  charts: {
+    casesByStatus: ChartDataPoint[];
+    casesByRisk: ChartDataPoint[];
+    casesOverTime: ChartDataPoint[];
+    casesByVillage: ChartDataPoint[];
+    vetWorkload: ChartDataPoint[];
+    agentWorkload: ChartDataPoint[];
+    speciesDistribution: ChartDataPoint[];
+    alertsBySeverity: ChartDataPoint[];
+    assistanceRequestStatus: ChartDataPoint[];
+  };
+  villageAnalysis: VillageAnalysisRow[];
+  mapLayers: DistrictMapLayersData;
+  recentActivity: RecentActivityItem[];
+}
+
+// Transparent Heatmap Intensity Weighting Model
+export function calculateRiskIntensity(riskLevel?: string | null, hasAlert: boolean = false): number {
+  const rank = getRiskRank(riskLevel);
+  let baseWeight = 1.0;
+  if (rank >= 5) baseWeight = 5.0; // CRITICAL
+  else if (rank === 4) baseWeight = 4.0; // HIGH
+  else if (rank === 3) baseWeight = 3.0; // ELEVATED
+  else if (rank === 2) baseWeight = 2.0; // MEDIUM
+  else if (rank === 1) baseWeight = 1.0; // LOW
+
+  if (hasAlert) baseWeight += 5.0; // Active village outbreak alert
+  return baseWeight;
+}
+
 /**
- * Computes district public-health surveillance metrics exclusively from real Prisma database records.
- * Zero fabricated data. Handles sparse/empty states cleanly without division-by-zero.
+ * Calculates start and end timestamps from a time range string.
  */
-export async function getAuthorityDashboardMetrics(districtId: string | null): Promise<AuthorityDashboardMetrics> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+function getDateRangeFilter(
+  timeRange: string = "30d",
+  customStart?: string | null,
+  customEnd?: string | null
+): { gte?: Date; lte?: Date } {
+  const now = new Date();
+  if (timeRange === "today") {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { gte: startOfToday, lte: now };
+  }
+  if (timeRange === "7d") {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { gte: sevenDaysAgo, lte: now };
+  }
+  if (timeRange === "30d") {
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { gte: thirtyDaysAgo, lte: now };
+  }
+  if (timeRange === "90d") {
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    return { gte: ninetyDaysAgo, lte: now };
+  }
+  if (timeRange === "custom" && customStart) {
+    const start = new Date(customStart);
+    const end = customEnd ? new Date(customEnd) : now;
+    return { gte: start, lte: end };
+  }
+  return {};
+}
 
-  // Geographic scoping filter
-  const caseWhereClause: Prisma.CaseWhereInput = {};
-  const animalWhereClause: Prisma.AnimalWhereInput = {};
-  const alertWhereClause: Prisma.AlertWhereInput = {};
-  const userWhereClause: Prisma.UserWhereInput = { status: "PENDING_APPROVAL" };
+/**
+ * Core district command data aggregation engine.
+ * STRICTLY DATABASE-BACKED. Zero mock data.
+ */
+export async function getDistrictAuthorityCommandData(
+  options: DistrictCommandFilterOptions
+): Promise<DistrictCommandCenterData> {
+  const { districtId, timeRange = "30d", customStartDate, customEndDate, blockId, villageId } = options;
 
-  let districtName = "All Districts Jurisdiction";
-
+  let districtName = "District Authority Scope";
   if (districtId) {
     const districtRecord = await prisma.district.findUnique({
       where: { id: districtId },
       select: { name: true },
     });
-    if (districtRecord) districtName = districtRecord.name;
+    if (districtRecord?.name) {
+      districtName = districtRecord.name;
+    }
+  }
 
-    caseWhereClause.animal = {
+  // 1. Fetch available Geographic Filter Hierarchy for the district
+  const blocksInDistrict = await prisma.block.findMany({
+    where: districtId ? { districtId } : {},
+    select: {
+      id: true,
+      name: true,
+      villages: {
+        select: {
+          id: true,
+          name: true,
+          blockId: true,
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const filterBlocks = blocksInDistrict.map((b) => ({
+    id: b.id,
+    name: b.name,
+    villageCount: b.villages.length,
+  }));
+
+  const filterVillages = blocksInDistrict.flatMap((b) =>
+    b.villages.map((v) => ({
+      id: v.id,
+      name: v.name,
+      blockId: v.blockId,
+    }))
+  );
+
+  // 2. Build Prisma Where Clauses with Strict Geographic & Temporal Scoping
+  const dateFilter = getDateRangeFilter(timeRange, customStartDate, customEndDate);
+
+  // Geographic village filter tree
+  const villageScopedWhere: Prisma.VillageWhereInput = {};
+  if (villageId) {
+    villageScopedWhere.id = villageId;
+  } else if (blockId) {
+    villageScopedWhere.blockId = blockId;
+  } else if (districtId) {
+    villageScopedWhere.block = { districtId };
+  }
+
+  // Farm where clause
+  const farmWhereClause: Prisma.FarmWhereInput = {
+    village: villageScopedWhere,
+  };
+
+  // Case where clause
+  const caseWhereClause: Prisma.CaseWhereInput = {
+    animal: {
       herd: {
         farm: {
-          village: {
-            block: {
-              districtId: districtId,
+          village: villageScopedWhere,
+        },
+      },
+    },
+    ...(dateFilter.gte || dateFilter.lte ? { reportedAt: dateFilter } : {}),
+  };
+
+  // Animal where clause
+  const animalWhereClause: Prisma.AnimalWhereInput = {
+    herd: {
+      farm: {
+        village: villageScopedWhere,
+      },
+    },
+  };
+
+  // Alert where clause
+  const alertWhereClause: Prisma.AlertWhereInput = {
+    village: villageScopedWhere,
+  };
+
+  // Assistance request where clause
+  const assistanceWhereClause: Prisma.AssistanceRequestWhereInput = {
+    farm: {
+      village: villageScopedWhere,
+    },
+    ...(dateFilter.gte || dateFilter.lte ? { requestedAt: dateFilter } : {}),
+  };
+
+  // User where clause for district personnel
+  const userDistrictWhere: Prisma.UserWhereInput = {};
+  if (villageId) {
+    userDistrictWhere.villageId = villageId;
+  } else if (blockId) {
+    userDistrictWhere.blockId = blockId;
+  } else if (districtId) {
+    userDistrictWhere.districtId = districtId;
+  }
+
+  // 3. Parallel Database Aggregations
+  const [
+    farmersCount,
+    farmsCount,
+    animalsCount,
+    allDistrictCases,
+    assistanceRequests,
+    fieldVisits,
+    veterinariansList,
+    fieldAgentsList,
+    activeAlertsList,
+    allAlertsList,
+    allFarmsWithRelations,
+    allVillagesInScope,
+    recentCases,
+    recentVisits,
+    recentVetReports,
+  ] = await Promise.all([
+    prisma.user.count({
+      where: {
+        role: "FARMER",
+        ...userDistrictWhere,
+      },
+    }),
+    prisma.farm.count({ where: farmWhereClause }),
+    prisma.animal.count({ where: animalWhereClause }),
+    prisma.case.findMany({
+      where: caseWhereClause,
+      include: {
+        animal: {
+          select: {
+            id: true,
+            tag: true,
+            species: true,
+            herd: {
+              select: {
+                farm: {
+                  select: {
+                    id: true,
+                    name: true,
+                    latitude: true,
+                    longitude: true,
+                    farmerUserId: true,
+                    farmerUser: { select: { id: true, name: true, phone: true } },
+                    village: {
+                      select: {
+                        id: true,
+                        name: true,
+                        block: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        assignedVeterinarianUser: {
+          select: { id: true, name: true, phone: true },
+        },
+        veterinaryReports: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            diagnosis: true,
+            action: true,
+            followUpDate: true,
+            followUpCompleted: true,
+            createdAt: true,
+            vetUser: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { reportedAt: "desc" },
+    }),
+    prisma.assistanceRequest.findMany({
+      where: assistanceWhereClause,
+      include: {
+        farmerUser: { select: { id: true, name: true, phone: true } },
+        assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
+        farm: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+            village: { select: { id: true, name: true, block: { select: { id: true, name: true } } } },
+          },
+        },
+        animal: { select: { id: true, tag: true, species: true } },
+        case: { select: { id: true, caseNumber: true, status: true, gpsLat: true, gpsLng: true } },
+        visit: {
+          select: {
+            id: true,
+            startedAt: true,
+            completedAt: true,
+            observations: true,
+            measurements: true,
+            fieldAgentUser: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { requestedAt: "desc" },
+    }),
+    prisma.fieldVisit.findMany({
+      where: {
+        assistanceRequest: {
+          farm: {
+            village: villageScopedWhere,
+          },
+        },
+      },
+      include: {
+        assistanceRequest: {
+          include: {
+            farmerUser: { select: { name: true, phone: true } },
+            farm: {
+              select: {
+                name: true,
+                latitude: true,
+                longitude: true,
+                village: { select: { name: true, block: { select: { name: true } } } },
+              },
+            },
+          },
+        },
+        fieldAgentUser: { select: { id: true, name: true, phone: true } },
+        case: { select: { caseNumber: true, gpsLat: true, gpsLng: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: {
+        role: "VETERINARIAN",
+        ...userDistrictWhere,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        district: { select: { name: true } },
+        block: { select: { name: true } },
+        village: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.user.findMany({
+      where: {
+        role: "FIELD_AGENT",
+        ...userDistrictWhere,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        district: { select: { name: true } },
+        block: { select: { name: true } },
+        village: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.alert.findMany({
+      where: {
+        active: true,
+        ...alertWhereClause,
+      },
+      include: {
+        village: {
+          include: {
+            block: true,
+            farms: { select: { latitude: true, longitude: true }, take: 1 },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.alert.findMany({
+      where: alertWhereClause,
+      include: {
+        village: {
+          include: {
+            block: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.farm.findMany({
+      where: farmWhereClause,
+      include: {
+        farmerUser: { select: { name: true } },
+        village: { select: { name: true, block: { select: { name: true } } } },
+        herds: {
+          include: {
+            animals: {
+              select: {
+                id: true,
+                cases: {
+                  where: {
+                    status: { in: ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"] },
+                  },
+                  select: { id: true },
+                },
+              },
             },
           },
         },
       },
-    };
-
-    animalWhereClause.herd = {
-      farm: {
-        village: {
-          block: {
-            districtId: districtId,
+    }),
+    prisma.village.findMany({
+      where: villageScopedWhere,
+      include: {
+        block: true,
+        alerts: { where: { active: true } },
+        farms: {
+          include: {
+            farmerUser: { select: { id: true } },
+            herds: {
+              include: {
+                animals: {
+                  include: {
+                    cases: {
+                      select: {
+                        id: true,
+                        status: true,
+                        analysisResult: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
-    };
-
-    alertWhereClause.village = {
-      block: {
-        districtId: districtId,
-      },
-    };
-
-    userWhereClause.districtId = districtId;
-  }
-
-  // Execute database aggregation queries in parallel
-  const [
-    animalsMonitored,
-    reportsThisWeek,
-    confirmedCasesCount,
-    activeAlertsCount,
-    pendingApprovalsCount,
-    allDistrictCases,
-  ] = await Promise.all([
-    prisma.animal.count({ where: animalWhereClause }),
-    prisma.case.count({
-      where: {
-        ...caseWhereClause,
-        reportedAt: { gte: sevenDaysAgo },
-      },
+      orderBy: { name: "asc" },
     }),
-    prisma.case.count({
-      where: {
-        ...caseWhereClause,
-        status: "CONFIRMED",
-      },
-    }),
-    prisma.alert.count({
-      where: {
-        ...alertWhereClause,
-        active: true,
-      },
-    }),
-    prisma.user.count({ where: userWhereClause }),
     prisma.case.findMany({
       where: caseWhereClause,
       select: {
+        id: true,
+        caseNumber: true,
+        status: true,
         reportedAt: true,
-        reviewedAt: true,
-        confirmedAt: true,
         analysisResult: true,
+        animal: {
+          select: {
+            tag: true,
+            species: true,
+            herd: {
+              select: {
+                farm: {
+                  select: {
+                    name: true,
+                    village: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
+      orderBy: { reportedAt: "desc" },
+      take: 6,
+    }),
+    prisma.fieldVisit.findMany({
+      where: {
+        assistanceRequest: {
+          farm: {
+            village: villageScopedWhere,
+          },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        observations: true,
+        fieldAgentUser: { select: { name: true } },
+        assistanceRequest: {
+          select: {
+            farm: { select: { name: true, village: { select: { name: true } } } },
+            farmerUser: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
+    prisma.veterinaryReport.findMany({
+      where: {
+        case: {
+          animal: {
+            herd: {
+              farm: {
+                village: villageScopedWhere,
+              },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        diagnosis: true,
+        action: true,
+        vetUser: { select: { name: true } },
+        case: {
+          select: {
+            caseNumber: true,
+            animal: {
+              select: {
+                tag: true,
+                species: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
     }),
   ]);
 
-  // 1. High-risk case aggregation using shared getRiskRank helper
-  let highRiskCasesCount = 0;
-  let totalReviewTimeMs = 0;
-  let reviewedCasesCount = 0;
-  let totalConfirmationTimeMs = 0;
-  let confirmedCasesWithTimestampCount = 0;
+  // 4. Compute 15 Core KPI Metrics & Turnaround Speed
+  let pendingReviewsCount = 0;
+  let underExamCount = 0;
+  let labReferralCount = 0;
+  let confirmedCount = 0;
+  let closedHarmlessCount = 0;
+  let followUpsDueCount = 0;
+  let totalReviewMs = 0;
+  let reviewedCasesWithTime = 0;
+  let totalConfirmationMs = 0;
+  let confirmedCasesWithTime = 0;
+
+  const nowTime = Date.now();
 
   for (const c of allDistrictCases) {
-    // Check AI risk level (CRITICAL=5, HIGH=4)
-    const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
-    const riskLevel = (analysis.overall_risk_level as string) || null;
-    const rank = getRiskRank(riskLevel);
-    if (rank >= 4) {
-      highRiskCasesCount++;
+    if (c.status === "PENDING_REVIEW") pendingReviewsCount++;
+    else if (c.status === "UNDER_EXAMINATION") underExamCount++;
+    else if (c.status === "LAB_REFERRAL") labReferralCount++;
+    else if (c.status === "CONFIRMED") confirmedCount++;
+    else if (c.status === "CLOSED_HARMLESS") closedHarmlessCount++;
+
+    // Follow ups check
+    const isDue =
+      (c.vetFollowUpDate && !c.followUpCompleted && new Date(c.vetFollowUpDate).getTime() <= nowTime) ||
+      (c.veterinaryReports[0]?.followUpDate &&
+        !c.veterinaryReports[0]?.followUpCompleted &&
+        new Date(c.veterinaryReports[0].followUpDate).getTime() <= nowTime);
+    if (isDue) {
+      followUpsDueCount++;
     }
 
-    // Time to review calculation (reviewedAt - reportedAt)
+    // Turnaround calculations
     if (c.reviewedAt) {
-      const reviewMs = new Date(c.reviewedAt).getTime() - new Date(c.reportedAt).getTime();
-      if (reviewMs >= 0) {
-        totalReviewTimeMs += reviewMs;
-        reviewedCasesCount++;
+      const ms = new Date(c.reviewedAt).getTime() - new Date(c.reportedAt).getTime();
+      if (ms >= 0) {
+        totalReviewMs += ms;
+        reviewedCasesWithTime++;
       }
     }
-
-    // Time to confirmation calculation (confirmedAt - reportedAt)
     if (c.confirmedAt) {
-      const confirmMs = new Date(c.confirmedAt).getTime() - new Date(c.reportedAt).getTime();
-      if (confirmMs >= 0) {
-        totalConfirmationTimeMs += confirmMs;
-        confirmedCasesWithTimestampCount++;
+      const ms = new Date(c.confirmedAt).getTime() - new Date(c.reportedAt).getTime();
+      if (ms >= 0) {
+        totalConfirmationMs += ms;
+        confirmedCasesWithTime++;
       }
     }
   }
 
-  // Turnaround averages in hours (or null if no reviewed/confirmed cases exist)
+  const activeCasesCount = pendingReviewsCount + underExamCount + labReferralCount;
+
+  let activeRequestsCount = 0;
+  for (const r of assistanceRequests) {
+    if (["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"].includes(r.status)) {
+      activeRequestsCount++;
+    }
+  }
+
+  let activeVisitsCount = 0;
+  for (const v of fieldVisits) {
+    if (!v.completedAt) {
+      activeVisitsCount++;
+    }
+  }
+
   const avgTimeToReviewHours =
-    reviewedCasesCount > 0
-      ? Math.round((totalReviewTimeMs / (reviewedCasesCount * 1000 * 3600)) * 10) / 10
-      : null;
+    reviewedCasesWithTime > 0 ? Math.round((totalReviewMs / (reviewedCasesWithTime * 3600000)) * 10) / 10 : null;
 
   const avgTimeToConfirmationHours =
-    confirmedCasesWithTimestampCount > 0
-      ? Math.round((totalConfirmationTimeMs / (confirmedCasesWithTimestampCount * 1000 * 3600)) * 10) / 10
+    confirmedCasesWithTime > 0
+      ? Math.round((totalConfirmationMs / (confirmedCasesWithTime * 3600000)) * 10) / 10
       : null;
+
+  const kpis: KpiSummaryMetrics = {
+    totalFarmers: farmersCount,
+    totalFarms: farmsCount,
+    totalAnimals: animalsCount,
+    activeCases: activeCasesCount,
+    pendingReviews: pendingReviewsCount,
+    underExamination: underExamCount,
+    labReferrals: labReferralCount,
+    confirmedCases: confirmedCount,
+    closedHarmlessCases: closedHarmlessCount,
+    activeAssistanceRequests: activeRequestsCount,
+    activeFieldVisits: activeVisitsCount,
+    totalVeterinarians: veterinariansList.length,
+    totalFieldAgents: fieldAgentsList.length,
+    activeAlerts: activeAlertsList.length,
+    followUpsDue: followUpsDueCount,
+    avgTimeToReviewHours,
+    avgTimeToConfirmationHours,
+  };
+
+  // 5. Compute District Case Pipeline
+  const totalCasesAll = allDistrictCases.length;
+  const pipeline: DistrictPipelineStage[] = [
+    {
+      status: "PENDING_REVIEW",
+      label: "Pending Review",
+      count: pendingReviewsCount,
+      percentage: totalCasesAll > 0 ? Math.round((pendingReviewsCount / totalCasesAll) * 100) : 0,
+      color: "#F59E0B",
+    },
+    {
+      status: "UNDER_EXAMINATION",
+      label: "Under Examination",
+      count: underExamCount,
+      percentage: totalCasesAll > 0 ? Math.round((underExamCount / totalCasesAll) * 100) : 0,
+      color: "#EA580C",
+    },
+    {
+      status: "LAB_REFERRAL",
+      label: "Lab Referral",
+      count: labReferralCount,
+      percentage: totalCasesAll > 0 ? Math.round((labReferralCount / totalCasesAll) * 100) : 0,
+      color: "#8B5CF6",
+    },
+    {
+      status: "CONFIRMED",
+      label: "Confirmed Case",
+      count: confirmedCount,
+      percentage: totalCasesAll > 0 ? Math.round((confirmedCount / totalCasesAll) * 100) : 0,
+      color: "#DC2626",
+    },
+    {
+      status: "CLOSED_HARMLESS",
+      label: "Closed / Harmless",
+      count: closedHarmlessCount,
+      percentage: totalCasesAll > 0 ? Math.round((closedHarmlessCount / totalCasesAll) * 100) : 0,
+      color: "#059669",
+    },
+  ];
+
+  // 6. Compute Personnel & Coverage Overview (Veterinarians & Field Agents)
+  const veterinarians: VetCoverageItem[] = veterinariansList.map((vet) => {
+    const assignedCases = allDistrictCases.filter((c) => c.assignedVeterinarianUserId === vet.id);
+    const activeAssignedCases = assignedCases.filter((c) =>
+      ["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"].includes(c.status)
+    );
+
+    const pending = assignedCases.filter((c) => c.status === "PENDING_REVIEW").length;
+    const underExam = assignedCases.filter((c) => c.status === "UNDER_EXAMINATION").length;
+    const labRef = assignedCases.filter((c) => c.status === "LAB_REFERRAL").length;
+
+    let followUps = 0;
+    for (const c of assignedCases) {
+      if (
+        (c.vetFollowUpDate && !c.followUpCompleted) ||
+        (c.veterinaryReports[0]?.followUpDate && !c.veterinaryReports[0]?.followUpCompleted)
+      ) {
+        followUps++;
+      }
+    }
+
+    const farmerIdSet = new Set<string>();
+    const animalIdSet = new Set<string>();
+
+    activeAssignedCases.forEach((c) => {
+      if (c.animal?.herd?.farm?.farmerUserId) {
+        farmerIdSet.add(c.animal.herd.farm.farmerUserId);
+      }
+      if (c.animalId) {
+        animalIdSet.add(c.animalId);
+      }
+    });
+
+    const workloadScore = activeAssignedCases.length * 2 + pending;
+
+    const serviceArea = vet.village?.name
+      ? `${vet.village.name} (${vet.block?.name || "Block"})`
+      : vet.block?.name
+      ? `${vet.block.name} Block`
+      : vet.district?.name
+      ? `${vet.district.name} District`
+      : "District-wide Jurisdiction";
+
+    const assignedCasesList = assignedCases.map((c) => {
+      const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+      const riskLevel = (analysis.overall_risk_level as string) || "UNKNOWN";
+      return {
+        id: c.id,
+        caseNumber: c.caseNumber,
+        status: c.status,
+        riskLevel,
+        species: c.animal.species,
+        animalTag: c.animal.tag,
+        farmerName: c.animal.herd.farm.farmerUser?.name || "Farmer",
+        farmName: c.animal.herd.farm.name,
+        villageName: c.animal.herd.farm.village.name,
+        blockName: c.animal.herd.farm.village.block.name,
+        reportedAt: c.reportedAt.toISOString(),
+        diagnosis: c.vetDiagnosis || c.veterinaryReports[0]?.diagnosis || null,
+        followUpDate: c.vetFollowUpDate?.toISOString() || c.veterinaryReports[0]?.followUpDate?.toISOString() || null,
+        followUpCompleted: c.followUpCompleted || c.veterinaryReports[0]?.followUpCompleted || false,
+      };
+    });
+
+    return {
+      id: vet.id,
+      name: vet.name,
+      phone: vet.phone,
+      serviceArea,
+      assignedCases: assignedCases.length,
+      activeCases: activeAssignedCases.length,
+      pendingReviews: pending,
+      underExam,
+      labReferrals: labRef,
+      followUps,
+      farmersUnderCare: farmerIdSet.size,
+      animalsUnderCare: animalIdSet.size,
+      workloadScore,
+      assignedCasesList,
+    };
+  });
+
+  const fieldAgents: FieldAgentCoverageItem[] = fieldAgentsList.map((agent) => {
+    const assignedRequests = assistanceRequests.filter((r) => r.assignedFieldAgentUserId === agent.id);
+    const agentVisits = fieldVisits.filter((v) => v.fieldAgentUserId === agent.id);
+
+    const pending = assignedRequests.filter((r) => ["REQUESTED", "ASSIGNED"].includes(r.status)).length;
+    const accepted = assignedRequests.filter((r) => ["ACCEPTED", "IN_PROGRESS"].includes(r.status)).length;
+    const scheduled = assignedRequests.filter((r) => !!r.scheduledAt && r.status !== "COMPLETED").length;
+    const completed = agentVisits.filter((v) => !!v.completedAt).length;
+    const openRequests = assignedRequests.filter((r) =>
+      ["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"].includes(r.status)
+    ).length;
+
+    const farmerIdSet = new Set<string>();
+    const animalIdSet = new Set<string>();
+
+    assignedRequests.forEach((r) => {
+      if (r.farmerUserId) farmerIdSet.add(r.farmerUserId);
+      if (r.animalId) animalIdSet.add(r.animalId);
+    });
+    agentVisits.forEach((v) => {
+      if (v.assistanceRequest?.farmerUserId) farmerIdSet.add(v.assistanceRequest.farmerUserId);
+      if (v.assistanceRequest?.animalId) animalIdSet.add(v.assistanceRequest.animalId);
+    });
+
+    const workloadScore = openRequests * 2 + pending;
+
+    const serviceArea = agent.village?.name
+      ? `${agent.village.name} (${agent.block?.name || "Block"})`
+      : agent.block?.name
+      ? `${agent.block.name} Block`
+      : agent.district?.name
+      ? `${agent.district.name} District`
+      : "District-wide Jurisdiction";
+
+    const activeRequestsList = assignedRequests.map((r) => ({
+      id: r.id,
+      reason: r.reason,
+      status: r.status,
+      requestedAt: r.requestedAt.toISOString(),
+      scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
+      farmerName: r.farmerUser?.name || "Farmer",
+      farmName: r.farm.name,
+      villageName: r.farm.village?.name || "Village",
+      blockName: r.farm.village?.block?.name || "Block",
+      animalTag: r.animal?.tag || null,
+      species: r.animal?.species || null,
+      caseNumber: r.case?.caseNumber || null,
+      visitObservations: r.visit?.observations || null,
+      visitCompletedAt: r.visit?.completedAt ? r.visit.completedAt.toISOString() : null,
+    }));
+
+    return {
+      id: agent.id,
+      name: agent.name,
+      phone: agent.phone,
+      serviceArea,
+      pendingRequests: pending,
+      acceptedRequests: accepted,
+      scheduledVisits: scheduled,
+      completedVisits: completed,
+      farmersAssisted: farmerIdSet.size,
+      animalsVisited: animalIdSet.size,
+      openRequests,
+      workloadScore,
+      activeRequestsList,
+    };
+  });
+
+  // 7. Compute 9 Real-Data Charts
+  const casesByStatus: ChartDataPoint[] = pipeline.map((p) => ({
+    label: p.label,
+    value: p.count,
+    color: p.color,
+  }));
+
+  const riskCounts: Record<string, number> = {
+    CRITICAL: 0,
+    HIGH: 0,
+    ELEVATED: 0,
+    MEDIUM: 0,
+    LOW: 0,
+    UNKNOWN: 0,
+  };
+  for (const c of allDistrictCases) {
+    const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+    const risk = ((analysis.overall_risk_level as string) || "UNKNOWN").toUpperCase();
+    if (risk in riskCounts) {
+      riskCounts[risk]++;
+    } else {
+      riskCounts.UNKNOWN++;
+    }
+  }
+  const casesByRisk: ChartDataPoint[] = [
+    { label: "Critical", value: riskCounts.CRITICAL, color: "#DC2626" },
+    { label: "High", value: riskCounts.HIGH, color: "#EA580C" },
+    { label: "Elevated", value: riskCounts.ELEVATED, color: "#F59E0B" },
+    { label: "Medium", value: riskCounts.MEDIUM, color: "#3B82F6" },
+    { label: "Low", value: riskCounts.LOW, color: "#10B981" },
+    { label: "Unclassified", value: riskCounts.UNKNOWN, color: "#9CA3AF" },
+  ];
+
+  const temporalMap = new Map<string, number>();
+  allDistrictCases.forEach((c) => {
+    const dStr = new Date(c.reportedAt).toISOString().split("T")[0];
+    temporalMap.set(dStr, (temporalMap.get(dStr) || 0) + 1);
+  });
+  const sortedDates = Array.from(temporalMap.keys()).sort();
+  const casesOverTime: ChartDataPoint[] = sortedDates.map((dateKey) => ({
+    label: new Date(dateKey).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    value: temporalMap.get(dateKey) || 0,
+    meta: dateKey,
+  }));
+
+  const villageCaseCountMap = new Map<string, number>();
+  allDistrictCases.forEach((c) => {
+    const vName = c.animal?.herd?.farm?.village?.name || "Other";
+    villageCaseCountMap.set(vName, (villageCaseCountMap.get(vName) || 0) + 1);
+  });
+  const casesByVillage: ChartDataPoint[] = Array.from(villageCaseCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([vName, cnt]) => ({
+      label: vName,
+      value: cnt,
+      color: "#059669",
+    }));
+
+  const vetWorkload: ChartDataPoint[] = veterinarians.map((v) => ({
+    label: v.name,
+    value: v.activeCases,
+    secondaryValue: v.assignedCases,
+    color: "#8B5CF6",
+  }));
+
+  const agentWorkload: ChartDataPoint[] = fieldAgents.map((a) => ({
+    label: a.name,
+    value: a.openRequests,
+    secondaryValue: a.completedVisits,
+    color: "#3B82F6",
+  }));
+
+  const speciesCountMap: Record<string, number> = {};
+  allDistrictCases.forEach((c) => {
+    const sp = c.animal?.species || "OTHER";
+    speciesCountMap[sp] = (speciesCountMap[sp] || 0) + 1;
+  });
+  const speciesDistribution: ChartDataPoint[] = Object.entries(speciesCountMap).map(([sp, count]) => ({
+    label: sp.charAt(0) + sp.slice(1).toLowerCase(),
+    value: count,
+    color: sp === "COW" ? "#059669" : sp === "BUFFALO" ? "#D97706" : sp === "GOAT" ? "#2563EB" : "#78716C",
+  }));
+
+  const alertTypeMap = new Map<string, number>();
+  allAlertsList.forEach((a) => {
+    const key = a.diseaseName || "General Cluster Alert";
+    alertTypeMap.set(key, (alertTypeMap.get(key) || 0) + 1);
+  });
+  const alertsBySeverity: ChartDataPoint[] = Array.from(alertTypeMap.entries()).map(([disease, count]) => ({
+    label: disease,
+    value: count,
+    color: "#DC2626",
+  }));
+
+  const requestStatusCounts: Record<string, number> = {
+    REQUESTED: 0,
+    ASSIGNED: 0,
+    ACCEPTED: 0,
+    IN_PROGRESS: 0,
+    COMPLETED: 0,
+    CANCELLED: 0,
+  };
+  assistanceRequests.forEach((r) => {
+    if (r.status in requestStatusCounts) {
+      requestStatusCounts[r.status]++;
+    }
+  });
+  const assistanceRequestStatus: ChartDataPoint[] = [
+    { label: "Requested", value: requestStatusCounts.REQUESTED, color: "#F59E0B" },
+    { label: "Assigned", value: requestStatusCounts.ASSIGNED, color: "#3B82F6" },
+    { label: "Accepted", value: requestStatusCounts.ACCEPTED, color: "#6366F1" },
+    { label: "In Progress", value: requestStatusCounts.IN_PROGRESS, color: "#8B5CF6" },
+    { label: "Completed", value: requestStatusCounts.COMPLETED, color: "#10B981" },
+    { label: "Cancelled", value: requestStatusCounts.CANCELLED, color: "#6B7280" },
+  ];
+
+  // 8. Compute Village Analysis Table Rows
+  const villageAnalysis: VillageAnalysisRow[] = allVillagesInScope.map((v) => {
+    const farmCount = v.farms.length;
+    let animalCount = 0;
+    let totalCases = 0;
+    let activeCases = 0;
+    let maxRiskRank = 0;
+    let highestRisk = "NONE";
+    const farmerIdSet = new Set<string>();
+
+    v.farms.forEach((f) => {
+      if (f.farmerUser?.id) farmerIdSet.add(f.farmerUser.id);
+      f.herds.forEach((h) => {
+        animalCount += h.animals.length;
+        h.animals.forEach((a) => {
+          totalCases += a.cases.length;
+          a.cases.forEach((c) => {
+            if (["PENDING_REVIEW", "UNDER_EXAMINATION", "LAB_REFERRAL"].includes(c.status)) {
+              activeCases++;
+            }
+            const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+            const rLvl = (analysis.overall_risk_level as string) || null;
+            const rank = getRiskRank(rLvl);
+            if (rank > maxRiskRank) {
+              maxRiskRank = rank;
+              highestRisk = rLvl || "UNKNOWN";
+            }
+          });
+        });
+      });
+    });
+
+    return {
+      villageId: v.id,
+      villageName: v.name,
+      blockName: v.block.name,
+      farmersCount: farmerIdSet.size,
+      farmsCount: farmCount,
+      animalsCount: animalCount,
+      totalCases,
+      activeCases,
+      activeAlerts: v.alerts.length,
+      highestRisk: highestRisk === "NONE" && activeCases > 0 ? "LOW" : highestRisk,
+    };
+  });
+
+  // 9. Compute 7 Real Map Layers with Strict Authoritative Coordinate Hierarchy
+  const mapCases: DistrictMapLayersData["cases"] = [];
+  const heatmapPoints: DistrictMapLayersData["heatmapPoints"] = [];
+
+  for (const c of allDistrictCases) {
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    if (isValidCoordinate(c.gpsLat, c.gpsLng)) {
+      lat = c.gpsLat as number;
+      lng = c.gpsLng as number;
+    } else if (isValidCoordinate(c.animal?.herd?.farm?.latitude, c.animal?.herd?.farm?.longitude)) {
+      lat = c.animal.herd.farm.latitude;
+      lng = c.animal.herd.farm.longitude;
+    }
+
+    if (lat !== null && lng !== null) {
+      const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+      const riskLevel = (analysis.overall_risk_level as string) || "UNKNOWN";
+      const hasVillageAlert = activeAlertsList.some(
+        (a) => a.villageId === c.animal.herd.farm.village.id
+      );
+      const weight = calculateRiskIntensity(riskLevel, hasVillageAlert);
+
+      mapCases.push({
+        id: c.id,
+        caseNumber: c.caseNumber,
+        status: c.status,
+        riskLevel,
+        species: c.animal.species,
+        animalTag: c.animal.tag,
+        farmName: c.animal.herd.farm.name,
+        villageName: c.animal.herd.farm.village.name,
+        blockName: c.animal.herd.farm.village.block.name,
+        farmerName: c.animal.herd.farm.farmerUser?.name || "Farmer",
+        reportedAt: c.reportedAt.toISOString(),
+        diagnosis: c.vetDiagnosis || c.veterinaryReports[0]?.diagnosis || null,
+        lat,
+        lng,
+      });
+
+      heatmapPoints.push({
+        lat,
+        lng,
+        weight,
+        caseCount: 1,
+        riskLevel,
+        locationName: `${c.animal.herd.farm.village.name} (${c.animal.herd.farm.name})`,
+      });
+    }
+  }
+
+  const mapFarms: DistrictMapLayersData["farms"] = [];
+  for (const f of allFarmsWithRelations) {
+    if (isValidCoordinate(f.latitude, f.longitude)) {
+      let animalCount = 0;
+      let activeCaseCount = 0;
+      f.herds.forEach((h) => {
+        animalCount += h.animals.length;
+        h.animals.forEach((a) => {
+          activeCaseCount += a.cases.length;
+        });
+      });
+
+      mapFarms.push({
+        id: f.id,
+        name: f.name,
+        villageName: f.village.name,
+        blockName: f.village.block.name,
+        farmerName: f.farmerUser?.name || "Farmer",
+        lat: f.latitude,
+        lng: f.longitude,
+        animalCount,
+        activeCaseCount,
+      });
+    }
+  }
+
+  const mapVets: DistrictMapLayersData["veterinarians"] = [];
+  for (const vet of veterinarians) {
+    const activeCaseWithCoord = mapCases.find((c) =>
+      allDistrictCases.some((dc) => dc.id === c.id && dc.assignedVeterinarianUserId === vet.id)
+    );
+    if (activeCaseWithCoord) {
+      mapVets.push({
+        id: vet.id,
+        name: vet.name,
+        phone: vet.phone,
+        serviceArea: vet.serviceArea,
+        activeCasesCount: vet.activeCases,
+        pendingReviewsCount: vet.pendingReviews,
+        lat: activeCaseWithCoord.lat,
+        lng: activeCaseWithCoord.lng,
+      });
+    }
+  }
+
+  const mapAgents: DistrictMapLayersData["fieldAgents"] = [];
+  for (const agent of fieldAgents) {
+    const activeVisitWithCoord = fieldVisits.find((v) => {
+      if (v.fieldAgentUserId !== agent.id) return false;
+      const m = v.measurements as Record<string, unknown> | null;
+      if (m && isValidCoordinate(m.latitude, m.longitude)) return true;
+      if (m && isValidCoordinate(m.gpsLat, m.gpsLng)) return true;
+      if (isValidCoordinate(v.case?.gpsLat, v.case?.gpsLng)) return true;
+      if (isValidCoordinate(v.assistanceRequest?.farm?.latitude, v.assistanceRequest?.farm?.longitude)) return true;
+      return false;
+    });
+
+    if (activeVisitWithCoord) {
+      const m = activeVisitWithCoord.measurements as Record<string, unknown> | null;
+      let lat = 0;
+      let lng = 0;
+      if (m && isValidCoordinate(m.latitude, m.longitude)) {
+        lat = m.latitude as number;
+        lng = m.longitude as number;
+      } else if (m && isValidCoordinate(m.gpsLat, m.gpsLng)) {
+        lat = m.gpsLat as number;
+        lng = m.gpsLng as number;
+      } else if (isValidCoordinate(activeVisitWithCoord.case?.gpsLat, activeVisitWithCoord.case?.gpsLng)) {
+        lat = activeVisitWithCoord.case!.gpsLat as number;
+        lng = activeVisitWithCoord.case!.gpsLng as number;
+      } else {
+        lat = activeVisitWithCoord.assistanceRequest.farm.latitude;
+        lng = activeVisitWithCoord.assistanceRequest.farm.longitude;
+      }
+
+      mapAgents.push({
+        id: agent.id,
+        name: agent.name,
+        phone: agent.phone,
+        serviceArea: agent.serviceArea,
+        openRequestsCount: agent.openRequests,
+        completedVisitsCount: agent.completedVisits,
+        lat,
+        lng,
+      });
+    }
+  }
+
+  const mapVisits: DistrictMapLayersData["fieldVisits"] = [];
+  for (const v of fieldVisits) {
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    const m = v.measurements as Record<string, unknown> | null;
+    if (m && isValidCoordinate(m.latitude, m.longitude)) {
+      lat = m.latitude as number;
+      lng = m.longitude as number;
+    } else if (m && isValidCoordinate(m.gpsLat, m.gpsLng)) {
+      lat = m.gpsLat as number;
+      lng = m.gpsLng as number;
+    } else if (isValidCoordinate(v.case?.gpsLat, v.case?.gpsLng)) {
+      lat = v.case!.gpsLat as number;
+      lng = v.case!.gpsLng as number;
+    } else if (isValidCoordinate(v.assistanceRequest?.farm?.latitude, v.assistanceRequest?.farm?.longitude)) {
+      lat = v.assistanceRequest.farm.latitude;
+      lng = v.assistanceRequest.farm.longitude;
+    }
+
+    if (lat !== null && lng !== null) {
+      mapVisits.push({
+        id: v.id,
+        visitDate: (v.completedAt || v.startedAt || v.createdAt).toISOString(),
+        agentName: v.fieldAgentUser?.name || "Field Agent",
+        farmName: v.assistanceRequest?.farm?.name || "Farm",
+        villageName: v.assistanceRequest?.farm?.village?.name || "Village",
+        status: v.completedAt ? "Completed" : v.startedAt ? "In Progress" : "Accepted",
+        observations: v.observations || null,
+        lat,
+        lng,
+      });
+    }
+  }
+
+  const mapAlerts: DistrictMapLayersData["alerts"] = [];
+  for (const a of activeAlertsList) {
+    const sampleFarm = a.village?.farms[0];
+    if (sampleFarm && isValidCoordinate(sampleFarm.latitude, sampleFarm.longitude)) {
+      mapAlerts.push({
+        id: a.id,
+        diseaseName: a.diseaseName || "Cluster Outbreak",
+        caseCount: a.caseCount,
+        villageName: a.village.name,
+        blockName: a.village.block.name,
+        windowStart: a.windowStart.toISOString(),
+        windowEnd: a.windowEnd.toISOString(),
+        active: a.active,
+        lat: sampleFarm.latitude,
+        lng: sampleFarm.longitude,
+      });
+    }
+  }
+
+  const mapLayers: DistrictMapLayersData = {
+    heatmapPoints,
+    farms: mapFarms,
+    cases: mapCases,
+    veterinarians: mapVets,
+    fieldAgents: mapAgents,
+    fieldVisits: mapVisits,
+    alerts: mapAlerts,
+  };
+
+  // 10. Compute Recent Activity Stream
+  const recentActivity: RecentActivityItem[] = [];
+
+  recentCases.forEach((c) => {
+    const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
+    const risk = (analysis.overall_risk_level as string) || "UNKNOWN";
+    recentActivity.push({
+      id: `case-${c.id}`,
+      type: "CASE",
+      title: `Case #${c.caseNumber} • ${c.animal.species} (${c.animal.tag})`,
+      subtitle: `${c.animal.herd.farm.name}, ${c.animal.herd.farm.village.name} • Status: ${c.status}`,
+      timestamp: c.reportedAt.toISOString(),
+      statusBadge: risk,
+      statusVariant: risk === "CRITICAL" ? "destructive" : "default",
+      linkUrl: `/authority/cases?caseId=${c.id}`,
+    });
+  });
+
+  recentVisits.forEach((v) => {
+    recentActivity.push({
+      id: `visit-${v.id}`,
+      type: "VISIT",
+      title: `Field Visit by ${v.fieldAgentUser?.name || "Agent"}`,
+      subtitle: `${v.assistanceRequest?.farm.name || "Farm"} (${v.assistanceRequest?.farm.village?.name || "Village"})`,
+      timestamp: v.createdAt.toISOString(),
+      statusBadge: v.observations ? "Report Filed" : "In Progress",
+      statusVariant: "secondary",
+    });
+  });
+
+  recentVetReports.forEach((r) => {
+    recentActivity.push({
+      id: `report-${r.id}`,
+      type: "REPORT",
+      title: `Vet Diagnosis: ${r.diagnosis}`,
+      subtitle: `Dr. ${r.vetUser.name} • Case #${r.case.caseNumber} • Action: ${r.action}`,
+      timestamp: r.createdAt.toISOString(),
+      statusBadge: r.action,
+      statusVariant: "outline",
+    });
+  });
+
+  activeAlertsList.slice(0, 4).forEach((a) => {
+    recentActivity.push({
+      id: `alert-${a.id}`,
+      type: "ALERT",
+      title: `Outbreak Alert: ${a.diseaseName || "Cluster Disease"}`,
+      subtitle: `${a.village.name}, ${a.village.block.name} • ${a.caseCount} Cases Detected`,
+      timestamp: a.createdAt.toISOString(),
+      statusBadge: "ACTIVE ALERT",
+      statusVariant: "destructive",
+      linkUrl: `/authority/alerts?villageId=${a.villageId}`,
+    });
+  });
+
+  recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return {
     districtName,
-    animalsMonitored,
-    reportsThisWeek,
-    highRiskCases: highRiskCasesCount,
-    confirmedCases: confirmedCasesCount,
-    activeAlerts: activeAlertsCount,
-    pendingApprovalsCount,
-    avgTimeToReviewHours,
-    avgTimeToConfirmationHours,
+    districtId,
+    activeFilters: {
+      timeRange,
+      blockId: blockId || null,
+      villageId: villageId || null,
+      startDate: customStartDate || null,
+      endDate: customEndDate || null,
+    },
+    filterOptions: {
+      blocks: filterBlocks,
+      villages: filterVillages,
+    },
+    kpis,
+    pipeline,
+    veterinarians,
+    fieldAgents,
+    charts: {
+      casesByStatus,
+      casesByRisk,
+      casesOverTime,
+      casesByVillage,
+      vetWorkload,
+      agentWorkload,
+      speciesDistribution,
+      alertsBySeverity,
+      assistanceRequestStatus,
+    },
+    villageAnalysis,
+    mapLayers,
+    recentActivity: recentActivity.slice(0, 10),
+  };
+}
+
+// Backward compatibility helper for lightweight metrics queries
+export async function getAuthorityDashboardMetrics(districtId: string | null) {
+  const fullData = await getDistrictAuthorityCommandData({ districtId, timeRange: "7d" });
+  return {
+    districtName: fullData.districtName,
+    animalsMonitored: fullData.kpis.totalAnimals,
+    reportsThisWeek: fullData.pipeline.reduce((acc, curr) => acc + curr.count, 0),
+    highRiskCases: fullData.charts.casesByRisk.find((r) => r.label === "High")?.value || 0,
+    confirmedCases: fullData.kpis.confirmedCases,
+    activeAlerts: fullData.kpis.activeAlerts,
+    pendingApprovalsCount: 0,
+    avgTimeToReviewHours: fullData.kpis.avgTimeToReviewHours,
+    avgTimeToConfirmationHours: fullData.kpis.avgTimeToConfirmationHours,
   };
 }

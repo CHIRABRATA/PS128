@@ -3,77 +3,111 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapMarkerData, formatVillageName, formatBlockName, isValidCoordinate } from "./mapUtils";
+import {
+  DistrictMapLayersData,
+} from "@/lib/authority/metrics";
+import { isValidCoordinate } from "./mapUtils";
 
-export type { MapMarkerData };
-export { formatVillageName, formatBlockName, isValidCoordinate };
+export interface MapLayerVisibility {
+  heatmap: boolean;
+  farms: boolean;
+  cases: boolean;
+  vets: boolean;
+  agents: boolean;
+  visits: boolean;
+  alerts: boolean;
+}
 
 interface SurveillanceHeatmapInternalProps {
-  markers: MapMarkerData[];
-  selectedMarkerId?: string | null;
-  onSelectMarker?: (marker: MapMarkerData | null) => void;
+  mapLayers: DistrictMapLayersData;
+  layerVisibility: MapLayerVisibility;
+  userGpsLocation?: { lat: number; lng: number } | null;
+  focusCoord?: { lat: number; lng: number } | null;
   searchQuery?: string;
-  focusMarkerId?: string | null;
+  onSelectEntity?: (type: string, entity: unknown) => void;
 }
 
 export default function SurveillanceHeatmapInternal({
-  markers,
-  selectedMarkerId,
-  onSelectMarker,
+  mapLayers,
+  layerVisibility,
+  userGpsLocation,
+  focusCoord,
   searchQuery = "",
-  focusMarkerId,
+  onSelectEntity,
 }: SurveillanceHeatmapInternalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const layerGroupsRef = useRef<{
+    heatmap: L.LayerGroup;
+    farms: L.LayerGroup;
+    cases: L.LayerGroup;
+    vets: L.LayerGroup;
+    agents: L.LayerGroup;
+    visits: L.LayerGroup;
+    alerts: L.LayerGroup;
+    userGps: L.LayerGroup;
+  } | null>(null);
 
-  // 1. Initialize Map Instance and Official OpenStreetMap Tile Layer
+  // 1. Initialize Map Instance and OpenStreetMap Tiles
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Standard Maharashtra / Pune District center
-    const defaultCenter: [number, number] = [18.5793, 73.9806];
-
     if (!mapInstanceRef.current) {
+      // Find initial center from valid coordinates if available
+      let initialCenter: [number, number] = [20.5937, 78.9629]; // Geographic centroid of India
+      const allCoords: [number, number][] = [];
+
+      mapLayers.farms.forEach((f) => {
+        if (isValidCoordinate(f.lat, f.lng)) allCoords.push([f.lat, f.lng]);
+      });
+      mapLayers.cases.forEach((c) => {
+        if (isValidCoordinate(c.lat, c.lng)) allCoords.push([c.lat, c.lng]);
+      });
+
+      if (allCoords.length > 0) {
+        initialCenter = allCoords[0];
+      }
+
       const map = L.map(mapContainerRef.current, {
-        center: defaultCenter,
-        zoom: 10,
+        center: initialCenter,
+        zoom: allCoords.length > 0 ? 11 : 5,
         zoomControl: true,
         attributionControl: true,
       });
 
-      // Official OpenStreetMap Single-Host Tile Layer (Standard baseline)
       const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
       const osmTileLayer = L.tileLayer(tileUrl, {
         maxZoom: 19,
-        minZoom: 4,
+        minZoom: 3,
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
       });
-
       osmTileLayer.addTo(map);
 
-      const layerGroup = L.layerGroup().addTo(map);
-      layerGroupRef.current = layerGroup;
+      const layerGroups = {
+        heatmap: L.layerGroup().addTo(map),
+        farms: L.layerGroup().addTo(map),
+        cases: L.layerGroup().addTo(map),
+        vets: L.layerGroup().addTo(map),
+        agents: L.layerGroup().addTo(map),
+        visits: L.layerGroup().addTo(map),
+        alerts: L.layerGroup().addTo(map),
+        userGps: L.layerGroup().addTo(map),
+      };
+
+      layerGroupsRef.current = layerGroups;
       mapInstanceRef.current = map;
 
-      // Invalidate size to ensure tiles render regardless of layout timing
       const t1 = setTimeout(() => {
         if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-      }, 50);
-
+      }, 100);
       const t2 = setTimeout(() => {
         if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-      }, 200);
-
-      const t3 = setTimeout(() => {
-        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-      }, 500);
+      }, 300);
 
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);
-        clearTimeout(t3);
       };
     }
 
@@ -86,143 +120,358 @@ export default function SurveillanceHeatmapInternal({
     return () => {
       resizeObserver.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. Render Clean Standard Markers and Popups
+  // 2. Render Real Database Layers and Markers
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const layerGroup = layerGroupRef.current;
-    if (!map || !layerGroup) return;
+    const groups = layerGroupsRef.current;
+    if (!map || !groups) return;
 
-    layerGroup.clearLayers();
-
-    // Filter valid markers and apply search query
-    let validMarkers = markers.filter((m) => isValidCoordinate(m.lat, m.lng));
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      validMarkers = validMarkers.filter(
-        (m) =>
-          formatVillageName(m.name, m.blockName).toLowerCase().includes(q) ||
-          formatBlockName(m.blockName).toLowerCase().includes(q) ||
-          (m.diseaseName && m.diseaseName.toLowerCase().includes(q))
-      );
-    }
-
-    if (validMarkers.length === 0) return;
+    // Clear all layer groups
+    groups.heatmap.clearLayers();
+    groups.farms.clearLayers();
+    groups.cases.clearLayers();
+    groups.vets.clearLayers();
+    groups.agents.clearLayers();
+    groups.visits.clearLayers();
+    groups.alerts.clearLayers();
+    groups.userGps.clearLayers();
 
     const bounds = L.latLngBounds([]);
+    const q = searchQuery.toLowerCase().trim();
 
-    // Deduplicate/offset markers sharing identical coordinates to prevent stacking
-    const coordMap = new Map<string, number>();
-
-    validMarkers.forEach((m) => {
-      const cleanVillageName = formatVillageName(m.name, m.blockName);
-      const cleanBlockName = formatBlockName(m.blockName);
-
-      // Handle duplicate coordinates with slight micro-offset
-      const coordKey = `${m.lat.toFixed(4)},${m.lng.toFixed(4)}`;
-      const countAtCoord = coordMap.get(coordKey) || 0;
-      coordMap.set(coordKey, countAtCoord + 1);
-
-      let adjustedLat = m.lat;
-      let adjustedLng = m.lng;
-      if (countAtCoord > 0) {
-        // Micro-spiral offset so points at identical coords are individually visible and clickable
-        const angle = (countAtCoord * Math.PI) / 3;
-        const offset = 0.003 * countAtCoord;
-        adjustedLat += Math.sin(angle) * offset;
-        adjustedLng += Math.cos(angle) * offset;
-      }
-
-      bounds.extend([adjustedLat, adjustedLng]);
-
-      const isSelected = selectedMarkerId === m.id;
-
-      // Semantic risk color coding: Red = critical/alert, Orange = high risk, Yellow = monitoring, Green = stable
-      const markerColor = m.activeAlert
-        ? "#DC2626"
-        : m.highRiskCount > 0
-        ? "#EA580C"
-        : m.caseCount >= 2
-        ? "#D97706"
-        : "#059669";
-
-      const radius = m.activeAlert ? 10 : Math.max(7, Math.min(13, 6 + m.caseCount * 1.5));
-
-      const circleMarker = L.circleMarker([adjustedLat, adjustedLng], {
-        radius: isSelected ? radius + 3 : radius,
-        fillColor: markerColor,
-        color: isSelected ? "#191F1C" : "#FFFFFF",
-        weight: isSelected ? 3 : 2,
+    // LAYER: User GPS Location Pin
+    if (userGpsLocation && isValidCoordinate(userGpsLocation.lat, userGpsLocation.lng)) {
+      const userMarker = L.circleMarker([userGpsLocation.lat, userGpsLocation.lng], {
+        radius: 10,
+        fillColor: "#2563EB",
+        color: "#FFFFFF",
+        weight: 3,
         opacity: 1,
-        fillOpacity: 0.9,
-        className: "leaflet-surveillance-marker",
+        fillOpacity: 1,
       });
 
-      // Compact Hover Tooltip (No permanent text on the map canvas)
-      circleMarker.bindTooltip(
-        `<div style="font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; color: #191F1C;">
-          <span>${cleanVillageName}</span>
-          <span style="color: ${markerColor}; margin-left: 4px;">• ${m.caseCount} Cases</span>
-        </div>`,
-        {
-          direction: "top",
-          offset: [0, -radius],
-          className: "maitri-map-tooltip",
-        }
-      );
+      const pulseRing = L.circle([userGpsLocation.lat, userGpsLocation.lng], {
+        radius: 300,
+        fillColor: "#3B82F6",
+        color: "#2563EB",
+        weight: 1,
+        opacity: 0.8,
+        fillOpacity: 0.15,
+      });
 
-      // Clean, Structured Popup on Click
-      const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 170px;">
-          <div style="font-weight: 700; font-size: 13px; color: #191F1C; margin-bottom: 2px;">${cleanVillageName}</div>
-          <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">Taluka: ${cleanBlockName} • Pune District</div>
-          <div style="margin-bottom: 8px; display: inline-block; padding: 2px 8px; border-radius: 9999px; font-weight: 600; font-size: 11px; ${
-            m.activeAlert
-              ? "background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA;"
-              : "background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;"
-          }">
-            ${m.activeAlert ? `🚨 ${m.diseaseName || "Active Alert"}` : "✓ Active Surveillance"}
-          </div>
-          <div style="border-top: 1px solid #E5E0D8; padding-top: 6px; font-size: 11px; color: #57534E; line-height: 1.5;">
-            <div>• Total Cases: <strong style="color: #191F1C;">${m.caseCount}</strong></div>
-            <div>• High Risk: <strong style="color: #EA580C;">${m.highRiskCount}</strong></div>
-            <div>• Confirmed: <strong style="color: #059669;">${m.confirmedCount}</strong></div>
+      userMarker.bindPopup(`
+        <div style="font-family: system-ui, sans-serif; font-size: 12px; padding: 4px;">
+          <div style="font-weight: 700; color: #1E40AF; font-size: 13px;">📍 You Are Here</div>
+          <div style="color: #64748B; font-size: 11px; margin-top: 2px;">
+            Browser GPS Location: ${userGpsLocation.lat.toFixed(5)}, ${userGpsLocation.lng.toFixed(5)}
           </div>
         </div>
-      `;
+      `);
 
-      circleMarker.bindPopup(popupHtml, { className: "maitri-custom-popup" });
+      groups.userGps.addLayer(pulseRing);
+      groups.userGps.addLayer(userMarker);
+      bounds.extend([userGpsLocation.lat, userGpsLocation.lng]);
+    }
 
-      circleMarker.on("click", (e) => {
-        L.DomEvent.stopPropagation(e);
-        if (onSelectMarker) {
-          onSelectMarker(m);
-        }
-        map.flyTo([adjustedLat, adjustedLng], Math.max(map.getZoom(), 11), {
-          duration: 0.5,
+    // LAYER 1: Health-Risk Heatmap Intensity Circles
+    if (layerVisibility.heatmap) {
+      mapLayers.heatmapPoints.forEach((hp) => {
+        if (!isValidCoordinate(hp.lat, hp.lng)) return;
+        if (q && !hp.locationName.toLowerCase().includes(q)) return;
+
+        bounds.extend([hp.lat, hp.lng]);
+
+        const color =
+          hp.weight >= 8
+            ? "#DC2626"
+            : hp.weight >= 5
+            ? "#EA580C"
+            : hp.weight >= 3
+            ? "#F59E0B"
+            : "#059669";
+
+        const radius = Math.min(30, Math.max(12, hp.weight * 4));
+
+        const heatCircle = L.circleMarker([hp.lat, hp.lng], {
+          radius,
+          fillColor: color,
+          color: color,
+          weight: 1,
+          opacity: 0.6,
+          fillOpacity: 0.35,
+          className: "leaflet-heatmap-pulse",
         });
+
+        heatCircle.bindTooltip(`
+          <div style="font-size: 11px; font-weight: bold; color: #191F1C;">
+            ${hp.locationName} • Risk Weight: ${hp.weight.toFixed(1)}
+          </div>
+        `);
+
+        groups.heatmap.addLayer(heatCircle);
       });
-
-      layerGroup.addLayer(circleMarker);
-    });
-
-    // Auto-fit geographic extent on initial load if multiple markers exist
-    if (validMarkers.length > 1 && !focusMarkerId) {
-      map.fitBounds(bounds, { padding: [45, 45], maxZoom: 12 });
     }
-  }, [markers, selectedMarkerId, onSelectMarker, searchQuery, focusMarkerId]);
 
-  // 3. Handle focus marker requests
+    // LAYER 2: Farms
+    if (layerVisibility.farms) {
+      mapLayers.farms.forEach((farm) => {
+        if (!isValidCoordinate(farm.lat, farm.lng)) return;
+        if (
+          q &&
+          !farm.name.toLowerCase().includes(q) &&
+          !farm.villageName.toLowerCase().includes(q) &&
+          !farm.farmerName.toLowerCase().includes(q)
+        )
+          return;
+
+        bounds.extend([farm.lat, farm.lng]);
+
+        const farmMarker = L.circleMarker([farm.lat, farm.lng], {
+          radius: 7,
+          fillColor: "#059669",
+          color: "#FFFFFF",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9,
+        });
+
+        farmMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 180px;">
+            <div style="font-weight: 700; font-size: 13px; color: #065F46;">🏡 ${farm.name}</div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">
+              Village: ${farm.villageName} • ${farm.blockName}
+            </div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Farmer: <strong>${farm.farmerName}</strong></div>
+              <div>Registered Animals: <strong>${farm.animalCount}</strong></div>
+              <div>Active Cases: <strong style="color: ${farm.activeCaseCount > 0 ? '#DC2626' : '#059669'};">${farm.activeCaseCount}</strong></div>
+            </div>
+          </div>
+        `);
+
+        farmMarker.on("click", () => {
+          if (onSelectEntity) onSelectEntity("FARM", farm);
+        });
+
+        groups.farms.addLayer(farmMarker);
+      });
+    }
+
+    // LAYER 3: Active Cases
+    if (layerVisibility.cases) {
+      mapLayers.cases.forEach((c) => {
+        if (!isValidCoordinate(c.lat, c.lng)) return;
+        if (
+          q &&
+          !c.caseNumber.toLowerCase().includes(q) &&
+          !c.species.toLowerCase().includes(q) &&
+          !c.villageName.toLowerCase().includes(q)
+        )
+          return;
+
+        bounds.extend([c.lat, c.lng]);
+
+        const color =
+          c.riskLevel === "CRITICAL"
+            ? "#DC2626"
+            : c.riskLevel === "HIGH"
+            ? "#EA580C"
+            : c.riskLevel === "ELEVATED"
+            ? "#F59E0B"
+            : "#0284C7";
+
+        const caseMarker = L.circleMarker([c.lat, c.lng], {
+          radius: 8,
+          fillColor: color,
+          color: "#FFFFFF",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95,
+        });
+
+        caseMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 200px;">
+            <div style="font-weight: 700; font-size: 13px; color: ${color};">
+              📋 Case #${c.caseNumber}
+            </div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">
+              ${c.species} (${c.animalTag}) • ${c.villageName}
+            </div>
+            <div style="margin-bottom: 6px;">
+              <span style="font-size: 10px; font-weight: 700; background: ${color}20; color: ${color}; padding: 2px 6px; border-radius: 4px;">
+                ${c.status} • Risk: ${c.riskLevel}
+              </span>
+            </div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Farm: <strong>${c.farmName}</strong></div>
+              <div>Farmer: <strong>${c.farmerName}</strong></div>
+              <div>Reported: <strong>${new Date(c.reportedAt).toLocaleDateString()}</strong></div>
+              ${c.diagnosis ? `<div style="margin-top: 4px; color: #065F46;">Diagnosis: <strong>${c.diagnosis}</strong></div>` : ""}
+            </div>
+          </div>
+        `);
+
+        caseMarker.on("click", () => {
+          if (onSelectEntity) onSelectEntity("CASE", c);
+        });
+
+        groups.cases.addLayer(caseMarker);
+      });
+    }
+
+    // LAYER 4: Veterinarians
+    if (layerVisibility.vets) {
+      mapLayers.veterinarians.forEach((vet) => {
+        if (!isValidCoordinate(vet.lat, vet.lng)) return;
+        if (q && !vet.name.toLowerCase().includes(q) && !vet.serviceArea.toLowerCase().includes(q)) return;
+
+        bounds.extend([vet.lat, vet.lng]);
+
+        const vetMarker = L.circleMarker([vet.lat, vet.lng], {
+          radius: 9,
+          fillColor: "#7C3AED",
+          color: "#FFFFFF",
+          weight: 2.5,
+          opacity: 1,
+          fillOpacity: 0.95,
+        });
+
+        vetMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 190px;">
+            <div style="font-weight: 700; font-size: 13px; color: #6D28D9;">🩺 Dr. ${vet.name}</div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">Area: ${vet.serviceArea}</div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Phone: <strong>${vet.phone}</strong></div>
+              <div>Active Cases Under Care: <strong>${vet.activeCasesCount}</strong></div>
+              <div>Pending Reviews: <strong>${vet.pendingReviewsCount}</strong></div>
+            </div>
+          </div>
+        `);
+
+        groups.vets.addLayer(vetMarker);
+      });
+    }
+
+    // LAYER 5: Field Agents
+    if (layerVisibility.agents) {
+      mapLayers.fieldAgents.forEach((agent) => {
+        if (!isValidCoordinate(agent.lat, agent.lng)) return;
+        if (q && !agent.name.toLowerCase().includes(q) && !agent.serviceArea.toLowerCase().includes(q)) return;
+
+        bounds.extend([agent.lat, agent.lng]);
+
+        const agentMarker = L.circleMarker([agent.lat, agent.lng], {
+          radius: 9,
+          fillColor: "#2563EB",
+          color: "#FFFFFF",
+          weight: 2.5,
+          opacity: 1,
+          fillOpacity: 0.95,
+        });
+
+        agentMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 190px;">
+            <div style="font-weight: 700; font-size: 13px; color: #1D4ED8;">🛡️ ${agent.name} (Field Agent)</div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">Area: ${agent.serviceArea}</div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Phone: <strong>${agent.phone}</strong></div>
+              <div>Open Requests: <strong>${agent.openRequestsCount}</strong></div>
+              <div>Completed Visits: <strong>${agent.completedVisitsCount}</strong></div>
+            </div>
+          </div>
+        `);
+
+        groups.agents.addLayer(agentMarker);
+      });
+    }
+
+    // LAYER 6: Field Visits
+    if (layerVisibility.visits) {
+      mapLayers.fieldVisits.forEach((visit) => {
+        if (!isValidCoordinate(visit.lat, visit.lng)) return;
+        if (q && !visit.agentName.toLowerCase().includes(q) && !visit.farmName.toLowerCase().includes(q)) return;
+
+        bounds.extend([visit.lat, visit.lng]);
+
+        const visitMarker = L.circleMarker([visit.lat, visit.lng], {
+          radius: 7,
+          fillColor: "#0D9488",
+          color: "#FFFFFF",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9,
+        });
+
+        visitMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 190px;">
+            <div style="font-weight: 700; font-size: 13px; color: #0F766E;">🚶 Field Visit (${visit.status})</div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">
+              ${visit.farmName} • ${visit.villageName}
+            </div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Agent: <strong>${visit.agentName}</strong></div>
+              <div>Date: <strong>${new Date(visit.visitDate).toLocaleDateString()}</strong></div>
+              ${visit.observations ? `<div style="margin-top: 4px;">Notes: <em>${visit.observations}</em></div>` : ""}
+            </div>
+          </div>
+        `);
+
+        groups.visits.addLayer(visitMarker);
+      });
+    }
+
+    // LAYER 7: Outbreak Alerts
+    if (layerVisibility.alerts) {
+      mapLayers.alerts.forEach((alert) => {
+        if (!isValidCoordinate(alert.lat, alert.lng)) return;
+        if (q && !alert.diseaseName.toLowerCase().includes(q) && !alert.villageName.toLowerCase().includes(q)) return;
+
+        bounds.extend([alert.lat, alert.lng]);
+
+        const alertMarker = L.circleMarker([alert.lat, alert.lng], {
+          radius: 12,
+          fillColor: "#DC2626",
+          color: "#FFFFFF",
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.9,
+          className: "leaflet-alert-pulse",
+        });
+
+        alertMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #191F1C; padding: 4px; min-width: 200px;">
+            <div style="font-weight: 700; font-size: 13px; color: #991B1B;">🚨 ACTIVE OUTBREAK ALERT</div>
+            <div style="font-size: 11px; color: #78716C; margin-bottom: 6px;">
+              ${alert.villageName} (${alert.blockName})
+            </div>
+            <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
+              <div>Suspected Disease: <strong style="color: #DC2626;">${alert.diseaseName}</strong></div>
+              <div>Cluster Case Count: <strong>${alert.caseCount}</strong></div>
+              <div>Window: <strong>${new Date(alert.windowStart).toLocaleDateString()} – ${new Date(alert.windowEnd).toLocaleDateString()}</strong></div>
+            </div>
+          </div>
+        `);
+
+        groups.alerts.addLayer(alertMarker);
+      });
+    }
+
+    // Fit map bounds to encompass all valid plotted records
+    if (bounds.isValid() && !focusCoord) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+    }
+  }, [mapLayers, layerVisibility, userGpsLocation, searchQuery, focusCoord, onSelectEntity]);
+
+  // 3. Handle explicit focus requests
   useEffect(() => {
-    if (!focusMarkerId || !mapInstanceRef.current) return;
-    const target = markers.find((m) => m.id === focusMarkerId && isValidCoordinate(m.lat, m.lng));
-    if (target) {
-      mapInstanceRef.current.flyTo([target.lat, target.lng], 13, { duration: 0.6 });
-      if (onSelectMarker) onSelectMarker(target);
+    if (!focusCoord || !mapInstanceRef.current) return;
+    if (isValidCoordinate(focusCoord.lat, focusCoord.lng)) {
+      mapInstanceRef.current.flyTo([focusCoord.lat, focusCoord.lng], 13, { duration: 0.6 });
     }
-  }, [focusMarkerId, markers, onSelectMarker]);
+  }, [focusCoord]);
 
   return (
     <div className="w-full h-full relative min-h-[480px]">
