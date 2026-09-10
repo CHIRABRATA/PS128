@@ -34,12 +34,18 @@ export function LocationCapture({
     onChangeLocation(selected.latitude, selected.longitude);
   };
 
+  const handleClear = () => {
+    onChangeLocation(null, null);
+  };
+
   return (
     <div className="space-y-3">
       <LocationSearch
         value={initialValue}
         onLocationSelect={handleLocationSelect}
-        label="Farm / Disease Outbreak Location"
+        onClear={handleClear}
+        label="Where is the animal/farm located?"
+        title="Farm / Disease Outbreak Location"
         required={false}
         showMapPreview={true}
       />
