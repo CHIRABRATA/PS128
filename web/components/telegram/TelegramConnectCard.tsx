@@ -1,16 +1,61 @@
 "use client";
 
-import { useState } from "react";
-import { generateTelegramLinkTokenAction } from "@/lib/actions/telegram";
+import { useState, useEffect } from "react";
+import {
+  generateTelegramLinkTokenAction,
+  getTelegramStatusAction,
+  unlinkTelegramAccountAction,
+} from "@/lib/actions/telegram";
 import { Button } from "@/components/ui/button";
-import { Send, Check, Copy, ExternalLink, RefreshCw, AlertCircle, ShieldCheck } from "lucide-react";
+import {
+  Send,
+  Check,
+  Copy,
+  ExternalLink,
+  RefreshCw,
+  AlertCircle,
+  ShieldCheck,
+  Unlink,
+  Clock,
+} from "lucide-react";
 
-export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
+interface TelegramConnectCardProps {
+  initialConnected?: boolean;
+  initialUsername?: string;
+  initialConnectedAt?: string;
+}
+
+export function TelegramConnectCard({
+  initialConnected,
+  initialUsername,
+  initialConnectedAt,
+}: TelegramConnectCardProps) {
   const [loading, setLoading] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+  const [isConnected, setIsConnected] = useState(initialConnected ?? false);
+  const [username, setUsername] = useState<string | undefined>(initialUsername);
+  const [connectedAt, setConnectedAt] = useState<string | undefined>(initialConnectedAt);
   const [token, setToken] = useState<string | null>(null);
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch status on initial render if not explicitly passed
+  useEffect(() => {
+    let active = true;
+    if (initialConnected === undefined) {
+      getTelegramStatusAction().then((res) => {
+        if (active && res.success) {
+          setIsConnected(res.isLinked);
+          setUsername(res.username);
+          setConnectedAt(res.connectedAt);
+        }
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [initialConnected]);
 
   const handleGenerateToken = async () => {
     setLoading(true);
@@ -30,6 +75,26 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
     }
   };
 
+  const handleUnlink = async () => {
+    setUnlinking(true);
+    setError(null);
+    try {
+      const res = await unlinkTelegramAccountAction();
+      if (res.success) {
+        setIsConnected(false);
+        setUsername(undefined);
+        setConnectedAt(undefined);
+        setToken(null);
+      } else {
+        setError(res.error || "Failed to disconnect Telegram account.");
+      }
+    } catch {
+      setError("Failed to disconnect. Please try again.");
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -37,6 +102,14 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
   };
 
   const deepLink = botUsername && token ? `https://t.me/${botUsername}?start=${token}` : null;
+
+  const formattedDate = connectedAt
+    ? new Date(connectedAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <div className="p-5 bg-white border border-[#E5E0D8] rounded-3xl space-y-4 text-[#191F1C] shadow-xs">
@@ -46,9 +119,9 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
             <Send className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#191F1C]">टेलिग्राम प्रादुर्भाव सूचना नेटवर्क | Telegram Alerts</h3>
+            <h3 className="text-sm font-bold text-[#191F1C]">Telegram Notifications</h3>
             <p className="text-xs text-stone-500">
-              गावात रोग प्रादुर्भाव झाल्यास त्वरित मोबाईल सूचना मिळवा.
+              Receive role-specific surveillance updates &amp; livestock health alerts on Telegram.
             </p>
           </div>
         </div>
@@ -56,21 +129,58 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
         {isConnected ? (
           <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-full flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>जोडलेले आहे</span>
+            <span>Connected</span>
           </span>
         ) : (
-          <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold rounded-full">
-            जोडलेले नाही
+          <span className="px-2.5 py-1 bg-stone-100 text-stone-700 border border-[#D9D3C7] text-xs font-semibold rounded-full">
+            Not connected
           </span>
         )}
       </div>
 
       {isConnected ? (
-        <div className="p-3.5 bg-[#FAF8F3] border border-[#E5E0D8] rounded-2xl text-xs text-stone-700 space-y-1">
-          <p className="font-semibold text-emerald-800">आपले खाते टेलिग्राम अलर्ट बॉटशी जोडलेले आहे.</p>
-          <p className="text-stone-500 text-[11px]">
-            आपल्या कार्यकक्षेतील रोग प्रादुर्भाव सूचना आणि पशुआरोग्य अलर्ट थेट आपल्या टेलिग्रामवर पाठवले जातील.
-          </p>
+        <div className="space-y-3">
+          <div className="p-3.5 bg-[#FAF8F3] border border-[#E5E0D8] rounded-2xl text-xs text-stone-700 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-emerald-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span>Maitri Telegram Bot Connected</span>
+              </span>
+              {username && (
+                <span className="font-mono text-[11px] px-2 py-0.5 bg-white border border-[#D9D3C7] rounded-md text-stone-800">
+                  @{username}
+                </span>
+              )}
+            </div>
+            <p className="text-stone-500 text-[11px]">
+              Your account is securely linked. Important surveillance alerts and updates will be delivered directly to your Telegram chat.
+            </p>
+            {formattedDate && (
+              <p className="text-[10px] text-stone-400 flex items-center gap-1 pt-0.5">
+                <Clock className="w-3 h-3" />
+                <span>Connected on {formattedDate}</span>
+              </p>
+            )}
+          </div>
+
+          <Button
+            onClick={handleUnlink}
+            disabled={unlinking}
+            variant="outline"
+            className="w-full border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold py-2 rounded-xl flex items-center justify-center gap-2 min-h-[38px] cursor-pointer"
+          >
+            {unlinking ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Disconnecting...</span>
+              </>
+            ) : (
+              <>
+                <Unlink className="w-3.5 h-3.5" />
+                <span>Disconnect Telegram</span>
+              </>
+            )}
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -78,24 +188,24 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
             <Button
               onClick={handleGenerateToken}
               disabled={loading}
-              className="w-full bg-[#047857] hover:bg-[#065f46] text-white font-semibold text-xs py-2.5 rounded-2xl shadow-xs flex items-center justify-center gap-2 min-h-[44px]"
+              className="w-full bg-[#047857] hover:bg-[#065f46] text-white font-semibold text-xs py-2.5 rounded-2xl shadow-xs flex items-center justify-center gap-2 min-h-[44px] cursor-pointer"
             >
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>टोकन तयार होत आहे...</span>
+                  <span>Generating token...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>टेलिग्राम खाते जोडा (Connect Telegram)</span>
+                  <span>Connect Telegram</span>
                 </>
               )}
             </Button>
           ) : (
             <div className="p-3.5 bg-[#FAF8F3] border border-[#E5E0D8] rounded-2xl space-y-3">
               <p className="text-xs text-stone-700 font-medium">
-                खालील लिंक उघडून बॉट सुरू करा:
+                Click below to open the bot and link your account:
               </p>
 
               {deepLink && (
@@ -103,9 +213,9 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
                   href={deepLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold rounded-xl transition shadow-xs"
                 >
-                  <span>Maitri Bot उघडा</span>
+                  <span>Open {botUsername || "Maitri Bot"}</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               )}
@@ -126,8 +236,9 @@ export function TelegramConnectCard({ isConnected }: { isConnected: boolean }) {
                 </button>
               </div>
 
-              <p className="text-[10px] text-amber-800 font-medium">
-                * हा टोकन १५ मिनिटांसाठी वैध आहे.
+              <p className="text-[10px] text-amber-800 font-medium flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-700 shrink-0" />
+                <span>This secure single-use link is valid for 10 minutes.</span>
               </p>
             </div>
           )}

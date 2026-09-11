@@ -3,6 +3,22 @@
  * NEVER import this file in client components.
  */
 
+export interface TelegramInlineKeyboardButton {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+export interface TelegramInlineKeyboardMarkup {
+  inline_keyboard: TelegramInlineKeyboardButton[][];
+}
+
+export interface SendTelegramMessageOptions {
+  parseMode?: "HTML" | "Markdown";
+  replyMarkup?: TelegramInlineKeyboardMarkup;
+  disableWebPagePreview?: boolean;
+}
+
 export interface TelegramSendMessageResponse {
   ok: boolean;
   result?: {
@@ -20,7 +36,7 @@ export interface TelegramSendMessageResponse {
 export async function sendTelegramMessage(
   chatId: string | number,
   text: string,
-  parseMode: "HTML" | "Markdown" = "HTML"
+  optionsOrParseMode: "HTML" | "Markdown" | SendTelegramMessageOptions = "HTML"
 ): Promise<{ success: boolean; messageId?: number; error?: string }> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -31,23 +47,37 @@ export async function sendTelegramMessage(
     };
   }
 
+  const options: SendTelegramMessageOptions =
+    typeof optionsOrParseMode === "string"
+      ? { parseMode: optionsOrParseMode }
+      : optionsOrParseMode || {};
+
+  const parseMode = options.parseMode || "HTML";
+  const disableWebPagePreview = options.disableWebPagePreview ?? true;
+
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
   try {
+    const payload: Record<string, unknown> = {
+      chat_id: chatId,
+      text,
+      parse_mode: parseMode,
+      disable_web_page_preview: disableWebPagePreview,
+    };
+
+    if (options.replyMarkup) {
+      payload.reply_markup = options.replyMarkup;
+    }
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: parseMode,
-        disable_web_page_preview: true,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 

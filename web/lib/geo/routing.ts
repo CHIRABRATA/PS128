@@ -1,6 +1,7 @@
 import prisma from "@/lib/db/prisma";
 import { FullAppUser } from "@/lib/auth/session";
 import { UserRole } from "@prisma/client";
+import { dispatchTelegramNotification } from "@/lib/telegram/delivery";
 
 export enum LocationMatchTier {
   SAME_VILLAGE = "SAME_VILLAGE",
@@ -568,7 +569,7 @@ export async function routeCaseToVeterinarian(caseId: string): Promise<{
       ? `${location.districtName}`
       : "your jurisdiction";
 
-    await prisma.inAppNotification.create({
+    const createdNotification = await prisma.inAppNotification.create({
       data: {
         userId: topVet.id,
         title: `New Case in ${locString}`,
@@ -577,6 +578,12 @@ export async function routeCaseToVeterinarian(caseId: string): Promise<{
         type: "CASE_ASSIGNED",
       },
     });
+
+    if (createdNotification?.id) {
+      dispatchTelegramNotification(createdNotification.id).catch((err) => {
+        console.error("[Telegram Dispatch Error]:", err);
+      });
+    }
   }
 
   return {
@@ -700,7 +707,7 @@ export async function routeAssistanceRequestToFieldAgent(requestId: string): Pro
 
   if (!existingNotification) {
     const locString = villageName || blockName || districtName || "your area";
-    await prisma.inAppNotification.create({
+    const createdNotification = await prisma.inAppNotification.create({
       data: {
         userId: topAgent.id,
         title: `New Field Assistance Request in ${locString}`,
@@ -709,6 +716,12 @@ export async function routeAssistanceRequestToFieldAgent(requestId: string): Pro
         type: "ASSISTANCE_ASSIGNED",
       },
     });
+
+    if (createdNotification?.id) {
+      dispatchTelegramNotification(createdNotification.id).catch((err) => {
+        console.error("[Telegram Dispatch Error]:", err);
+      });
+    }
   }
 
   return {

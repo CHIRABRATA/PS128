@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/db/prisma";
 import { requireActiveUser } from "@/lib/auth/session";
+import { dispatchTelegramNotification } from "@/lib/telegram/delivery";
 
 export interface CreateNotificationInput {
   userId: string;
@@ -12,11 +13,11 @@ export interface CreateNotificationInput {
 }
 
 /**
- * Creates an in-app notification for a user.
+ * Creates an in-app notification for a user and triggers Telegram delivery if connected.
  */
 export async function createInAppNotification(input: CreateNotificationInput) {
   try {
-    return await prisma.inAppNotification.create({
+    const notification = await prisma.inAppNotification.create({
       data: {
         userId: input.userId,
         title: input.title,
@@ -25,6 +26,15 @@ export async function createInAppNotification(input: CreateNotificationInput) {
         type: input.type,
       },
     });
+
+    if (notification) {
+      // Trigger Telegram notification delivery asynchronously (non-blocking, best-effort)
+      dispatchTelegramNotification(notification.id).catch((err) => {
+        console.error("[Telegram Dispatch Trigger Error]:", err);
+      });
+    }
+
+    return notification;
   } catch (err) {
     console.error("[Create Notification Error]:", err);
     return null;

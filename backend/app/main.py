@@ -1,7 +1,7 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routes import health, predict, iot, analytics, master, advisory
+from app.routes import health, predict, iot, analytics, master, advisory, telegram
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,6 +25,7 @@ app.include_router(iot.router, prefix=settings.API_V1_STR)
 app.include_router(analytics.router, prefix=settings.API_V1_STR)
 app.include_router(master.router, prefix=settings.API_V1_STR)
 app.include_router(advisory.router, prefix=settings.API_V1_STR)
+app.include_router(telegram.router, prefix=settings.API_V1_STR)
 
 @app.get("/", include_in_schema=False)
 async def root():

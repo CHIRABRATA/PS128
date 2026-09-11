@@ -121,6 +121,8 @@ model User {
   fieldVisits                FieldVisit[]           @relation("AgentFieldVisits")
   authoredVetReports         VeterinaryReport[]     @relation("VetAuthoredReports")
   appNotifications           InAppNotification[]
+  telegramConnection         TelegramConnection?
+  telegramLinkTokens         TelegramLinkToken[]
 
   @@index([clerkId])
   @@index([role])
@@ -390,7 +392,8 @@ model InAppNotification {
   type      String
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  telegramDeliveries TelegramNotificationDelivery[]
 
   @@index([userId])
   @@index([read])
@@ -522,3 +525,50 @@ model ChatMessage {
   @@index([conversationId])
   @@index([createdAt])
 }
+
+model TelegramConnection {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  telegramChatId         String   @unique
+  telegramUsername       String?
+  connectedAt            DateTime @default(now())
+  lastVerifiedAt         DateTime?
+  isActive               Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  telegramDeliveries TelegramNotificationDelivery[]
+
+  @@index([telegramChatId])
+}
+
+model TelegramLinkToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model TelegramNotificationDelivery {
+  id                    String             @id @default(cuid())
+  notificationId        String
+  telegramConnectionId  String
+  sentAt                DateTime?
+  telegramMessageId     Int?
+  status                NotificationStatus
+  errorMessage          String?
+
+  notification       InAppNotification  @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  telegramConnection TelegramConnection @relation(fields: [telegramConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, telegramConnectionId])
+  @@index([notificationId])
+  @@index([telegramConnectionId])
+}
+
