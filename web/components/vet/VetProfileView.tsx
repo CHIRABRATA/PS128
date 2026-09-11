@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 import {
   User,
   Phone,
@@ -362,11 +363,7 @@ export function VetProfileView({
                   Registered
                 </span>
                 <span className="font-medium text-stone-900">
-                  {new Date(profile.createdAt).toLocaleDateString([], {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {formatDate(profile.createdAt)}
                 </span>
               </div>
             </div>

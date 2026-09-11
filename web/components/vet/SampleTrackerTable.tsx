@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface SampleItem {
   id: string;
@@ -164,7 +165,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
                 <td className="p-3">{sample.case.animal.tag} ({sample.case.animal.species})</td>
                 <td className="p-3 text-stone-700">{sample.labName || "Not recorded"}</td>
                 <td className="p-3">{getStatusBadge(sample.status)}</td>
-                <td className="p-3 text-stone-500">{new Date(sample.collectedAt).toLocaleDateString()}</td>
+                <td className="p-3 text-stone-500">{formatDate(sample.collectedAt)}</td>
                 <td className="p-3 truncate max-w-xs text-stone-600">{sample.resultSummary || "Pending"}</td>
                 <td className="p-3 text-right">
                   <Button

@@ -4,6 +4,7 @@ import { ApprovalButtons } from "../ApprovalButtons";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserCheck, Clock, MapPin } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default async function AuthorityApprovalsPage() {
   await requireDistrictAuthority();
@@ -58,7 +59,7 @@ export default async function AuthorityApprovalsPage() {
                       </span>
                       <span className="flex items-center gap-1 text-stone-500 font-mono">
                         <Clock className="h-3 w-3" />
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {formatDate(user.createdAt, true)}
                       </span>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { RecentActivityItem } from "@/lib/authority/metrics";
 import { Activity, ClipboardList, Footprints, FileText, BellRing, ChevronRight } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 interface RecentActivityFeedProps {
   activities: RecentActivityItem[];
@@ -79,7 +80,7 @@ export function RecentActivityFeed({ activities }: RecentActivityFeedProps) {
                     </div>
                     <p className="text-[11px] text-stone-500">{act.subtitle}</p>
                     <p className="text-[10px] text-stone-400 font-mono">
-                      {new Date(act.timestamp).toLocaleString()}
+                      {formatDateTime(act.timestamp, true)}
                     </p>
                   </div>
                 </div>

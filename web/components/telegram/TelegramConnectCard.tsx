@@ -18,6 +18,7 @@ import {
   Unlink,
   Clock,
 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface TelegramConnectCardProps {
   initialConnected?: boolean;
@@ -103,13 +104,7 @@ export function TelegramConnectCard({
 
   const deepLink = botUsername && token ? `https://t.me/${botUsername}?start=${token}` : null;
 
-  const formattedDate = connectedAt
-    ? new Date(connectedAt).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
+  const formattedDate = connectedAt ? formatDate(connectedAt) : null;
 
   return (
     <div className="p-5 bg-white border border-[#E5E0D8] rounded-3xl space-y-4 text-[#191F1C] shadow-xs">

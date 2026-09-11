@@ -8,6 +8,7 @@ import { RiskBadge } from "@/components/ai/RiskBadge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatDateTime } from "@/lib/utils";
 import {
   Activity,
   Camera,
@@ -238,7 +239,7 @@ export default async function VetDashboardPage({
                       <div className="text-xs text-stone-600 space-y-1">
                         <div>Farm: <span className="text-stone-900 font-medium">{item.animal.herd.farm.name}</span></div>
                         <div>Village: <span className="text-stone-900 font-medium">{item.animal.herd.farm.village.name}</span></div>
-                        <div>Reported: <span className="text-stone-500">{new Date(item.reportedAt).toLocaleString()}</span></div>
+                        <div>Reported: <span className="text-stone-500">{formatDateTime(item.reportedAt)}</span></div>
                         {item.assignedVeterinarianUser && (
                           <div className="text-emerald-900 text-[11px] pt-0.5">
                             Assigned to: <strong>Dr. {item.assignedVeterinarianUser.name}</strong>
@@ -328,12 +329,7 @@ export default async function VetDashboardPage({
                             )}
                           </td>
                           <td className="py-3 px-3 text-stone-500">
-                            {new Date(item.reportedAt).toLocaleDateString([], {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatDateTime(item.reportedAt)}
                           </td>
                           <td className="py-3 px-3">
                             <Badge className="bg-stone-100 text-stone-700 border-stone-200 text-[10px]">

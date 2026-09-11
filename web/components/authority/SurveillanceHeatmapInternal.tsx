@@ -7,6 +7,7 @@ import {
   DistrictMapLayersData,
 } from "@/lib/authority/metrics";
 import { isValidCoordinate } from "./mapUtils";
+import { formatDate } from "@/lib/utils";
 
 export interface MapLayerVisibility {
   heatmap: boolean;
@@ -308,7 +309,7 @@ export default function SurveillanceHeatmapInternal({
             <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
               <div>Farm: <strong>${c.farmName}</strong></div>
               <div>Farmer: <strong>${c.farmerName}</strong></div>
-              <div>Reported: <strong>${new Date(c.reportedAt).toLocaleDateString()}</strong></div>
+              <div>Reported: <strong>${formatDate(c.reportedAt, true)}</strong></div>
               ${c.diagnosis ? `<div style="margin-top: 4px; color: #065F46;">Diagnosis: <strong>${c.diagnosis}</strong></div>` : ""}
             </div>
           </div>
@@ -413,7 +414,7 @@ export default function SurveillanceHeatmapInternal({
             </div>
             <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
               <div>Agent: <strong>${visit.agentName}</strong></div>
-              <div>Date: <strong>${new Date(visit.visitDate).toLocaleDateString()}</strong></div>
+              <div>Date: <strong>${formatDate(visit.visitDate, true)}</strong></div>
               ${visit.observations ? `<div style="margin-top: 4px;">Notes: <em>${visit.observations}</em></div>` : ""}
             </div>
           </div>
@@ -450,7 +451,7 @@ export default function SurveillanceHeatmapInternal({
             <div style="border-top: 1px solid #E5E0D8; padding-top: 4px; font-size: 11px;">
               <div>Suspected Disease: <strong style="color: #DC2626;">${alert.diseaseName}</strong></div>
               <div>Cluster Case Count: <strong>${alert.caseCount}</strong></div>
-              <div>Window: <strong>${new Date(alert.windowStart).toLocaleDateString()} – ${new Date(alert.windowEnd).toLocaleDateString()}</strong></div>
+              <div>Window: <strong>${formatDate(alert.windowStart, true)} – ${formatDate(alert.windowEnd, true)}</strong></div>
             </div>
           </div>
         `);

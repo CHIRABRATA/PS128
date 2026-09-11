@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Calendar, MapPin, ShieldAlert, ShieldCheck, Search, ChevronRight } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export interface AlertWithLocation {
   id: string;
@@ -154,7 +155,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                       </span>
                       <span className="flex items-center gap-1 text-stone-500 font-mono">
                         <Calendar className="h-3.5 w-3.5 text-stone-400" />
-                        Window: {new Date(alert.windowStart).toLocaleDateString()} — {new Date(alert.windowEnd).toLocaleDateString()}
+                        Window: {formatDate(alert.windowStart, true)} — {formatDate(alert.windowEnd, true)}
                       </span>
                     </div>
                   </div>

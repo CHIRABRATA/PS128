@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, ArrowRight } from "lucide-react";
 import { Prisma } from "@prisma/client";
+import { formatDateTime } from "@/lib/utils";
 
 export default async function VetCasesPage() {
   const vet = await requireVeterinarian();
@@ -123,7 +124,7 @@ export default async function VetCasesPage() {
                         <td className="p-3">
                           <RiskBadge level={level} />
                         </td>
-                        <td className="p-3 text-stone-500">{new Date(c.reportedAt).toLocaleDateString()}</td>
+                        <td className="p-3 text-stone-500">{formatDateTime(c.reportedAt)}</td>
                         <td className="p-3 text-right">
                           <Link href={`/vet/cases/${c.id}`}>
                             <Button type="button" size="sm" className="h-8 text-xs bg-[#047857] hover:bg-[#065f46] text-white font-semibold gap-1 min-h-[32px]">

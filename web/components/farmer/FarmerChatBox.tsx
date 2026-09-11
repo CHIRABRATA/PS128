@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/farmer-talk";
 import { AnimalContextPacket } from "@/lib/ai/farmer-talk";
 import { MessageSquare, Send, AlertTriangle, ShieldCheck, RefreshCw, Stethoscope } from "lucide-react";
+import { formatTime } from "@/lib/utils";
 
 export interface ChatMessageItem {
   id: string;
@@ -294,7 +295,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
                   )}
                 </div>
                 <span className="text-[10px] text-stone-400 px-1 font-mono">
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {formatTime(msg.createdAt)}
                 </span>
               </div>
             );

@@ -17,6 +17,7 @@ import {
   Calendar,
   User,
 } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface PersonnelCoverageSectionProps {
   veterinarians: VetCoverageItem[];
@@ -364,13 +365,13 @@ export function PersonnelCoverageSection({
                         {c.followUpDate && (
                           <p className="text-[11px] text-rose-700 flex items-center gap-1 font-mono">
                             <Calendar className="h-3 w-3" />
-                            <span>Follow-up: {new Date(c.followUpDate).toLocaleDateString()} {c.followUpCompleted ? "(Completed)" : "(Pending)"}</span>
+                            <span>Follow-up: {formatDate(c.followUpDate, true)} {c.followUpCompleted ? "(Completed)" : "(Pending)"}</span>
                           </p>
                         )}
                       </div>
 
                       <div className="text-[11px] text-stone-500 font-mono shrink-0">
-                        Reported: {new Date(c.reportedAt).toLocaleDateString()}
+                        Reported: {formatDate(c.reportedAt, true)}
                       </div>
                     </div>
                   ))}
@@ -458,13 +459,13 @@ export function PersonnelCoverageSection({
                         {r.scheduledAt && (
                           <p className="text-[11px] text-blue-700 flex items-center gap-1 font-mono">
                             <Calendar className="h-3 w-3" />
-                            <span>Scheduled: {new Date(r.scheduledAt).toLocaleString()}</span>
+                            <span>Scheduled: {formatDateTime(r.scheduledAt, true)}</span>
                           </p>
                         )}
                       </div>
 
                       <div className="text-[11px] text-stone-500 font-mono shrink-0">
-                        Requested: {new Date(r.requestedAt).toLocaleDateString()}
+                        Requested: {formatDate(r.requestedAt, true)}
                       </div>
                     </div>
                   ))}

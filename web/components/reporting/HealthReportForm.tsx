@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { formatDateTime } from "@/lib/utils";
 import {
   ArrowRight,
   ArrowLeft,
@@ -470,7 +471,7 @@ export function HealthReportForm({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-stone-500">Reported at:</span>
-                <span className="text-stone-600">{submitResult.reportedAt ? new Date(submitResult.reportedAt).toLocaleString() : new Date().toLocaleString()}</span>
+                <span className="text-stone-600">{formatDateTime(submitResult.reportedAt || new Date(), true)}</span>
               </div>
             </div>
           </div>

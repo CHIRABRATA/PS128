@@ -21,6 +21,7 @@ import {
   UserCheck,
   ChevronRight,
 } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 export default async function AnimalDetailPage({
   params,
@@ -177,7 +178,7 @@ export default async function AnimalDetailPage({
                   <Calendar className="h-4 w-4 text-amber-700" />
                   <span>Scheduled Clinical Follow-up:</span>
                   <span className="font-mono font-bold text-[#191F1C]">
-                    {new Date(activeCase.vetFollowUpDate).toLocaleDateString()}
+                    {formatDate(activeCase.vetFollowUpDate, true)}
                   </span>
                 </div>
                 <Badge className="bg-amber-200 text-amber-950 border-amber-300 text-[10px]">
@@ -218,7 +219,7 @@ export default async function AnimalDetailPage({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-stone-500 text-[11px] pt-1 border-t border-[#E5E0D8]">
                     <span>Clinician: Dr. {latestReport.vetUser.name} ({latestReport.vetUser.phone})</span>
                     <div className="flex items-center gap-3">
-                      <span>Reported: {new Date(latestReport.createdAt).toLocaleDateString()}</span>
+                      <span>Reported: {formatDate(latestReport.createdAt, true)}</span>
                       {latestReport.caseId && (
                         <Link href={`/farmer/cases/${latestReport.caseId}`}>
                           <Button size="sm" className="h-6 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg px-2.5">
@@ -289,11 +290,7 @@ export default async function AnimalDetailPage({
                         )}
                       </div>
                       <span className="text-[11px] font-mono text-stone-500">
-                        {new Date(event.date).toLocaleDateString([], {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatDate(event.date, true)}
                       </span>
                     </div>
 
@@ -356,7 +353,7 @@ export default async function AnimalDetailPage({
                       <div className="font-bold text-stone-900">{vac.vaccineName}</div>
                       <span className="text-[10px] text-stone-500">By {vac.administeredByUser.name}</span>
                     </div>
-                    <span className="font-mono text-stone-600">{new Date(vac.dateGiven).toLocaleDateString()}</span>
+                    <span className="font-mono text-stone-600">{formatDate(vac.dateGiven, true)}</span>
                   </div>
                 ))}
               </div>
@@ -383,7 +380,7 @@ export default async function AnimalDetailPage({
                       <div className="font-bold text-stone-900">{t.medication}</div>
                       <span className="text-[10px] text-stone-500">{t.notes || "Standard prescription"}</span>
                     </div>
-                    <span className="font-mono text-stone-600">{new Date(t.dateGiven).toLocaleDateString()}</span>
+                    <span className="font-mono text-stone-600">{formatDate(t.dateGiven, true)}</span>
                   </div>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { getFarmerDashboardMetricsAction } from "@/lib/actions/farmer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MotionFadeIn } from "@/components/motion/MotionFadeIn";
+import { formatDateTime, formatDate } from "@/lib/utils";
 import {
   PlusCircle,
   MessageSquare,
@@ -334,7 +335,7 @@ export default async function FarmerPortalPage() {
 
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[10px] font-mono text-stone-500">
-                          {new Date(c.reportedAt).toLocaleDateString()}
+                          {formatDateTime(c.reportedAt)}
                         </span>
                         <div className="flex items-center gap-2">
                           <Link href={`/farmer/animals/${c.animalId}`}>
@@ -426,7 +427,7 @@ export default async function FarmerPortalPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-1 text-[10px] text-stone-500">
-                        <span>Requested: {new Date(req.requestedAt).toLocaleDateString()}</span>
+                        <span>Requested: {formatDateTime(req.requestedAt)}</span>
                         {req.status === "REQUESTED" || req.status === "ASSIGNED" ? (
                           <span className="text-amber-700 font-medium">Pending Agent Visit</span>
                         ) : req.status === "IN_PROGRESS" ? (

@@ -2,6 +2,7 @@ import prisma from "@/lib/db/prisma";
 import { getRiskRank } from "@/lib/vet/schemas";
 import { Prisma } from "@prisma/client";
 import { isValidCoordinate } from "@/components/authority/mapUtils";
+import { formatDate } from "@/lib/utils";
 
 export interface DistrictCommandFilterOptions {
   districtId: string | null;
@@ -1056,7 +1057,7 @@ export async function getDistrictAuthorityCommandData(
   });
   const sortedDates = Array.from(temporalMap.keys()).sort();
   const casesOverTime: ChartDataPoint[] = sortedDates.map((dateKey) => ({
-    label: new Date(dateKey).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label: formatDate(dateKey, false),
     value: temporalMap.get(dateKey) || 0,
     meta: dateKey,
   }));

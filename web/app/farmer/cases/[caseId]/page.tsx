@@ -21,6 +21,7 @@ import {
   FlaskConical,
   Pill,
 } from "lucide-react";
+import { formatDateTime, formatDate } from "@/lib/utils";
 
 export default async function FarmerCaseDetailPage({
   params,
@@ -80,11 +81,7 @@ export default async function FarmerCaseDetailPage({
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
               Animal: {animal.tag} ({animal.species}) • Reported:{" "}
-              {new Date(healthCase.reportedAt).toLocaleDateString([], {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+              {formatDateTime(healthCase.reportedAt, true)}
             </p>
           </div>
         </div>
@@ -225,12 +222,7 @@ export default async function FarmerCaseDetailPage({
                       <span className="text-stone-600">
                         Date:{" "}
                         <strong className="text-stone-900">
-                          {new Date(latestReport.followUpDate).toLocaleDateString([], {
-                            weekday: "short",
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {formatDate(latestReport.followUpDate, true)}
                         </strong>
                       </span>
                     </div>
@@ -274,7 +266,7 @@ export default async function FarmerCaseDetailPage({
                             Update #{veterinaryReports.length - idx - 1}: {r.diagnosis}
                           </span>
                           <span className="text-[11px] font-mono text-stone-500">
-                            {new Date(r.createdAt).toLocaleDateString()}
+                            {formatDate(r.createdAt, true)}
                           </span>
                         </div>
                         {r.notes && <p className="text-stone-600">{r.notes}</p>}
@@ -439,7 +431,7 @@ export default async function FarmerCaseDetailPage({
                     <div className="flex justify-between items-center">
                       <strong className="text-purple-950">{t.medication}</strong>
                       <span className="text-[10px] text-stone-500 font-mono">
-                        {new Date(t.dateGiven).toLocaleDateString()}
+                        {formatDate(t.dateGiven, true)}
                       </span>
                     </div>
                     {t.notes && <p className="text-stone-700 text-[11px]">{t.notes}</p>}

@@ -19,6 +19,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 interface RequestItem {
   id: string;
@@ -183,7 +184,7 @@ export function AgentAssistanceQueue({
                 <div className="flex items-center gap-4 text-[11px] text-stone-500 pt-0.5">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3 text-stone-400" />
-                    Requested: {new Date(req.requestedAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    Requested: {formatDateTime(req.requestedAt)}
                   </span>
                   {req.village && (
                     <span className="flex items-center gap-1">

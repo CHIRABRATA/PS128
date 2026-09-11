@@ -21,6 +21,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { VetAction } from "@prisma/client";
+import { formatDateTime, formatDate } from "@/lib/utils";
 
 export default async function VetCaseDetailPage({
   params,
@@ -88,11 +89,11 @@ export default async function VetCaseDetailPage({
         </div>
 
         <div className="text-right text-xs text-stone-500 space-y-0.5">
-          <div>Reported: <span className="text-stone-800 font-medium">{new Date(healthCase.reportedAt).toLocaleString()}</span></div>
+          <div>Reported: <span className="text-stone-800 font-medium">{formatDateTime(healthCase.reportedAt)}</span></div>
           {healthCase.reviewedAt && (
             <div className="flex items-center gap-1 text-[11px] text-emerald-800 font-medium justify-end">
               <UserCheck className="h-3.5 w-3.5 text-emerald-700" />
-              <span>Reviewed: {new Date(healthCase.reviewedAt).toLocaleString()}</span>
+              <span>Reviewed: {formatDateTime(healthCase.reviewedAt)}</span>
             </div>
           )}
         </div>
@@ -199,7 +200,7 @@ export default async function VetCaseDetailPage({
                       <div key={pc.id} className="p-2.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D8] space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-stone-900">#{pc.caseNumber}</span>
-                          <span className="text-stone-500 text-[10px]">{new Date(pc.reportedAt).toLocaleDateString()}</span>
+                          <span className="text-stone-500 text-[10px]">{formatDate(pc.reportedAt)}</span>
                         </div>
                         <p className="text-stone-600 text-[11px]">
                           Symptoms: {pc.symptoms.join(", ")}
@@ -225,7 +226,7 @@ export default async function VetCaseDetailPage({
                       <div key={vr.id} className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-emerald-950">{vr.diagnosis}</span>
-                          <span className="text-emerald-800 text-[10px]">{new Date(vr.createdAt).toLocaleDateString()}</span>
+                          <span className="text-emerald-800 text-[10px]">{formatDate(vr.createdAt)}</span>
                         </div>
                         <p className="text-emerald-900 text-[11px]">
                           Veterinarian: Dr. {vr.vetUser.name} • Action: {vr.action}
@@ -250,7 +251,7 @@ export default async function VetCaseDetailPage({
                     {healthCase.animal.vaccinations.map((vac) => (
                       <div key={vac.id} className="flex justify-between text-stone-600 bg-[#FAF8F3] p-2 rounded-xl border border-[#E5E0D8]">
                         <span className="text-stone-900 font-medium">{vac.vaccineName}</span>
-                        <span>{new Date(vac.dateGiven).toLocaleDateString()}</span>
+                        <span>{formatDate(vac.dateGiven)}</span>
                       </div>
                     ))}
                   </div>
@@ -270,7 +271,7 @@ export default async function VetCaseDetailPage({
                     {healthCase.animal.treatments.map((t) => (
                       <div key={t.id} className="flex justify-between text-stone-600 bg-[#FAF8F3] p-2 rounded-xl border border-[#E5E0D8]">
                         <span className="text-stone-900 font-medium">{t.medication}</span>
-                        <span>{new Date(t.dateGiven).toLocaleDateString()}</span>
+                        <span>{formatDate(t.dateGiven)}</span>
                       </div>
                     ))}
                   </div>

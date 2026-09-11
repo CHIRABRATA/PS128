@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, ArrowRight, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default async function VetFollowUpsPage({
   searchParams,
@@ -130,7 +131,7 @@ export default async function VetFollowUpsPage({
                       <div className="text-right">
                         <span className="text-[10px] text-stone-500 uppercase font-semibold block">Scheduled Date</span>
                         <span className={`text-xs font-bold font-mono ${isCompleted ? "text-stone-600" : isOverdue ? "text-red-700" : "text-amber-800"}`}>
-                          {dueDate.toLocaleDateString()}
+                          {formatDate(dueDate)}
                         </span>
                       </div>
 
