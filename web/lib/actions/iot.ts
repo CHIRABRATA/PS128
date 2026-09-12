@@ -4,7 +4,7 @@ import prisma from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireFarmer, assertFarmerOwnsAnimal } from "@/lib/auth/permissions";
 import { requireActiveUser } from "@/lib/auth/session";
-import { ingestIoTData } from "@/lib/api/backend-client";
+import { ingestIoTData, BackendTimeoutError, getBackendHealth } from "@/lib/api/backend-client";
 import { createInAppNotification } from "./notifications";
 import { IoTDeviceSource, IoTDeviceStatus, UserRole } from "@prisma/client";
 
@@ -272,6 +272,9 @@ export async function ingestIoTTelemetryAction(input: IoTTelemetryInput) {
   const source: IoTDeviceSource =
     input.source === "REAL" ? IoTDeviceSource.REAL : IoTDeviceSource.SIMULATED;
 
+  // Lightweight pre-warm of idle backend container (non-blocking)
+  getBackendHealth().catch(() => {});
+
   // 1. Authoritative Backend Processing via FastAPI POST /api/iot/data
   let backendResult;
   try {
@@ -284,6 +287,13 @@ export async function ingestIoTTelemetryAction(input: IoTTelemetryInput) {
     });
   } catch (err) {
     console.error("[FastAPI IoT Ingestion Failure]:", err);
+    if (err instanceof BackendTimeoutError) {
+      return {
+        success: false,
+        error:
+          "The livestock health backend is waking up from an idle state — please wait about 30 seconds and try again.",
+      };
+    }
     return {
       success: false,
       error: "Unable to reach the backend IoT ingestion service. Please try again.",

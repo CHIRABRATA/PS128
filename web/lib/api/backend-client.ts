@@ -367,11 +367,16 @@ export async function ingestIoTData(payload: IoTDataRequest): Promise<IoTDataRes
         body: JSON.stringify(payload),
         cache: "no-store",
       },
-      5000 // 5 seconds timeout
+      20000 // 20 seconds timeout for Render cold starts
     );
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
+      logSafeBackendDiagnostics("IoT Telemetry Ingestion Failed", endpoint, {
+        status: response.status,
+        errorCategory: "http_error",
+        detail: errText ? errText.slice(0, 150) : "HTTP Error",
+      });
       throw new BackendResponseError(
         `Backend /api/iot/data HTTP ${response.status}: ${errText}`,
         response.status
@@ -387,9 +392,20 @@ export async function ingestIoTData(payload: IoTDataRequest): Promise<IoTDataRes
 
     return parseResult.data;
   } catch (err: unknown) {
-    if (err instanceof BackendResponseError || err instanceof BackendTimeoutError) {
+    if (err instanceof BackendTimeoutError) {
+      logSafeBackendDiagnostics("IoT Telemetry Ingestion Timed Out", endpoint, {
+        errorCategory: "timeout",
+        detail: err.message,
+      });
       throw err;
     }
+    if (err instanceof BackendResponseError) {
+      throw err;
+    }
+    logSafeBackendDiagnostics("IoT Telemetry Ingestion Network Failure", endpoint, {
+      errorCategory: "network",
+      detail: err instanceof Error ? err.message : "Network failure",
+    });
     console.error("[AI Engine IoT Ingestion Error]:", err);
     throw new BackendUnavailableError(
       err instanceof Error ? err.message : "Failed to ingest IoT telemetry."
