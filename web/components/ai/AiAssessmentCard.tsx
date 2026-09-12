@@ -18,6 +18,7 @@ import {
   Activity,
   Layers,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { getReportCopy } from "@/lib/i18n/report";
@@ -67,9 +68,6 @@ export function AiAssessmentCard({
   const riskScore = Number(analysisResult?.overall_risk_score || 0);
   const riskLevel = (analysisResult?.overall_risk_level as string) || "UNKNOWN";
   const diseasePrediction = analysisResult?.disease_prediction as Record<string, unknown> | null;
-  const clinicalSummary = diseasePrediction
-    ? `${String(diseasePrediction.suspected_condition || "Unknown condition")} (${Math.round(Number(diseasePrediction.confidence || 0) * 100)}%)`
-    : "";
   const differentials = (analysisResult?.differential_diagnoses as Array<{
     disease_name: string;
     probability: number;
@@ -83,22 +81,22 @@ export function AiAssessmentCard({
   const farmerAdvisory = analysisResult?.farmer_advisory as { advisory?: string } | null;
 
   return (
-    <Card className="border-blue-200 bg-blue-50/40 rounded-3xl shadow-xs overflow-hidden text-[#191F1C]">
+    <Card className="border-[#D0E2FF] bg-[#F4F8FF] rounded-3xl shadow-xs overflow-hidden text-[#191F1C]">
       {/* Header with Clinical Decision Support Tag */}
-      <CardHeader className="border-b border-blue-200/80 pb-3 bg-blue-50/80">
+      <CardHeader className="border-b border-[#D0E2FF] pb-3 bg-white/90">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-100 text-blue-800 border border-blue-200">
-              <Sparkles className="h-5 w-5 text-blue-700" />
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-xs">
+              <Sparkles className="h-5 w-5 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <CardTitle className="text-base font-bold text-blue-950 tracking-tight">
-                  {copy.decisionTitle}
+                <CardTitle className="text-base font-bold text-slate-900 tracking-tight">
+                  {copy.decisionTitle || "Clinical Decision Support"}
                 </CardTitle>
               </div>
-              <p className="text-xs text-blue-900/80">
-                {copy.decisionDescription}
+              <p className="text-xs text-slate-600">
+                {copy.decisionDescription || "Multimodal synthesis of clinical symptoms, vital sensors, microclimate, and outbreak surge telemetry."}
               </p>
             </div>
           </div>
@@ -111,10 +109,10 @@ export function AiAssessmentCard({
               size="sm"
               disabled={analyzing}
               onClick={handleRunAnalysis}
-              className="h-8 gap-1.5 text-xs border-blue-300 bg-white text-blue-900 hover:bg-blue-50 min-h-[32px] rounded-xl cursor-pointer"
+              className="h-8 gap-1.5 text-xs border-blue-200 bg-white text-blue-900 hover:bg-blue-50 min-h-[32px] rounded-xl cursor-pointer shadow-2xs font-semibold"
             >
-              <RefreshCw className={`h-3 w-3 text-blue-700 ${analyzing ? "animate-spin" : ""}`} />
-              <span>{analysisResult ? copy.retry : copy.startAnalysis}</span>
+              <RefreshCw className={`h-3.5 w-3.5 text-blue-600 ${analyzing ? "animate-spin" : ""}`} />
+              <span>{analysisResult ? (copy.retry || "Retry analysis") : (copy.startAnalysis || "Start analysis")}</span>
             </Button>
           </div>
         </div>
@@ -129,50 +127,66 @@ export function AiAssessmentCard({
         )}
 
         {!analysisResult && !analyzing && (
-          <div className="p-6 rounded-2xl border border-blue-200 bg-white text-center space-y-3 shadow-2xs">
-            <Activity className="h-8 w-8 text-blue-400 mx-auto" />
+          <div className="p-8 rounded-3xl border border-blue-200 bg-white text-center space-y-3 shadow-2xs">
+            <Activity className="h-10 w-10 text-blue-500 mx-auto" />
             <div>
-              <p className="text-xs font-bold text-blue-950">Multimodal analysis is pending for this case.</p>
-              <p className="text-[11px] text-stone-500 max-w-sm mx-auto mt-0.5">
-                Select &quot;Start analysis&quot; to combine symptoms, weather, sensor, and outbreak data.
+              <p className="text-sm font-bold text-slate-900">Multimodal clinical assessment pending</p>
+              <p className="text-xs text-stone-500 max-w-sm mx-auto mt-1">
+                Run AI analysis to synthesize reported symptoms, visual photographs, vital sensors, and outbreak vectors.
               </p>
             </div>
             <Button
               type="button"
               size="sm"
               onClick={handleRunAnalysis}
-              className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl"
+              className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl px-5 h-9"
             >
-              {copy.startAnalysis}
+              {copy.startAnalysis || "Run AI Analysis"}
             </Button>
           </div>
         )}
 
         {analyzing && (
-          <div className="p-8 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-blue-200">
-            <RefreshCw className="h-6 w-6 animate-spin text-blue-700" />
-            <span className="text-xs text-blue-950 font-medium">
-              Clinical analysis of symptoms, images, and outbreak data is in progress...
+          <div className="p-10 flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-blue-200 shadow-2xs">
+            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="text-xs text-slate-800 font-semibold">
+              Evaluating clinical data, lesion patterns, and epidemiological risk vectors...
             </span>
           </div>
         )}
 
         {analysisResult && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
-            {/* 1. Primary Risk Gauge & Clinical Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-2xl border border-blue-200 shadow-2xs">
-              <div className="flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-blue-100">
+            {/* 1. Primary Risk Gauge & Clinical Summary Card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-5 rounded-3xl border border-[#D0E2FF] shadow-xs">
+              <div className="flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-slate-100">
                 <RiskGauge score={riskScore} level={riskLevel} />
               </div>
 
-              <div className="md:col-span-2 space-y-2 flex flex-col justify-center">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-950 uppercase tracking-wider">
-                  <FileText className="h-3.5 w-3.5 text-blue-700" />
-                  <span>{copy.clinicalSummary}</span>
+              <div className="md:col-span-2 space-y-3 flex flex-col justify-center">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  <span>{copy.clinicalSummary || "Clinical Synthesis & Primary Suspected Condition"}</span>
                 </div>
-                <p className="text-xs text-stone-700 leading-relaxed bg-[#FAF8F3] p-3 rounded-xl border border-[#E5E0D8]">
-                  {clinicalSummary || copy.noSummary}
-                </p>
+
+                <div className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] space-y-2">
+                  <div className="text-base font-bold text-slate-900">
+                    {diseasePrediction?.suspected_condition ? String(diseasePrediction.suspected_condition) : "Suspected Clinical Condition"}
+                  </div>
+                  {Boolean(diseasePrediction?.confidence) && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-stone-500 font-medium">Diagnostic Confidence:</span>
+                      <Badge className="bg-blue-50 text-blue-800 border-blue-200 font-mono text-xs font-bold">
+                        {Math.round(Number(diseasePrediction?.confidence) * 100)}% Match
+                      </Badge>
+                    </div>
+                  )}
+                  {Boolean(diseasePrediction?.symptoms_analyzed) && (
+                    <p className="text-xs text-stone-600 pt-1 border-t border-[#E5E0D8]/60">
+                      <strong>Analyzed Indicators:</strong> {String(diseasePrediction?.symptoms_analyzed)}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -180,21 +194,23 @@ export function AiAssessmentCard({
             {differentials.length > 0 && (
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-amber-600" />
-                    <span>Differential diagnoses</span>
+                  <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-amber-600" />
+                    <span>Differential Diagnoses Matrix</span>
                   </span>
-                  <span className="text-[11px] text-stone-500 font-mono">{differentials.length} possible conditions</span>
+                  <span className="text-xs text-stone-500 font-mono font-medium">
+                    {differentials.length} candidate condition{differentials.length > 1 ? "s" : ""}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {differentials.map((diff, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-2xl border border-[#E5E0D8] bg-white space-y-2 shadow-2xs"
+                      className="p-4 rounded-2xl border border-[#E5E0D8] bg-white space-y-2.5 shadow-2xs"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-[#191F1C]">{diff.disease_name}</span>
+                        <span className="text-xs font-bold text-slate-900">{diff.disease_name}</span>
                         <Badge
                           className={`text-[10px] font-mono font-bold ${
                             diff.probability >= 0.7
@@ -210,14 +226,14 @@ export function AiAssessmentCard({
 
                       {diff.hallmark_symptoms_matched && diff.hallmark_symptoms_matched.length > 0 && (
                         <div className="text-[11px] text-stone-600">
-                          <span className="text-stone-500">Matching symptoms: </span>
+                          <span className="text-stone-500">Hallmark markers: </span>
                           <span className="text-stone-800 font-medium">{diff.hallmark_symptoms_matched.join(", ")}</span>
                         </div>
                       )}
 
                       {diff.quarantine_protocol_summary && (
-                        <p className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-xl border border-amber-200">
-                          <strong>Isolation:</strong> {diff.quarantine_protocol_summary}
+                        <p className="text-[11px] text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200/80">
+                          <strong>Isolation Protocol:</strong> {diff.quarantine_protocol_summary}
                         </p>
                       )}
                     </div>
@@ -243,12 +259,15 @@ export function AiAssessmentCard({
             </div>
 
             {/* 5. Farmer Advisory Guidelines */}
-            {farmerAdvisory && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm leading-relaxed text-emerald-950">
-                          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider">{copy.advisoryTitle}</h3>
-                          <p className="whitespace-pre-wrap">{farmerAdvisory.advisory || copy.noAdvisory}</p>
-                        </div>
-                      )}
+            {farmerAdvisory?.advisory && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs leading-relaxed text-emerald-950 shadow-2xs space-y-1.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-700" />
+                  <span>{copy.advisoryTitle || "Automated Farmer Advisory Summary"}</span>
+                </h4>
+                <p className="whitespace-pre-wrap font-medium">{farmerAdvisory.advisory}</p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

@@ -32,8 +32,16 @@ export function CasePhotoViewer({
     fetch(proxyUrl)
       .then(async (res) => {
         if (!res.ok) {
+          // If proxy fails, try using direct photoUrl if available
+          if (photoUrl && photoUrl.startsWith("http")) {
+            if (isMounted) {
+              setSrc(photoUrl);
+              setLoading(false);
+            }
+            return;
+          }
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `Failed to load photo (Status ${res.status})`);
+          throw new Error(data.error || `Unable to stream photo (HTTP ${res.status})`);
         }
         const blob = await res.blob();
         const objectUrl = URL.createObjectURL(blob);
@@ -44,20 +52,25 @@ export function CasePhotoViewer({
       })
       .catch((err) => {
         if (isMounted) {
-          setError(err.message || "Unauthorized or missing photo.");
-          setLoading(false);
+          if (photoUrl && photoUrl.startsWith("http")) {
+            setSrc(photoUrl);
+            setLoading(false);
+          } else {
+            setError(err.message || "Unable to load case photograph.");
+            setLoading(false);
+          }
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [caseId]);
+  }, [caseId, photoUrl]);
 
   const aspectClasses = {
     square: "aspect-square",
     video: "aspect-video",
-    auto: "min-h-[160px] max-h-[360px]",
+    auto: "min-h-[180px] max-h-[380px]",
   }[aspectRatio];
 
   // 1. Missing Photo State
@@ -66,26 +79,28 @@ export function CasePhotoViewer({
       <div
         className={`w-full rounded-2xl border border-[#E5E0D8] bg-[#FAF8F3] p-6 flex flex-col items-center justify-center text-center gap-2 ${aspectClasses} ${className}`}
       >
-        <div className="h-10 w-10 rounded-xl bg-white border border-[#E5E0D8] flex items-center justify-center text-stone-400">
+        <div className="h-10 w-10 rounded-xl bg-white border border-[#E5E0D8] flex items-center justify-center text-stone-400 shadow-2xs">
           <ImageIcon className="h-5 w-5" />
         </div>
-        <p className="text-xs font-semibold text-stone-600">कोणतेही छायाचित्र जोडलेले नाही</p>
-        <p className="text-[11px] text-stone-500">या तक्रारीसोबत तपासणी छायाचित्र जोडले नव्हते.</p>
+        <p className="text-xs font-semibold text-stone-700">No Clinical Photograph Attached</p>
+        <p className="text-[11px] text-stone-500 max-w-xs">
+          No field lesion or inspection photo was uploaded with this case intake.
+        </p>
       </div>
     );
   }
 
-  // 2. Error / Unauthorized State
-  if (!loading && error) {
+  // 2. Error State
+  if (!loading && error && !src) {
     return (
       <div
-        className={`w-full rounded-2xl border border-red-200 bg-red-50/50 p-6 flex flex-col items-center justify-center text-center gap-2 ${aspectClasses} ${className}`}
+        className={`w-full rounded-2xl border border-amber-200 bg-amber-50/50 p-6 flex flex-col items-center justify-center text-center gap-2 ${aspectClasses} ${className}`}
       >
-        <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600">
+        <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
           <AlertCircle className="h-5 w-5" />
         </div>
-        <p className="text-xs font-semibold text-red-800">छायाचित्र पाहण्यास निर्बंध</p>
-        <p className="text-[11px] text-red-700/80 max-w-xs">{error}</p>
+        <p className="text-xs font-semibold text-amber-900">Photograph Preview Unavailable</p>
+        <p className="text-[11px] text-amber-800/80 max-w-xs">{error}</p>
       </div>
     );
   }
@@ -93,13 +108,13 @@ export function CasePhotoViewer({
   return (
     <>
       <div
-        className={`relative group w-full rounded-2xl overflow-hidden border border-[#E5E0D8] bg-[#FAF8F3] flex items-center justify-center ${aspectClasses} ${className}`}
+        className={`relative group w-full rounded-2xl overflow-hidden border border-[#E5E0D8] bg-slate-950 flex items-center justify-center ${aspectClasses} ${className}`}
       >
         {/* Loading Spinner */}
         {loading && (
-          <div className="absolute inset-0 bg-[#FAF8F3]/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
+          <div className="absolute inset-0 bg-[#FAF8F3]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
             <Loader2 className="h-6 w-6 text-emerald-700 animate-spin" />
-            <span className="text-[11px] text-stone-600 font-medium">छायाचित्र सुरक्षितपणे लोड होत आहे...</span>
+            <span className="text-xs text-stone-700 font-medium">Loading clinical photograph securely...</span>
           </div>
         )}
 
@@ -110,14 +125,18 @@ export function CasePhotoViewer({
             <img
               src={src}
               alt={alt}
-              className="w-full h-full object-contain max-h-[360px] rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
+              className="w-full h-full object-contain max-h-[380px] rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
               loading="lazy"
+              onError={() => {
+                // If direct loading fails, reset or show friendly fallback
+                setError("Remote photograph stream unreachable.");
+              }}
             />
 
             {/* Privacy Badge */}
-            <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E5E0D8] text-[10px] font-medium text-emerald-800 shadow-xs">
-              <ShieldCheck className="h-3 w-3 text-emerald-700" />
-              <span>सुरक्षित वैद्यकीय मीडिया</span>
+            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700 text-[10px] font-semibold text-emerald-400 shadow-md">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Protected Clinical Media</span>
             </div>
 
             {/* Lightbox Trigger Button */}
@@ -126,8 +145,8 @@ export function CasePhotoViewer({
               size="sm"
               variant="outline"
               onClick={() => setLightboxOpen(true)}
-              className="absolute top-2.5 right-2.5 h-8 w-8 p-0 rounded-full bg-white/90 border-[#D9D3C7] text-stone-700 hover:text-stone-900 hover:bg-stone-100 shadow-xs backdrop-blur-sm cursor-pointer"
-              title="Expand photo view"
+              className="absolute top-3 right-3 h-8 w-8 p-0 rounded-full bg-white/90 border-[#D9D3C7] text-stone-700 hover:text-stone-900 hover:bg-stone-100 shadow-md backdrop-blur-sm cursor-pointer"
+              title="Expand photograph to full screen"
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </Button>
@@ -138,11 +157,11 @@ export function CasePhotoViewer({
       {/* Lightbox Modal */}
       {lightboxOpen && src && (
         <div
-          className="fixed inset-0 z-50 bg-stone-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4"
           onClick={() => setLightboxOpen(false)}
         >
           <div
-            className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center"
+            className="relative max-w-5xl max-h-[90vh] w-full flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
             <Button
@@ -158,14 +177,14 @@ export function CasePhotoViewer({
             <img
               src={src}
               alt={alt}
-              className="max-w-full max-h-[80vh] object-contain rounded-2xl border border-white/20 shadow-2xl"
+              className="max-w-full max-h-[82vh] object-contain rounded-2xl border border-white/20 shadow-2xl"
             />
 
             <div className="mt-3 flex items-center justify-between w-full text-xs text-stone-300 px-2">
-              <span className="truncate max-w-xs">{alt}</span>
-              <span className="text-emerald-400 flex items-center gap-1 font-mono text-[11px]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Maitri Private Stream
+              <span className="truncate max-w-sm">{alt}</span>
+              <span className="text-emerald-400 flex items-center gap-1.5 font-mono text-xs">
+                <ShieldCheck className="h-4 w-4" />
+                Maitri Secure Clinical Stream
               </span>
             </div>
           </div>

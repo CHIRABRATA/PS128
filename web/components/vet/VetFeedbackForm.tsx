@@ -172,48 +172,41 @@ export function VetFeedbackForm({
     }
   };
 
-  const getActionLabel = (act: VetAction) => {
-    switch (act) {
-      case "ISOLATE":
-        return "ISOLATE";
-      case "TREAT":
-        return "TREAT";
-      case "MONITOR":
-        return "MONITOR";
-      case "REFER_LAB":
-        return "REFER TO LAB";
-      case "NONE":
-        return "NONE";
-      default:
-        return act;
-    }
-  };
+  const actionsList: { key: VetAction; label: string; desc: string }[] = [
+    { key: "ISOLATE", label: "ISOLATE", desc: "Quarantine immediately" },
+    { key: "TREAT", label: "TREAT", desc: "Administer treatment" },
+    { key: "MONITOR", label: "MONITOR", desc: "Active observation" },
+    { key: "REFER_LAB", label: "REFER TO LAB", desc: "Collect diagnostic sample" },
+    { key: "NONE", label: "NONE", desc: "No intervention needed" },
+  ];
 
   return (
-    <div className="p-5 rounded-3xl border-2 border-emerald-300 bg-emerald-50/70 space-y-5 shadow-xs text-emerald-950">
+    <div className="p-6 rounded-3xl border border-emerald-200/90 bg-emerald-50/40 space-y-5 shadow-xs text-stone-900">
       {/* Header Banner */}
-      <div className="flex items-center justify-between border-b border-emerald-200 pb-3">
-        <div className="flex items-center gap-2">
-          <Stethoscope className="h-5 w-5 text-emerald-700" />
+      <div className="flex items-center justify-between border-b border-emerald-200/80 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-emerald-700 text-white shadow-xs">
+            <Stethoscope className="h-5 w-5" />
+          </div>
           <div>
             <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-wider">
               Veterinary Clinical Assessment
             </h3>
-            <p className="text-[11px] text-emerald-800">
-              Official licensed veterinary medical evaluation.
+            <p className="text-xs text-emerald-800">
+              Official licensed veterinary medical evaluation and clinical disposition.
             </p>
           </div>
         </div>
-        <Badge className="border-emerald-300 text-emerald-900 bg-emerald-100 text-[10px] font-bold">
-          Doctor&apos;s Notes
+        <Badge className="px-3 py-1 text-xs font-semibold rounded-full border border-emerald-300 bg-emerald-100 text-emerald-900 shadow-none">
+          Doctor&apos;s Entry
         </Badge>
       </div>
 
       {/* Safety Notice */}
-      <div className="bg-white p-3 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5 shadow-2xs">
+      <div className="bg-white p-3.5 rounded-2xl border border-emerald-200/80 text-xs text-emerald-950 flex items-start gap-2.5 shadow-2xs">
         <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed">
-          <strong>Clinical Authority:</strong> AI findings are for clinical decision support only. The entry below serves as the official final veterinary diagnosis.
+          <strong className="font-semibold text-emerald-900">Clinical Authority:</strong> AI findings provide decision support. The licensed veterinary entry recorded below serves as the legally binding clinical diagnosis and prescription.
         </p>
       </div>
 
@@ -236,26 +229,26 @@ export function VetFeedbackForm({
       <div className="space-y-4">
         {/* 1. Diagnosis Summary */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-emerald-950">
+          <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
             1. Clinical Diagnosis *
           </Label>
           <Input
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
             disabled={isTerminal || submitting}
-            placeholder="e.g. Suspected Lumpy Skin Disease / Hemorrhagic Septicemia / Non-specific Lesions"
-            className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400"
+            placeholder="e.g. Suspected Lumpy Skin Disease / Hemorrhagic Septicemia / Foot & Mouth Disease"
+            className="bg-white border-stone-200 focus-visible:border-emerald-600 focus-visible:ring-emerald-600 text-xs text-stone-900 rounded-xl placeholder:text-stone-400 h-10 px-3.5 shadow-2xs"
           />
         </div>
 
         {/* 2. Recommended Action */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-xs font-bold text-emerald-950">
+            <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
               2. Recommended Action *
             </Label>
             {suggestedAction && (
-              <span className="text-[10px] text-amber-800 font-semibold flex items-center gap-1">
+              <span className="text-[11px] text-amber-800 font-semibold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                 <AlertTriangle className="h-3 w-3 text-amber-600" />
                 AI Suggestion: {suggestedAction}
               </span>
@@ -263,28 +256,31 @@ export function VetFeedbackForm({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-            {(["ISOLATE", "TREAT", "MONITOR", "REFER_LAB", "NONE"] as VetAction[]).map((act) => (
-              <button
-                key={act}
-                type="button"
-                disabled={isTerminal || submitting}
-                onClick={() => setAction(act)}
-                className={`p-2.5 rounded-xl border font-bold text-center transition-all cursor-pointer ${
-                  action === act
-                    ? "bg-emerald-700 border-emerald-800 text-white shadow-xs"
-                    : "bg-white border-[#D9D3C7] text-stone-700 hover:bg-stone-50 hover:text-stone-900"
-                }`}
-              >
-                {getActionLabel(act)}
-              </button>
-            ))}
+            {actionsList.map((act) => {
+              const isSelected = action === act.key;
+              return (
+                <button
+                  key={act.key}
+                  type="button"
+                  disabled={isTerminal || submitting}
+                  onClick={() => setAction(act.key)}
+                  className={`py-2.5 px-2 rounded-xl border font-bold text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[46px] leading-tight ${
+                    isSelected
+                      ? "bg-emerald-700 border-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/20"
+                      : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50 hover:text-stone-900 hover:border-stone-300 shadow-2xs"
+                  }`}
+                >
+                  <span className="text-xs font-bold tracking-tight">{act.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* 3. Follow-Up Date & Lab Target */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+            <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-emerald-700" />
               <span>3. Follow-up Date</span>
             </Label>
@@ -293,12 +289,12 @@ export function VetFeedbackForm({
               value={followUpDate}
               onChange={(e) => setFollowUpDate(e.target.value)}
               disabled={isTerminal || submitting}
-              className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl"
+              className="bg-white border-stone-200 focus-visible:border-emerald-600 focus-visible:ring-emerald-600 text-xs text-stone-900 rounded-xl h-10 px-3.5 shadow-2xs"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+            <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
               <span>Diagnostic Lab Name</span>
             </Label>
@@ -307,14 +303,14 @@ export function VetFeedbackForm({
               onChange={(e) => setLabName(e.target.value)}
               disabled={isTerminal || submitting}
               placeholder="e.g. District Veterinary Disease Investigation Laboratory"
-              className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400"
+              className="bg-white border-stone-200 focus-visible:border-emerald-600 focus-visible:ring-emerald-600 text-xs text-stone-900 rounded-xl placeholder:text-stone-400 h-10 px-3.5 shadow-2xs"
             />
           </div>
         </div>
 
         {/* 4. Veterinary Notes */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-emerald-950">
+          <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
             4. Clinical Notes &amp; Quarantine Guidelines
           </Label>
           <Textarea
@@ -323,21 +319,21 @@ export function VetFeedbackForm({
             disabled={isTerminal || submitting}
             placeholder="Enter prescribed medications, quarantine guidelines, dosage instructions, or sample collection notes..."
             rows={3}
-            className="bg-white border-[#D9D3C7] text-xs text-stone-900 rounded-xl placeholder:text-stone-400 shadow-2xs"
+            className="bg-white border-stone-200 focus-visible:border-emerald-600 focus-visible:ring-emerald-600 text-xs text-stone-900 rounded-xl placeholder:text-stone-400 shadow-2xs resize-y"
           />
         </div>
       </div>
 
       {/* Action Buttons */}
       {!isTerminal && (
-        <div className="pt-3 border-t border-emerald-200 flex flex-wrap gap-2 justify-end">
+        <div className="pt-3 border-t border-emerald-200/80 flex flex-wrap gap-2.5 justify-end">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleSaveDraft}
             disabled={submitting}
-            className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 min-h-[36px] rounded-xl"
+            className="text-xs gap-1.5 border-stone-200 bg-white text-stone-800 hover:bg-stone-50 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             <span>Save Feedback</span>
@@ -349,7 +345,7 @@ export function VetFeedbackForm({
             size="sm"
             onClick={handleReferToLab}
             disabled={submitting}
-            className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-100 hover:bg-amber-200 min-h-[36px] rounded-xl"
+            className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
             <span>Refer to Lab</span>
@@ -361,7 +357,7 @@ export function VetFeedbackForm({
             size="sm"
             onClick={handleCloseHarmless}
             disabled={submitting}
-            className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-700 hover:bg-stone-50 min-h-[36px] rounded-xl"
+            className="text-xs gap-1.5 border-stone-200 bg-white text-stone-700 hover:bg-stone-50 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             <XCircle className="h-3.5 w-3.5 text-stone-500" />
             <span>Close / Harmless</span>
@@ -372,10 +368,10 @@ export function VetFeedbackForm({
             size="sm"
             onClick={handleConfirmCase}
             disabled={submitting}
-            className="text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs min-h-[36px] rounded-xl"
+            className="text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs min-h-[38px] rounded-xl px-4 cursor-pointer"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            <span>Confirm Disease (Confirm)</span>
+            <span>Confirm Disease</span>
           </Button>
         </div>
       )}
