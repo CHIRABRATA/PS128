@@ -3,6 +3,7 @@ import { requireFarmer } from "@/lib/auth/permissions";
 import { getFarmerProfileAction } from "@/lib/actions/farmer";
 import { getDistricts } from "@/lib/actions/geo";
 import { FarmerProfileView } from "@/components/farmer/FarmerProfileView";
+import { TelegramConnectCard } from "@/components/telegram/TelegramConnectCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User } from "lucide-react";
 
@@ -52,6 +53,8 @@ export default async function FarmerProfilePage() {
         initialProfile={profile}
         districts={districts.map((d) => ({ id: d.id, name: d.name }))}
       />
+
+      <TelegramConnectCard />
     </div>
   );
 }

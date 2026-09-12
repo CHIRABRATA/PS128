@@ -196,7 +196,10 @@ async def telegram_webhook(
         }
 
     except Exception as err:
-        logger.error(f"[Telegram Webhook Error] Failed to process link token: {err}")
+        link_record_found = "link_record" in locals() and link_record is not None
+        logger.error(
+            f"[Telegram Webhook Error] Failed to process link token (token_hash={token_hash}, link_record_found={link_record_found}): {err}"
+        )
         try:
             await telegram_client.send_message(chat_id=chat_id, text=MSG_INTERNAL_FAILURE)
         except Exception:

@@ -167,6 +167,47 @@ describe("Phase 1: Telegram Security & Account Linking Foundation", () => {
       });
       expect(activeRecord!.tokenHash).toBe(hashLinkToken(res2.token!));
     });
+
+    it("returns a valid link when TELEGRAM_BOT_USERNAME is set", async () => {
+      vi.mocked(clerkNextjs.auth).mockResolvedValue({ userId: testClerkId1 } as unknown as Awaited<ReturnType<typeof clerkNextjs.auth>>);
+      const originalBot = process.env.TELEGRAM_BOT_USERNAME;
+      try {
+        process.env.TELEGRAM_BOT_USERNAME = "CustomMaitriBot";
+        const res = await generateTelegramLinkTokenAction();
+        expect(res.success).toBe(true);
+        expect(res.botUsername).toBe("CustomMaitriBot");
+        expect(res.linkUrl).toBe(`https://t.me/CustomMaitriBot?start=${res.token}`);
+      } finally {
+        if (originalBot !== undefined) {
+          process.env.TELEGRAM_BOT_USERNAME = originalBot;
+        } else {
+          delete process.env.TELEGRAM_BOT_USERNAME;
+        }
+      }
+    });
+
+    it("logs a warning and returns fallback link when TELEGRAM_BOT_USERNAME is not set", async () => {
+      vi.mocked(clerkNextjs.auth).mockResolvedValue({ userId: testClerkId1 } as unknown as Awaited<ReturnType<typeof clerkNextjs.auth>>);
+      const originalBot = process.env.TELEGRAM_BOT_USERNAME;
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        delete process.env.TELEGRAM_BOT_USERNAME;
+        const res = await generateTelegramLinkTokenAction();
+        expect(res.success).toBe(true);
+        expect(res.botUsername).toBe("MaitriAlertBot");
+        expect(res.linkUrl).toBe(`https://t.me/MaitriAlertBot?start=${res.token}`);
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining("TELEGRAM_BOT_USERNAME is not set on this deployment (web)")
+        );
+      } finally {
+        warnSpy.mockRestore();
+        if (originalBot !== undefined) {
+          process.env.TELEGRAM_BOT_USERNAME = originalBot;
+        } else {
+          delete process.env.TELEGRAM_BOT_USERNAME;
+        }
+      }
+    });
   });
 
   describe("4. Server Action: getTelegramStatusAction", () => {

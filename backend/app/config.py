@@ -1,6 +1,9 @@
 import os
+import logging
 from pathlib import Path
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 try:
     from pydantic_settings import BaseSettings
@@ -69,3 +72,12 @@ except ImportError:
             return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
     settings = SettingsFallback()
+
+if (
+    settings.TELEGRAM_BOT_USERNAME == "MaitriAlertBot"
+    or not settings.TELEGRAM_BOT_TOKEN
+    or not settings.TELEGRAM_WEBHOOK_SECRET
+):
+    logger.warning(
+        "[Telegram Config] TELEGRAM_BOT_USERNAME/TOKEN/WEBHOOK_SECRET appears unconfigured — Telegram linking will not work until these are set on this deployment."
+    )

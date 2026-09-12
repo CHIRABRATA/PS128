@@ -3,6 +3,7 @@ import { requireVeterinarian } from "@/lib/auth/permissions";
 import { getVetProfileAction } from "@/lib/actions/vet";
 import { getDistricts } from "@/lib/actions/geo";
 import { VetProfileView } from "@/components/vet/VetProfileView";
+import { TelegramConnectCard } from "@/components/telegram/TelegramConnectCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Stethoscope } from "lucide-react";
 
@@ -52,6 +53,8 @@ export default async function VetProfilePage() {
         initialProfile={profile}
         districts={districts.map((d) => ({ id: d.id, name: d.name }))}
       />
+
+      <TelegramConnectCard />
     </div>
   );
 }
