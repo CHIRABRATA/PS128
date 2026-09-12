@@ -35,27 +35,27 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#E5E0D8] bg-[#FAF8F3]/95 px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#C9BFA0] bg-[#EDE7D3]/95 px-4 md:px-8 backdrop-blur-md">
       {/* Brand Logo & Identity */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-800 text-white font-extrabold shadow-sm group-hover:bg-emerald-700 transition-colors">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2F5233] text-[#EDE7D3] font-extrabold shadow-xs group-hover:bg-[#25401F] transition-colors">
           <span className="text-lg tracking-tight font-serif font-black">M</span>
         </div>
         <div className="flex flex-col text-left">
           <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
             {dictionary.app.title}
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#2F5233]/10 text-[#2F5233] border border-[#2F5233]/25">
               {roleLabel}
             </span>
           </span>
-          <span className="text-[11px] text-stone-500 hidden sm:inline leading-tight">
+          <span className="text-[11px] text-[#5C5645] hidden sm:inline leading-tight">
             {dictionary.app.subtitle}
           </span>
         </div>
       </Link>
 
       {/* Desktop Navigation Links */}
-      <nav className="hidden xl:flex items-center gap-1.5 bg-white border border-[#E5E0D8] px-2 py-1 rounded-xl shadow-xs">
+      <nav className="hidden xl:flex items-center gap-1.5 bg-[#F7F3E6] border border-[#C9BFA0] px-2 py-1 rounded-xl shadow-2xs">
         {navLinks.map((link) => {
           const Icon = link.icon;
           const isActive = pathname.startsWith(link.href);
@@ -65,11 +65,11 @@ export function Navbar() {
               href={link.href}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:-translate-y-0.5"
+                  ? "bg-[#2F5233] text-[#EDE7D3] shadow-xs"
+                  : "text-[#5C5645] hover:text-[#22291F] hover:bg-[#EDE7D3]"
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 transition-transform duration-200 ${isActive ? "text-emerald-700 scale-110" : "text-stone-500"}`} />
+              <Icon className={`h-3.5 w-3.5 transition-transform duration-200 ${isActive ? "text-[#EDE7D3] scale-110" : "text-[#5C5645]"}`} />
               <span>{link.label}</span>
             </Link>
           );
@@ -80,12 +80,12 @@ export function Navbar() {
       <div className="flex items-center gap-3">
         <Show when="signed-out">
           <SignInButton mode="modal">
-            <Button variant="outline" size="sm" className="text-xs border-[#D9D3C7] text-stone-800 hover:bg-stone-50">
+            <Button variant="outline" size="sm" className="text-xs border-[#C9BFA0] bg-[#F7F3E6] text-[#22291F] hover:bg-[#EDE7D3] rounded-xl">
               {dictionary.nav.signIn}
             </Button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <Button size="sm" className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-sm">
+            <Button size="sm" className="text-xs bg-[#2F5233] hover:bg-[#25401F] text-[#EDE7D3] font-semibold shadow-xs rounded-xl">
               {dictionary.nav.signUp}
             </Button>
           </SignUpButton>
@@ -94,15 +94,15 @@ export function Navbar() {
         <Show when="signed-in">
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
-              <Button size="sm" variant="outline" className="text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 flex items-center gap-1.5">
-                <Home className="h-3.5 w-3.5 text-emerald-700" />
+              <Button size="sm" variant="outline" className="text-xs border-[#C9BFA0] bg-[#F7F3E6] text-[#22291F] hover:bg-[#EDE7D3] flex items-center gap-1.5 rounded-xl shadow-2xs">
+                <Home className="h-3.5 w-3.5 text-[#2F5233]" />
                 <span>{dictionary.nav.dashboard}</span>
               </Button>
             </Link>
             <UserButton
               appearance={{
                 elements: {
-                  userButtonAvatarBox: "h-9 w-9 border-2 border-emerald-700/60 hover:border-emerald-700 transition-all rounded-full",
+                  userButtonAvatarBox: "h-9 w-9 border-2 border-[#2F5233]/60 hover:border-[#2F5233] transition-all rounded-full",
                 },
               }}
             />

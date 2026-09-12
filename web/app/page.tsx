@@ -13,7 +13,7 @@ import { MotionRoleEcosystem } from "@/components/motion/MotionRoleEcosystem";
 import { MotionWorkflowTimeline } from "@/components/motion/MotionWorkflowTimeline";
 import { HelplineModal } from "@/components/site/helpline-modal";
 import { RecordModal, type RecordModalData } from "@/components/site/record-modal";
-import { PhoneCall, WifiOff, Camera, MapPin, CalendarCheck, ShieldCheck } from "lucide-react";
+import { PhoneCall, WifiOff, Camera, MapPin, CalendarCheck } from "lucide-react";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -70,7 +70,8 @@ export default async function Home() {
       };
     });
 
-  // Static preview content for the register modals
+  // Static preview content for the register modals — swap for real per-animal
+  // records once the detail route/query exists.
   const registerRecords: Array<RecordModalData & { image: string }> = [
     {
       name: "Gauri",
@@ -118,24 +119,23 @@ export default async function Home() {
   ];
 
   return (
-    <div className="flex-1 flex flex-col w-full bg-[#FAF8F3] text-[#191F1C] overflow-x-hidden">
+    <div className="flex-1 flex flex-col w-full bg-[#EDE7D3] text-[#22291F] overflow-x-hidden">
       {/* ===================================================================
-          MASTHEAD — Soft cream sub-header banner harmonized with the navbar
+          MASTHEAD — reads like the header of an official register, not a
+          product nav bar. Helpline opens a modal instead of just dialing.
       ==================================================================== */}
-      <div className="w-full bg-[#F5F2EB] border-b border-[#E5E0D8] px-4 md:px-8 py-2.5">
+      <div className="w-full bg-[#EDE7D3] border-b border-[#C9BFA0] px-4 md:px-8 py-3">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <div className="text-xs leading-tight text-stone-600">
-            <span className="block font-bold text-stone-900">
+          <div className="text-xs leading-tight text-[#5C5645]">
+            <span className="block font-medium text-[#22291F]">
               Department of Animal Husbandry, Government of Maharashtra
             </span>
-            <span className="block text-stone-500 text-[11px] mt-0.5">
-              Livestock Health &amp; Disease Surveillance Network
-            </span>
+            <span className="block">Livestock Health &amp; Disease Surveillance Network</span>
           </div>
           <HelplineModal>
             <button
               type="button"
-              className="text-xs font-mono font-semibold text-emerald-800 border border-emerald-700/30 bg-white/90 hover:bg-emerald-800 hover:text-white px-3 py-1.5 rounded-xl transition-all shadow-2xs cursor-pointer"
+              className="text-xs font-mono text-[#2F5233] border border-[#2F5233]/40 px-3 py-1.5 hover:bg-[#2F5233] hover:text-[#EDE7D3] transition-colors"
             >
               Helpline 1962
             </button>
@@ -144,30 +144,30 @@ export default async function Home() {
       </div>
 
       {/* ===================================================================
-          1. HERO SECTION
+          1. HERO — a masthead headline plus a field photograph with a
+          caption strip, like a page out of a district gazette.
       ==================================================================== */}
-      <section className="w-full max-w-6xl mx-auto px-4 md:px-8 pt-12 pb-16 md:pt-16 md:pb-20">
+      <section className="w-full max-w-6xl mx-auto px-4 md:px-8 pt-14 pb-16 md:pt-20 md:pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div className="lg:col-span-7 flex flex-col items-start">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-3.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
-              <span>Unified Animal Health Network</span>
-            </div>
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-[54px] text-[#191F1C] leading-[1.15] font-normal max-w-xl">
+            <p className="text-sm text-[#5C5645] mb-3">
+              For farmers, field workers, veterinarians and district officers
+            </p>
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-[58px] text-[#191F1C] leading-[1.15] font-normal max-w-xl">
               Every animal, once recorded, is never lost track of.
             </h1>
-            <p className="text-stone-600 text-base leading-relaxed max-w-md mt-4">
+            <p className="text-[#3A3D30] text-base leading-relaxed max-w-md mt-5">
               One shared record follows each animal from a farmer&apos;s first
               report through a field visit to a veterinarian&apos;s decision —
               across every village in the network.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-6">
+            <div className="flex flex-wrap items-center gap-4 pt-7">
               <Show when="signed-in">
                 <Link href="/farmer/report">
                   <Button
                     size="lg"
-                    className="bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-sm px-6 h-11 rounded-xl shadow-xs cursor-pointer"
+                    className="bg-[#2F5233] hover:bg-[#25401F] text-[#F7F3E6] font-normal text-sm px-6 h-11 rounded-none cursor-pointer"
                   >
                     Report a health concern
                   </Button>
@@ -177,7 +177,7 @@ export default async function Home() {
                 <SignUpButton mode="modal">
                   <Button
                     size="lg"
-                    className="bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-sm px-6 h-11 rounded-xl shadow-xs cursor-pointer"
+                    className="bg-[#2F5233] hover:bg-[#25401F] text-[#F7F3E6] font-normal text-sm px-6 h-11 rounded-none cursor-pointer"
                   >
                     Report a health concern
                   </Button>
@@ -186,53 +186,53 @@ export default async function Home() {
 
               <Link
                 href={userId ? "/dashboard" : "/farmer"}
-                className="text-sm text-stone-800 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-800 transition-colors font-medium"
+                className="text-sm text-[#22291F] underline decoration-[#C9BFA0] underline-offset-4 hover:decoration-[#22291F] transition-colors"
               >
                 {userId ? "Enter workspaces" : "Explore Maitri"}
               </Link>
             </div>
 
             {userId && (
-              <p className="text-xs text-stone-500 pt-5">
+              <p className="text-xs text-[#5C5645] pt-6">
                 Signed in as{" "}
-                <strong className="text-stone-900 font-medium">
+                <strong className="text-[#22291F] font-medium">
                   {user?.firstName || user?.emailAddresses?.[0]?.emailAddress || "User"}
                 </strong>
               </p>
             )}
 
-            {/* Folio stats row */}
-            <div className="grid grid-cols-3 w-full max-w-md mt-8 border-t border-[#E5E0D8]">
-              <div className="py-4 pr-4 border-r border-[#E5E0D8]">
-                <div className="font-serif text-2xl font-semibold text-[#191F1C]">
+            {/* Folio-style stats row, not pill chips */}
+            <div className="grid grid-cols-3 w-full max-w-md mt-10 border-t border-[#C9BFA0]">
+              <div className="py-4 pr-4 border-r border-[#C9BFA0]">
+                <div className="font-serif text-2xl text-[#22291F]">
                   <MotionCountUp value={villageCount} duration={1200} />
                 </div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Villages active</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">Villages active</div>
               </div>
-              <div className="py-4 px-4 border-r border-[#E5E0D8]">
-                <div className="font-serif text-2xl font-semibold text-[#191F1C]">
+              <div className="py-4 px-4 border-r border-[#C9BFA0]">
+                <div className="font-serif text-2xl text-[#22291F]">
                   <MotionCountUp value={animalCount} duration={1500} />
                 </div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Animals monitored</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">Animals monitored</div>
               </div>
               <div className="py-4 pl-4">
-                <div className="font-serif text-2xl font-semibold text-red-700">
+                <div className="font-serif text-2xl text-[#A13D2B]">
                   <MotionCountUp value={activeCaseCount} duration={1000} />
                 </div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Active field cases</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">Active field cases</div>
               </div>
             </div>
           </div>
 
           <div className="lg:col-span-5">
             <MotionFadeIn delay={0} direction="none" duration={700}>
-              <div className="border border-[#E5E0D8] rounded-2xl overflow-hidden bg-white shadow-xs">
+              <div className="border border-[#C9BFA0]">
                 <MotionHeroImage
                   src="/images/vet_field_examination.jpg"
                   alt="Rural veterinarian examining cattle in Maharashtra"
                   activeCaseCount={activeCaseCount}
                 />
-                <p className="text-xs text-stone-600 px-4 py-3 border-t border-[#E5E0D8] bg-[#F5F2EB]">
+                <p className="text-xs text-[#5C5645] px-4 py-3 border-t border-[#C9BFA0] bg-[#F7F3E6]">
                   A veterinary officer examines a reported case in Haveli
                   block, Pune district.
                 </p>
@@ -243,15 +243,16 @@ export default async function Home() {
       </section>
 
       {/* ===================================================================
-          2. ROLE ECOSYSTEM SECTION
+          2. ROLE SECTION — one plain headline, the interactive ecosystem
+          does the visual work (kept as-is; it isn't a generic card grid).
       ==================================================================== */}
-      <section className="w-full bg-[#F5F2EB] border-y border-[#E5E0D8] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
+      <section className="w-full bg-[#F7F3E6] border-y border-[#C9BFA0] py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-12">
           <div className="max-w-2xl">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal leading-tight">
               Four people, one record.
             </h2>
-            <p className="text-stone-600 text-sm md:text-base leading-relaxed mt-2.5">
+            <p className="text-[#3A3D30] text-sm md:text-base leading-relaxed mt-3">
               A livestock owner&apos;s observation, a field worker&apos;s visit, a
               veterinarian&apos;s decision, and a district officer&apos;s view of the
               wider picture — all attached to the same animal.
@@ -263,48 +264,45 @@ export default async function Home() {
       </section>
 
       {/* ===================================================================
-          3. ANIMAL REGISTER SHOWCASE SECTION
+          3. ANIMAL SECTION — a register, not a card grid: one larger entry
+          plus two smaller ones, hairline dividers, sharp corners, no
+          matching drop shadows. Each opens its full record in a modal.
       ==================================================================== */}
-      <section id="showcase" className="w-full bg-[#FAF8F3] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E5E0D8] pb-5">
-            <div>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
-                Your livestock, kept in one register.
-              </h2>
-              <p className="text-stone-500 text-xs md:text-sm mt-1">
-                Digital health profiles, ear-tag registration, vaccination
-                history, and treatment follow-ups.
-              </p>
-            </div>
-            <Link href="/farmer" className="text-xs text-emerald-800 font-semibold hover:underline">
-              Open Livestock Directory &rarr;
-            </Link>
+      <section id="showcase" className="w-full bg-[#EDE7D3] py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#C9BFA0] pb-6">
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
+              Your livestock, kept in one register.
+            </h2>
+            <p className="text-[#5C5645] text-xs md:text-sm max-w-sm">
+              Digital health profiles, ear-tag registration, vaccination
+              history, and treatment follow-ups for every animal in the herd.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#C9BFA0]">
             {registerRecords.map((r) => (
               <RecordModal key={r.tagId} data={r}>
                 <button
                   type="button"
-                  className="group flex h-full flex-col bg-white rounded-2xl border border-[#E5E0D8] overflow-hidden text-left shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                  className="group flex h-full flex-col bg-[#EDE7D3] text-left transition-colors hover:bg-[#F7F3E6]"
                 >
-                  <div className="relative h-48 w-full bg-stone-100">
-                    <Image src={r.image} alt={r.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="relative h-52 w-full bg-stone-200">
+                    <Image src={r.image} alt={r.name} fill className="object-cover" />
                   </div>
-                  <div className="p-5 flex flex-col gap-2.5 flex-1">
+                  <div className="p-5 flex flex-col gap-3 flex-1">
                     <div className="flex items-baseline justify-between">
-                      <h3 className="font-serif text-lg font-bold text-[#191F1C] group-hover:text-emerald-800 transition-colors">
+                      <h3 className="font-serif text-lg text-[#191F1C] group-hover:underline decoration-[#C9BFA0] underline-offset-4">
                         {r.name}
                       </h3>
-                      <span className="font-mono text-[11px] text-stone-500 px-2 py-0.5 rounded-md bg-stone-100 border border-stone-200">{r.tagId}</span>
+                      <span className="font-mono text-[11px] text-[#5C5645]">{r.tagId}</span>
                     </div>
-                    <p className="text-xs text-stone-600">
+                    <p className="text-xs text-[#5C5645]">
                       {r.species} · {r.age} · {r.sex}
                     </p>
-                    <div className="flex items-center justify-between text-xs pt-3 mt-auto border-t border-[#E5E0D8]">
-                      <span className="text-stone-500">{r.status}</span>
-                      <span className="text-emerald-700 font-semibold group-hover:underline">View record &rarr;</span>
+                    <div className="flex items-center justify-between text-xs pt-3 mt-auto border-t border-[#C9BFA0]/70">
+                      <span className="text-[#5C5645]">{r.status}</span>
+                      <span className="text-[#2F5233]">View record</span>
                     </div>
                   </div>
                 </button>
@@ -315,14 +313,15 @@ export default async function Home() {
       </section>
 
       {/* ===================================================================
-          4. FIELD SECTION
+          4. FIELD SECTION — the four points as a divided list, not four
+          identical white cards.
       ==================================================================== */}
-      <section className="w-full bg-slate-900 text-stone-100 py-16 md:py-20">
+      <section className="w-full bg-[#233327] text-[#EDE7D3] py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
             <div className="lg:col-span-5">
               <MotionFadeIn direction="none" duration={600}>
-                <div className="relative h-[320px] sm:h-[400px] border border-slate-700 rounded-2xl overflow-hidden shadow-lg">
+                <div className="relative h-[340px] sm:h-[420px] border border-[#3E5443]">
                   <Image
                     src="/images/pashusakhi_field_visit.jpg"
                     alt="Pashusakhi field inspection visit in a village"
@@ -330,7 +329,7 @@ export default async function Home() {
                     className="object-cover"
                   />
                 </div>
-                <p className="text-xs text-slate-400 pt-3">
+                <p className="text-xs text-[#A9BBA9] pt-3">
                   Village shed inspection, Haveli block — door-to-door
                   livestock vitals check.
                 </p>
@@ -338,27 +337,27 @@ export default async function Home() {
             </div>
 
             <div className="lg:col-span-7">
-              <h2 className="font-serif text-3xl sm:text-4xl font-normal text-white">
+              <h2 className="font-serif text-3xl sm:text-4xl font-normal">
                 Built for the field.
               </h2>
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed mt-3 max-w-lg">
+              <p className="text-[#C7D2C8] text-sm md:text-base leading-relaxed mt-3 max-w-lg">
                 Engineered for rural Maharashtra, where field agents work
-                through low connectivity and harsh outdoor conditions.
+                through low connectivity and harsh outdoor light.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 mt-8 border-t border-l border-[#3E5443]">
                 {[
                   { icon: WifiOff, title: "Offline reporting", body: "Log inspections in remote sheds without network. Syncs automatically on reconnect." },
                   { icon: Camera, title: "Photo evidence", body: "Attach clinical photos of lesions and mucosal membranes, compressed on-device." },
                   { icon: MapPin, title: "GPS location", body: "Automatic farm coordinates support reliable disease-cluster detection." },
                   { icon: CalendarCheck, title: "Village visits", body: "Track daily rounds and follow-up checks with local veterinarians." },
                 ].map(({ icon: Icon, title, body }) => (
-                  <div key={title} className="p-4 rounded-2xl border border-slate-800 bg-slate-800/50 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <Icon className="h-4 w-4 text-emerald-400" />
+                  <div key={title} className="p-5 border-r border-b border-[#3E5443] space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Icon className="h-4 w-4 text-[#8FB08F]" />
                       <span>{title}</span>
                     </div>
-                    <p className="text-slate-300 text-xs leading-relaxed">{body}</p>
+                    <p className="text-[#A9BBA9] text-xs leading-relaxed">{body}</p>
                   </div>
                 ))}
               </div>
@@ -368,15 +367,16 @@ export default async function Home() {
       </section>
 
       {/* ===================================================================
-          5. VET WORKFLOW TIMELINE SECTION
+          5. VET SECTION — genuinely a sequence, so the timeline component
+          earns its step markers.
       ==================================================================== */}
-      <section className="w-full bg-[#F5F2EB] border-b border-[#E5E0D8] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-8">
+      <section className="w-full bg-[#F7F3E6] border-b border-[#C9BFA0] py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
           <div className="max-w-2xl">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal leading-tight">
               From observation to veterinary decision.
             </h2>
-            <p className="text-stone-600 text-sm md:text-base leading-relaxed mt-2.5">
+            <p className="text-[#3A3D30] text-sm md:text-base leading-relaxed mt-3">
               District veterinarians work from field evidence and AI-assisted
               differentials — the decision, and the record, stay theirs.
             </p>
@@ -387,36 +387,32 @@ export default async function Home() {
       </section>
 
       {/* ===================================================================
-          6. SURVEILLANCE HEATMAP SECTION
+          6. SURVEILLANCE SECTION — stats presented like the hero's folio
+          row for consistency, not separate pill badges.
       ==================================================================== */}
-      <section className="w-full bg-[#FAF8F3] py-16 md:py-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#E5E0D8] pb-5">
-            <div>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
-                What is happening across the district.
-              </h2>
-              <p className="text-stone-500 text-xs md:text-sm mt-1">
-                Real-time geographic disease clustering, symptom heatmaps, and outbreak signals.
-              </p>
-            </div>
+      <section className="w-full bg-[#EDE7D3] py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#C9BFA0] pb-6">
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
+              What is happening across the district.
+            </h2>
             <div className="grid grid-cols-3 gap-6 text-sm">
               <div>
-                <div className="font-serif text-xl font-bold text-[#191F1C]">{villageCount || 12}</div>
-                <div className="text-[11px] text-stone-500">Villages monitored</div>
+                <div className="font-serif text-xl text-[#22291F]">{villageCount || 12}</div>
+                <div className="text-[11px] text-[#5C5645]">Villages monitored</div>
               </div>
               <div>
-                <div className="font-serif text-xl font-bold text-red-700">{activeCaseCount || 4}</div>
-                <div className="text-[11px] text-stone-500">Active concerns</div>
+                <div className="font-serif text-xl text-[#A13D2B]">{activeCaseCount || 4}</div>
+                <div className="text-[11px] text-[#5C5645]">Active concerns</div>
               </div>
               <div>
-                <div className="font-serif text-xl font-bold text-[#191F1C]">{activeAlerts.length || 2}</div>
-                <div className="text-[11px] text-stone-500">Alerts active</div>
+                <div className="font-serif text-xl text-[#22291F]">{activeAlerts.length || 2}</div>
+                <div className="text-[11px] text-[#5C5645]">Follow-ups</div>
               </div>
             </div>
           </div>
 
-          <div className="w-full border border-[#E5E0D8] bg-white rounded-2xl overflow-hidden shadow-xs">
+          <div className="w-full border border-[#C9BFA0] bg-[#F7F3E6]">
             <SurveillanceHeatmap markers={mapMarkers} />
           </div>
         </div>
@@ -425,14 +421,14 @@ export default async function Home() {
       {/* ===================================================================
           7. FINAL CTA
       ==================================================================== */}
-      <section className="w-full max-w-6xl mx-auto px-4 md:px-8 pb-16 md:pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 rounded-3xl border border-emerald-900 bg-emerald-950 text-white overflow-hidden shadow-lg">
-          <div className="lg:col-span-7 p-8 sm:p-12 md:p-14 flex flex-col justify-between gap-6">
+      <section className="w-full max-w-6xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 border border-[#233327] bg-[#233327] text-[#EDE7D3]">
+          <div className="lg:col-span-7 p-8 sm:p-12 md:p-16 flex flex-col justify-between gap-8">
             <div>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal leading-tight">
                 Better observation starts better care.
               </h2>
-              <p className="text-emerald-100/80 text-sm md:text-base leading-relaxed mt-3 max-w-lg">
+              <p className="text-[#C7D2C8] text-sm md:text-base leading-relaxed mt-4 max-w-lg">
                 Join livestock owners, village Pashusakhis, and veterinary
                 officers across Maharashtra building a healthier,
                 disease-resilient livestock network.
@@ -442,14 +438,14 @@ export default async function Home() {
             <div className="flex flex-wrap items-center gap-4">
               <Show when="signed-in">
                 <Link href="/dashboard">
-                  <Button className="bg-white text-emerald-950 hover:bg-emerald-50 font-bold px-6 h-11 rounded-xl cursor-pointer shadow-sm">
+                  <Button className="bg-[#EDE7D3] text-[#22291F] hover:bg-[#F7F3E6] font-normal px-6 h-11 rounded-none cursor-pointer">
                     Open dashboard &amp; workspaces
                   </Button>
                 </Link>
               </Show>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <Button className="bg-white text-emerald-950 hover:bg-emerald-50 font-bold px-6 h-11 rounded-xl cursor-pointer shadow-sm">
+                  <Button className="bg-[#EDE7D3] text-[#22291F] hover:bg-[#F7F3E6] font-normal px-6 h-11 rounded-none cursor-pointer">
                     Get started
                   </Button>
                 </SignUpButton>
@@ -458,7 +454,7 @@ export default async function Home() {
               <HelplineModal>
                 <button
                   type="button"
-                  className="text-sm text-emerald-200 hover:text-white underline decoration-emerald-700 underline-offset-4 cursor-pointer"
+                  className="text-sm text-[#C7D2C8] hover:text-[#EDE7D3] underline decoration-[#3E5443] underline-offset-4"
                 >
                   Or call the helpline — 1962
                 </button>
@@ -466,7 +462,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 relative h-64 lg:h-auto min-h-[280px] border-t lg:border-t-0 lg:border-l border-emerald-900">
+          <div className="lg:col-span-5 relative h-64 lg:h-auto min-h-[300px] border-t lg:border-t-0 lg:border-l border-[#3E5443]">
             <Image
               src="/images/indian_livestock_hero.jpg"
               alt="Healthy Indian cattle herd"
@@ -478,13 +474,13 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#E5E0D8] bg-[#F5F2EB] py-8 px-4 md:px-8 text-center text-xs text-stone-500 space-y-2">
+      <footer className="w-full border-t border-[#C9BFA0] bg-[#F7F3E6] py-8 px-4 md:px-8 text-center text-xs text-[#5C5645] space-y-2">
         <HelplineModal>
           <button
             type="button"
-            className="mx-auto flex items-center justify-center gap-2 font-medium text-stone-900 hover:text-emerald-800 hover:underline decoration-stone-300 underline-offset-4 cursor-pointer"
+            className="mx-auto flex items-center justify-center gap-2 font-medium text-[#22291F] hover:underline decoration-[#C9BFA0] underline-offset-4"
           >
-            <PhoneCall className="w-3.5 h-3.5 text-emerald-700" />
+            <PhoneCall className="w-3.5 h-3.5 text-[#2F5233]" />
             <span>Toll-free livestock emergency &amp; disease helpline — 1962</span>
           </button>
         </HelplineModal>

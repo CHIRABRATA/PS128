@@ -19,7 +19,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="xl:hidden fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-[#E5E0D8] bg-[#FAF8F3]/95 px-1 backdrop-blur-md pb-safe shadow-lg">
+    <nav className="xl:hidden fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-[#C9BFA0] bg-[#EDE7D3]/95 px-1 backdrop-blur-md pb-safe shadow-lg">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -29,11 +29,11 @@ export function MobileNav() {
             href={item.href}
             className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 text-[10px] font-semibold min-w-[56px] min-h-[44px] ${
               isActive
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200 scale-105 shadow-2xs"
-                : "text-stone-500 hover:text-stone-800"
+                ? "bg-[#2F5233] text-[#EDE7D3] scale-105 shadow-2xs"
+                : "text-[#5C5645] hover:text-[#22291F]"
             }`}
           >
-            <Icon className={`h-4 w-4 mb-0.5 transition-transform duration-200 ${isActive ? "text-emerald-700 scale-110" : "text-stone-400"}`} />
+            <Icon className={`h-4 w-4 mb-0.5 transition-transform duration-200 ${isActive ? "text-[#EDE7D3] scale-110" : "text-[#5C5645]"}`} />
             <span className="leading-none">{item.label}</span>
           </Link>
         );
