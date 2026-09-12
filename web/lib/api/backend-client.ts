@@ -77,12 +77,13 @@ const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds timeout
  */
 export function getBackendBaseUrl(): string {
   const raw =
-    process.env.AI_ENGINE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
+    process.env.AI_ENGINE_URL ||
     process.env.BACKEND_URL ||
     process.env.FASTAPI_URL ||
     process.env.AI_BACKEND_URL ||
-    "http://localhost:8000";
+    "https://ps128-livestock-api.onrender.com";
 
   let url = raw.trim().replace(/\/+$/, "");
   if (url.endsWith("/api")) {
