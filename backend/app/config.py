@@ -26,7 +26,7 @@ try:
 
         # Telegram Bot API Configuration (Server-Side Only)
         TELEGRAM_BOT_TOKEN: str = ""
-        TELEGRAM_BOT_USERNAME: str = "MaitriAlertBot"
+        TELEGRAM_BOT_USERNAME: str = "pashu_raksha_bot"
         TELEGRAM_WEBHOOK_SECRET: str = ""
         TELEGRAM_WEBHOOK_URL: str = ""
         TELEGRAM_API_BASE_URL: str = "https://api.telegram.org"
@@ -61,7 +61,7 @@ except ImportError:
             self.GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
             self.GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
             self.TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
-            self.TELEGRAM_BOT_USERNAME: str = os.getenv("TELEGRAM_BOT_USERNAME", "MaitriAlertBot")
+            self.TELEGRAM_BOT_USERNAME: str = os.getenv("TELEGRAM_BOT_USERNAME", "pashu_raksha_bot").lstrip("@").strip()
             self.TELEGRAM_WEBHOOK_SECRET: str = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
             self.TELEGRAM_WEBHOOK_URL: str = os.getenv("TELEGRAM_WEBHOOK_URL", "")
             self.TELEGRAM_API_BASE_URL: str = os.getenv("TELEGRAM_API_BASE_URL", "https://api.telegram.org")
@@ -74,7 +74,7 @@ except ImportError:
     settings = SettingsFallback()
 
 if (
-    settings.TELEGRAM_BOT_USERNAME == "MaitriAlertBot"
+    not settings.TELEGRAM_BOT_USERNAME
     or not settings.TELEGRAM_BOT_TOKEN
     or not settings.TELEGRAM_WEBHOOK_SECRET
 ):

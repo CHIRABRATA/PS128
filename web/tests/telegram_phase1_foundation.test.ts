@@ -194,8 +194,8 @@ describe("Phase 1: Telegram Security & Account Linking Foundation", () => {
         delete process.env.TELEGRAM_BOT_USERNAME;
         const res = await generateTelegramLinkTokenAction();
         expect(res.success).toBe(true);
-        expect(res.botUsername).toBe("MaitriAlertBot");
-        expect(res.linkUrl).toBe(`https://t.me/MaitriAlertBot?start=${res.token}`);
+        expect(res.botUsername).toBe("pashu_raksha_bot");
+        expect(res.linkUrl).toBe(`https://t.me/pashu_raksha_bot?start=${res.token}`);
         expect(warnSpy).toHaveBeenCalledWith(
           expect.stringContaining("TELEGRAM_BOT_USERNAME is not set on this deployment (web)")
         );

@@ -75,10 +75,11 @@ export async function generateTelegramLinkTokenAction(): Promise<TelegramLinkTok
       }),
     ]);
 
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME || "MaitriAlertBot";
+    const rawBotUsername = process.env.TELEGRAM_BOT_USERNAME || "pashu_raksha_bot";
+    const botUsername = rawBotUsername.replace(/^@/, "").trim();
     if (!process.env.TELEGRAM_BOT_USERNAME) {
       console.warn(
-        "[Telegram] TELEGRAM_BOT_USERNAME is not set on this deployment (web) — falling back to placeholder 'MaitriAlertBot'. Set it to match the bot configured on the backend."
+        "[Telegram] TELEGRAM_BOT_USERNAME is not set on this deployment (web) — falling back to 'pashu_raksha_bot'. Set it to match the bot configured on the backend."
       );
     }
     const linkUrl = `https://t.me/${botUsername}?start=${rawToken}`;
