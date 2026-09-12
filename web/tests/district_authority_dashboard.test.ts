@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import prisma from "@/lib/db/prisma";
 import {
   getDistrictAuthorityCommandData,
   calculateRiskIntensity,
+  calculateDateRangeBounds,
 } from "@/lib/authority/metrics";
 import { isValidCoordinate } from "@/components/authority/mapUtils";
 
@@ -37,7 +38,7 @@ describe("District Authority Command Dashboard Engine", () => {
   let animalA2Id: string;
   let animalB1Id: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const timestamp = Date.now();
 
     // 1. Create District A & District B
@@ -231,7 +232,7 @@ describe("District Authority Command Dashboard Engine", () => {
     animalB1Id = ab1.id;
 
     // 6. Create Cases in District A
-    // Case 1: Pending Review (High AI Risk)
+    // Case 1: Pending Review (High AI Risk) reported TODAY
     await prisma.case.create({
       data: {
         caseNumber: `CASE-A1-${timestamp}`,
@@ -242,13 +243,14 @@ describe("District Authority Command Dashboard Engine", () => {
         status: "PENDING_REVIEW",
         symptoms: ["fever", "mouth blisters"],
         durationDays: 2,
+        reportedAt: new Date(), // Today
         gpsLat: 19.1235,
         gpsLng: 74.5679,
         analysisResult: { overall_risk_level: "HIGH" },
       },
     });
 
-    // Case 2: Under Examination (Critical Risk) with follow-up
+    // Case 2: Under Examination (Critical Risk) reported 3 DAYS AGO
     await prisma.case.create({
       data: {
         caseNumber: `CASE-A2-${timestamp}`,
@@ -259,6 +261,7 @@ describe("District Authority Command Dashboard Engine", () => {
         status: "UNDER_EXAMINATION",
         symptoms: ["swelling", "lameness"],
         durationDays: 4,
+        reportedAt: new Date(Date.now() - 3 * 24 * 3600000), // 3 days ago
         analysisResult: { overall_risk_level: "CRITICAL" },
         vetFollowUpDate: new Date(Date.now() - 3600000), // Due follow-up
         followUpCompleted: false,
@@ -276,6 +279,7 @@ describe("District Authority Command Dashboard Engine", () => {
         status: "CONFIRMED",
         symptoms: ["coughing"],
         durationDays: 3,
+        reportedAt: new Date(),
         analysisResult: { overall_risk_level: "MEDIUM" },
       },
     });
@@ -291,6 +295,7 @@ describe("District Authority Command Dashboard Engine", () => {
         assignedFieldAgentUserId: agentAId,
         reason: "Suspected FMD blister inspection",
         status: "IN_PROGRESS",
+        requestedAt: new Date(), // Today
       },
     });
 
@@ -299,6 +304,7 @@ describe("District Authority Command Dashboard Engine", () => {
         assistanceRequestId: reqA.id,
         fieldAgentUserId: agentAId,
         startedAt: new Date(),
+        createdAt: new Date(), // Today
         observations: "Observed lesions on oral cavity.",
         measurements: { latitude: 19.124, longitude: 74.568 },
       },
@@ -313,6 +319,7 @@ describe("District Authority Command Dashboard Engine", () => {
         windowStart: new Date(Date.now() - 3 * 24 * 3600000),
         windowEnd: new Date(),
         active: true,
+        createdAt: new Date(), // Today
       },
     });
   });
@@ -321,24 +328,24 @@ describe("District Authority Command Dashboard Engine", () => {
     const dataA = await getDistrictAuthorityCommandData({ districtId: districtAId, timeRange: "all" });
     const dataB = await getDistrictAuthorityCommandData({ districtId: districtBId, timeRange: "all" });
 
-    // Verify District A data
-    expect(dataA.kpis.totalFarmers).toBe(2);
-    expect(dataA.kpis.totalFarms).toBe(2);
-    expect(dataA.kpis.totalAnimals).toBe(2);
-    expect(dataA.kpis.activeCases).toBe(2); // 1 Pending + 1 Under Exam
-    expect(dataA.kpis.totalVeterinarians).toBe(1);
-    expect(dataA.kpis.totalFieldAgents).toBe(1);
-    expect(dataA.kpis.activeAlerts).toBe(1);
+    // Verify District A snapshot data
+    expect(dataA.snapshot.totalFarmers).toBe(2);
+    expect(dataA.snapshot.totalFarms).toBe(2);
+    expect(dataA.snapshot.totalAnimals).toBe(2);
+    expect(dataA.snapshot.currentActiveCases).toBe(2); // 1 Pending + 1 Under Exam
+    expect(dataA.snapshot.totalVeterinarians).toBe(1);
+    expect(dataA.snapshot.totalFieldAgents).toBe(1);
+    expect(dataA.snapshot.currentActiveAlerts).toBe(1);
 
-    // Verify District B data
-    expect(dataB.kpis.totalFarmers).toBe(1);
-    expect(dataB.kpis.totalFarms).toBe(1);
-    expect(dataB.kpis.totalAnimals).toBe(1);
-    expect(dataB.kpis.activeCases).toBe(0); // 0 active, 1 confirmed
-    expect(dataB.kpis.confirmedCases).toBe(1);
-    expect(dataB.kpis.totalVeterinarians).toBe(1);
-    expect(dataB.kpis.totalFieldAgents).toBe(1);
-    expect(dataB.kpis.activeAlerts).toBe(0);
+    // Verify District B snapshot data
+    expect(dataB.snapshot.totalFarmers).toBe(1);
+    expect(dataB.snapshot.totalFarms).toBe(1);
+    expect(dataB.snapshot.totalAnimals).toBe(1);
+    expect(dataB.snapshot.currentActiveCases).toBe(0); // 0 active, 1 confirmed
+    expect(dataB.snapshot.currentConfirmedCases).toBe(1);
+    expect(dataB.snapshot.totalVeterinarians).toBe(1);
+    expect(dataB.snapshot.totalFieldAgents).toBe(1);
+    expect(dataB.snapshot.currentActiveAlerts).toBe(0);
 
     // Verify cross-district isolation
     const vetNamesA = dataA.veterinarians.map((v) => v.name);
@@ -356,6 +363,61 @@ describe("District Authority Command Dashboard Engine", () => {
     const vetIdsB = dataB.veterinarians.map((v) => v.id);
     expect(vetIdsB).toContain(vetBId);
     expect(vetIdsB).not.toContain(vetAId);
+  });
+
+  it("calculates accurate date boundaries in Indian Standard Time (Asia/Kolkata)", () => {
+    const todayBounds = calculateDateRangeBounds("today");
+    expect(todayBounds.label).toBe("Today");
+    expect(todayBounds.gte).toBeDefined();
+    expect(todayBounds.lte).toBeDefined();
+
+    // Verify that startOfToday is earlier than endOfToday
+    expect(todayBounds.gte!.getTime()).toBeLessThan(todayBounds.lte!.getTime());
+
+    // Verify 7d bounds
+    const sevenDayBounds = calculateDateRangeBounds("7d");
+    expect(sevenDayBounds.label).toBe("Last 7 Days");
+    expect(sevenDayBounds.gte).toBeDefined();
+    expect(sevenDayBounds.lte).toBeDefined();
+    const diffDays = (sevenDayBounds.lte!.getTime() - sevenDayBounds.gte!.getTime()) / (24 * 3600 * 1000);
+    expect(Math.round(diffDays)).toBe(7);
+
+    // Verify 30d bounds
+    const thirtyDayBounds = calculateDateRangeBounds("30d");
+    expect(thirtyDayBounds.label).toBe("Last 30 Days");
+    const diff30 = (thirtyDayBounds.lte!.getTime() - thirtyDayBounds.gte!.getTime()) / (24 * 3600 * 1000);
+    expect(Math.round(diff30)).toBe(30);
+  });
+
+  it("differentiates 'Today' vs '7 Days' period records while snapshot counters remain steady", async () => {
+    // 1. Query for 'Today'
+    const todayData = await getDistrictAuthorityCommandData({ districtId: districtAId, timeRange: "today" });
+    // 2. Query for '7d'
+    const sevenDayData = await getDistrictAuthorityCommandData({ districtId: districtAId, timeRange: "7d" });
+
+    // SNAPSHOT COUNTERS must remain identical (district total animals/farms/farmers don't artificially change)
+    expect(todayData.snapshot.totalAnimals).toBe(2);
+    expect(sevenDayData.snapshot.totalAnimals).toBe(2);
+    expect(todayData.snapshot.totalFarmers).toBe(2);
+    expect(sevenDayData.snapshot.totalFarmers).toBe(2);
+    expect(todayData.snapshot.totalFarms).toBe(2);
+    expect(sevenDayData.snapshot.totalFarms).toBe(2);
+    expect(todayData.snapshot.currentActiveCases).toBe(2); // Still 2 active cases in district
+    expect(sevenDayData.snapshot.currentActiveCases).toBe(2);
+
+    // PERIOD-FILTERED COUNTERS must differ:
+    // Case 1 was reported Today -> Count = 1 for Today
+    // Case 1 + Case 2 were reported within last 7 days -> Count = 2 for 7 Days
+    expect(todayData.periodMetrics.casesReported).toBe(1);
+    expect(sevenDayData.periodMetrics.casesReported).toBe(2);
+
+    // Period chart data reflects time window
+    expect(todayData.charts.casesOverTime.length).toBe(1); // Today's point
+    expect(todayData.charts.casesOverTime[0].value).toBe(1);
+
+    expect(sevenDayData.charts.casesOverTime.length).toBe(7); // 7 daily points
+    const sevenDayTotal = sevenDayData.charts.casesOverTime.reduce((sum, p) => sum + p.value, 0);
+    expect(sevenDayTotal).toBe(2);
   });
 
   it("calculates personnel responsibility distinct farmers and animals correctly", async () => {
@@ -437,19 +499,27 @@ describe("District Authority Command Dashboard Engine", () => {
     expect(highWithAlertWeight).toBe(9.0); // 4.0 + 5.0 alert
   });
 
-  it("handles empty district cleanly without division-by-zero or errors", async () => {
+  it("handles empty district cleanly without division-by-zero or fake mock numbers", async () => {
     const emptyDist = await prisma.district.create({
       data: { name: `Empty District ${Date.now()}` },
     });
 
-    const emptyData = await getDistrictAuthorityCommandData({ districtId: emptyDist.id });
+    const emptyData = await getDistrictAuthorityCommandData({ districtId: emptyDist.id, timeRange: "today" });
 
-    expect(emptyData.kpis.totalFarmers).toBe(0);
-    expect(emptyData.kpis.totalFarms).toBe(0);
-    expect(emptyData.kpis.totalAnimals).toBe(0);
-    expect(emptyData.kpis.activeCases).toBe(0);
-    expect(emptyData.kpis.avgTimeToReviewHours).toBeNull();
-    expect(emptyData.kpis.avgTimeToConfirmationHours).toBeNull();
+    expect(emptyData.snapshot.totalFarmers).toBe(0);
+    expect(emptyData.snapshot.totalFarms).toBe(0);
+    expect(emptyData.snapshot.totalAnimals).toBe(0);
+    expect(emptyData.snapshot.currentActiveCases).toBe(0);
+    expect(emptyData.periodMetrics.casesReported).toBe(0);
+    expect(emptyData.periodMetrics.assistanceRequests).toBe(0);
+    expect(emptyData.periodMetrics.fieldVisits).toBe(0);
+    expect(emptyData.periodMetrics.veterinaryReports).toBe(0);
+    expect(emptyData.periodMetrics.alertsCreated).toBe(0);
+    expect(emptyData.periodMetrics.vaccinationsRecorded).toBe(0);
+    expect(emptyData.periodMetrics.treatmentsRecorded).toBe(0);
+    expect(emptyData.periodMetrics.avgTimeToReviewHours).toBeNull();
+    expect(emptyData.periodMetrics.avgTimeToConfirmationHours).toBeNull();
+    expect(emptyData.charts.casesOverTime.length).toBe(0);
     expect(emptyData.mapLayers.cases.length).toBe(0);
     expect(emptyData.mapLayers.farms.length).toBe(0);
     expect(emptyData.mapLayers.heatmapPoints.length).toBe(0);

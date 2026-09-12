@@ -24,10 +24,10 @@ export default function AuthorityError({
 
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">
-          Surveillance Portal Error
+          Unable to load district data.
         </h2>
         <p className="text-xs text-stone-600 leading-relaxed">
-          An error occurred loading district outbreak metrics or geospatial clusters.
+          An error occurred querying live district database records. No mock or fake numbers are displayed.
         </p>
         {error.message && (
           <p className="text-[11px] text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100 font-mono">
@@ -42,7 +42,7 @@ export default function AuthorityError({
           className="w-full sm:flex-1 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[42px] gap-2 cursor-pointer shadow-sm"
         >
           <RefreshCw className="h-4 w-4" />
-          <span>Reload Surveillance</span>
+          <span>Retry Query</span>
         </Button>
 
         <Link href="/" className="w-full sm:flex-1">

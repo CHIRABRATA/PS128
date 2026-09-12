@@ -13,6 +13,43 @@ export interface DistrictCommandFilterOptions {
   villageId?: string | null;
 }
 
+export interface DistrictSnapshotMetrics {
+  totalFarmers: number;
+  totalFarms: number;
+  totalAnimals: number;
+  currentActiveCases: number;
+  currentPendingReviews: number;
+  currentUnderExam: number;
+  currentLabReferrals: number;
+  currentConfirmedCases: number;
+  currentClosedHarmless: number;
+  currentActiveVisits: number;
+  currentActiveRequests: number;
+  totalVeterinarians: number;
+  totalFieldAgents: number;
+  currentActiveAlerts: number;
+  currentFollowUpsDue: number;
+}
+
+export interface SelectedPeriodMetrics {
+  periodLabel: string;
+  periodSubLabel: string;
+  timeRange: "today" | "7d" | "30d" | "90d" | "custom" | "all";
+  startDate: string | null;
+  endDate: string | null;
+  casesReported: number;
+  assistanceRequests: number;
+  fieldVisits: number;
+  veterinaryReports: number;
+  alertsCreated: number;
+  vaccinationsRecorded: number;
+  treatmentsRecorded: number;
+  casesConfirmed: number;
+  casesReviewed: number;
+  avgTimeToReviewHours: number | null;
+  avgTimeToConfirmationHours: number | null;
+}
+
 export interface KpiSummaryMetrics {
   totalFarmers: number;
   totalFarms: number;
@@ -221,7 +258,7 @@ export interface DistrictCommandCenterData {
   districtName: string;
   districtId: string | null;
   activeFilters: {
-    timeRange: string;
+    timeRange: "today" | "7d" | "30d" | "90d" | "custom" | "all";
     blockId: string | null;
     villageId: string | null;
     startDate: string | null;
@@ -231,6 +268,8 @@ export interface DistrictCommandCenterData {
     blocks: { id: string; name: string; villageCount: number }[];
     villages: { id: string; name: string; blockId: string }[];
   };
+  snapshot: DistrictSnapshotMetrics;
+  periodMetrics: SelectedPeriodMetrics;
   kpis: KpiSummaryMetrics;
   pipeline: DistrictPipelineStage[];
   veterinarians: VetCoverageItem[];
@@ -265,37 +304,112 @@ export function calculateRiskIntensity(riskLevel?: string | null, hasAlert: bool
   return baseWeight;
 }
 
+export interface PeriodDateBounds {
+  gte?: Date;
+  lte?: Date;
+  label: string;
+  subLabel: string;
+  startIso: string | null;
+  endIso: string | null;
+}
+
 /**
- * Calculates start and end timestamps from a time range string.
+ * Calculates start and end timestamps strictly adhering to Indian Standard Time (Asia/Kolkata / UTC+05:30)
+ * so that "Today" covers 00:00:00 IST through 23:59:59.999 IST without UTC boundary clipping.
  */
-function getDateRangeFilter(
-  timeRange: string = "30d",
+export function calculateDateRangeBounds(
+  timeRange: "today" | "7d" | "30d" | "90d" | "custom" | "all" = "30d",
   customStart?: string | null,
   customEnd?: string | null
-): { gte?: Date; lte?: Date } {
+): PeriodDateBounds {
   const now = new Date();
+
+  const formatIST = (d: Date, includeYear: boolean = true) => {
+    return d.toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "short",
+      year: includeYear ? "numeric" : undefined,
+    });
+  };
+
   if (timeRange === "today") {
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return { gte: startOfToday, lte: now };
+    // Determine YYYY-MM-DD in Asia/Kolkata timezone
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const istDateString = formatter.format(now); // e.g. "2026-09-12"
+    const startOfToday = new Date(`${istDateString}T00:00:00+05:30`);
+    const endOfToday = new Date(`${istDateString}T23:59:59.999+05:30`);
+
+    return {
+      gte: startOfToday,
+      lte: endOfToday,
+      label: "Today",
+      subLabel: formatIST(startOfToday, true),
+      startIso: startOfToday.toISOString(),
+      endIso: endOfToday.toISOString(),
+    };
   }
+
   if (timeRange === "7d") {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return { gte: sevenDaysAgo, lte: now };
+    return {
+      gte: sevenDaysAgo,
+      lte: now,
+      label: "Last 7 Days",
+      subLabel: `${formatIST(sevenDaysAgo, false)} – ${formatIST(now, true)}`,
+      startIso: sevenDaysAgo.toISOString(),
+      endIso: now.toISOString(),
+    };
   }
+
   if (timeRange === "30d") {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return { gte: thirtyDaysAgo, lte: now };
+    return {
+      gte: thirtyDaysAgo,
+      lte: now,
+      label: "Last 30 Days",
+      subLabel: `${formatIST(thirtyDaysAgo, false)} – ${formatIST(now, true)}`,
+      startIso: thirtyDaysAgo.toISOString(),
+      endIso: now.toISOString(),
+    };
   }
+
   if (timeRange === "90d") {
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    return { gte: ninetyDaysAgo, lte: now };
+    return {
+      gte: ninetyDaysAgo,
+      lte: now,
+      label: "Last 90 Days",
+      subLabel: `${formatIST(ninetyDaysAgo, false)} – ${formatIST(now, true)}`,
+      startIso: ninetyDaysAgo.toISOString(),
+      endIso: now.toISOString(),
+    };
   }
+
   if (timeRange === "custom" && customStart) {
-    const start = new Date(customStart);
-    const end = customEnd ? new Date(customEnd) : now;
-    return { gte: start, lte: end };
+    const start = new Date(`${customStart}T00:00:00+05:30`);
+    const end = customEnd ? new Date(`${customEnd}T23:59:59.999+05:30`) : now;
+    return {
+      gte: start,
+      lte: end,
+      label: "Custom Range",
+      subLabel: `${formatIST(start, false)} – ${formatIST(end, true)}`,
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+    };
   }
-  return {};
+
+  return {
+    label: "All Historical Data",
+    subLabel: "Complete database records",
+    startIso: null,
+    endIso: null,
+  };
 }
 
 /**
@@ -349,8 +463,9 @@ export async function getDistrictAuthorityCommandData(
     }))
   );
 
-  // 2. Build Prisma Where Clauses with Strict Geographic & Temporal Scoping
-  const dateFilter = getDateRangeFilter(timeRange, customStartDate, customEndDate);
+  // 2. Build Geographic & Temporal Scopes
+  const periodBounds = calculateDateRangeBounds(timeRange, customStartDate, customEndDate);
+  const dateFilter = periodBounds.gte || periodBounds.lte ? { gte: periodBounds.gte, lte: periodBounds.lte } : {};
 
   // Geographic village filter tree
   const villageScopedWhere: Prisma.VillageWhereInput = {};
@@ -362,24 +477,12 @@ export async function getDistrictAuthorityCommandData(
     villageScopedWhere.block = { districtId };
   }
 
-  // Farm where clause
+  // Farm base where
   const farmWhereClause: Prisma.FarmWhereInput = {
     village: villageScopedWhere,
   };
 
-  // Case where clause
-  const caseWhereClause: Prisma.CaseWhereInput = {
-    animal: {
-      herd: {
-        farm: {
-          village: villageScopedWhere,
-        },
-      },
-    },
-    ...(dateFilter.gte || dateFilter.lte ? { reportedAt: dateFilter } : {}),
-  };
-
-  // Animal where clause
+  // Animal base where
   const animalWhereClause: Prisma.AnimalWhereInput = {
     herd: {
       farm: {
@@ -388,20 +491,7 @@ export async function getDistrictAuthorityCommandData(
     },
   };
 
-  // Alert where clause
-  const alertWhereClause: Prisma.AlertWhereInput = {
-    village: villageScopedWhere,
-  };
-
-  // Assistance request where clause
-  const assistanceWhereClause: Prisma.AssistanceRequestWhereInput = {
-    farm: {
-      village: villageScopedWhere,
-    },
-    ...(dateFilter.gte || dateFilter.lte ? { requestedAt: dateFilter } : {}),
-  };
-
-  // User where clause for district personnel
+  // User district where for personnel & farmers
   const userDistrictWhere: Prisma.UserWhereInput = {};
   if (villageId) {
     userDistrictWhere.villageId = villageId;
@@ -411,34 +501,74 @@ export async function getDistrictAuthorityCommandData(
     userDistrictWhere.districtId = districtId;
   }
 
+  // Alert base where
+  const alertWhereClause: Prisma.AlertWhereInput = {
+    village: villageScopedWhere,
+  };
+
+  // Base Case Where (without date restriction, for current snapshot & personnel workload)
+  const caseBaseWhere: Prisma.CaseWhereInput = {
+    animal: {
+      herd: {
+        farm: {
+          village: villageScopedWhere,
+        },
+      },
+    },
+  };
+
+  // Period-Filtered Case Where (with date restriction)
+  const periodCaseWhereClause: Prisma.CaseWhereInput = {
+    ...caseBaseWhere,
+    ...(dateFilter.gte || dateFilter.lte ? { reportedAt: dateFilter } : {}),
+  };
+
+  // Period-Filtered Assistance Request Where
+  const periodAssistanceWhereClause: Prisma.AssistanceRequestWhereInput = {
+    farm: {
+      village: villageScopedWhere,
+    },
+    ...(dateFilter.gte || dateFilter.lte ? { requestedAt: dateFilter } : {}),
+  };
+
   // 3. Parallel Database Aggregations
   const [
     farmersCount,
     farmsCount,
     animalsCount,
-    allDistrictCases,
-    assistanceRequests,
-    fieldVisits,
+    allDistrictCases, // All active and cumulative cases for snapshot and personnel
+    periodCases, // Period-filtered cases for charts, period metrics, and pipeline
+    allAssistanceRequests,
+    periodAssistanceRequests,
+    allFieldVisits,
+    periodFieldVisits,
+    allPeriodVetReports,
     veterinariansList,
     fieldAgentsList,
     activeAlertsList,
-    allAlertsList,
+    periodAlertsList,
+    periodVaccinationsCount,
+    periodTreatmentsCount,
     allFarmsWithRelations,
     allVillagesInScope,
     recentCases,
     recentVisits,
     recentVetReports,
   ] = await Promise.all([
+    // Farmers count (Snapshot)
     prisma.user.count({
       where: {
         role: "FARMER",
         ...userDistrictWhere,
       },
     }),
+    // Farms count (Snapshot)
     prisma.farm.count({ where: farmWhereClause }),
+    // Animals count (Snapshot)
     prisma.animal.count({ where: animalWhereClause }),
+    // All Cases in District scope (Snapshot & Personnel allocation)
     prisma.case.findMany({
-      where: caseWhereClause,
+      where: caseBaseWhere,
       include: {
         animal: {
           select: {
@@ -487,8 +617,76 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { reportedAt: "desc" },
     }),
+    // Period Cases (Filtered by time range)
+    prisma.case.findMany({
+      where: periodCaseWhereClause,
+      include: {
+        animal: {
+          select: {
+            id: true,
+            tag: true,
+            species: true,
+            herd: {
+              select: {
+                farm: {
+                  select: {
+                    id: true,
+                    name: true,
+                    latitude: true,
+                    longitude: true,
+                    farmerUserId: true,
+                    farmerUser: { select: { id: true, name: true, phone: true } },
+                    village: {
+                      select: {
+                        id: true,
+                        name: true,
+                        block: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        assignedVeterinarianUser: {
+          select: { id: true, name: true, phone: true },
+        },
+        veterinaryReports: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            diagnosis: true,
+            action: true,
+            followUpDate: true,
+            followUpCompleted: true,
+            createdAt: true,
+            vetUser: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { reportedAt: "desc" },
+    }),
+    // All Assistance Requests (Snapshot)
     prisma.assistanceRequest.findMany({
-      where: assistanceWhereClause,
+      where: {
+        farm: {
+          village: villageScopedWhere,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        farmerUserId: true,
+        animalId: true,
+        assignedFieldAgentUserId: true,
+        requestedAt: true,
+      },
+    }),
+    // Period Assistance Requests
+    prisma.assistanceRequest.findMany({
+      where: periodAssistanceWhereClause,
       include: {
         farmerUser: { select: { id: true, name: true, phone: true } },
         assignedFieldAgentUser: { select: { id: true, name: true, phone: true } },
@@ -516,6 +714,7 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { requestedAt: "desc" },
     }),
+    // All Field Visits (Snapshot)
     prisma.fieldVisit.findMany({
       where: {
         assistanceRequest: {
@@ -543,6 +742,35 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { createdAt: "desc" },
     }),
+    // Period Field Visits
+    prisma.fieldVisit.findMany({
+      where: {
+        assistanceRequest: {
+          farm: {
+            village: villageScopedWhere,
+          },
+        },
+        ...(dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {}),
+      },
+      select: { id: true, completedAt: true, createdAt: true },
+    }),
+    // Period Veterinary Reports
+    prisma.veterinaryReport.findMany({
+      where: {
+        case: {
+          animal: {
+            herd: {
+              farm: {
+                village: villageScopedWhere,
+              },
+            },
+          },
+        },
+        ...(dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {}),
+      },
+      select: { id: true, createdAt: true, action: true, diagnosis: true },
+    }),
+    // Veterinarians in scope
     prisma.user.findMany({
       where: {
         role: "VETERINARIAN",
@@ -558,6 +786,7 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { name: "asc" },
     }),
+    // Field Agents in scope
     prisma.user.findMany({
       where: {
         role: "FIELD_AGENT",
@@ -573,6 +802,7 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { name: "asc" },
     }),
+    // Active Outbreak Alerts (Snapshot)
     prisma.alert.findMany({
       where: {
         active: true,
@@ -588,8 +818,12 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { createdAt: "desc" },
     }),
+    // Period Alerts Created
     prisma.alert.findMany({
-      where: alertWhereClause,
+      where: {
+        ...alertWhereClause,
+        ...(dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {}),
+      },
       include: {
         village: {
           include: {
@@ -599,6 +833,33 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { createdAt: "desc" },
     }),
+    // Period Vaccinations
+    prisma.vaccinationRecord.count({
+      where: {
+        animal: {
+          herd: {
+            farm: {
+              village: villageScopedWhere,
+            },
+          },
+        },
+        ...(dateFilter.gte || dateFilter.lte ? { dateGiven: dateFilter } : {}),
+      },
+    }),
+    // Period Treatments
+    prisma.treatmentRecord.count({
+      where: {
+        animal: {
+          herd: {
+            farm: {
+              village: villageScopedWhere,
+            },
+          },
+        },
+        ...(dateFilter.gte || dateFilter.lte ? { dateGiven: dateFilter } : {}),
+      },
+    }),
+    // Farms with relations
     prisma.farm.findMany({
       where: farmWhereClause,
       include: {
@@ -621,6 +882,7 @@ export async function getDistrictAuthorityCommandData(
         },
       },
     }),
+    // Villages in scope
     prisma.village.findMany({
       where: villageScopedWhere,
       include: {
@@ -649,8 +911,9 @@ export async function getDistrictAuthorityCommandData(
       },
       orderBy: { name: "asc" },
     }),
+    // Recent Cases
     prisma.case.findMany({
-      where: caseWhereClause,
+      where: periodCaseWhereClause,
       select: {
         id: true,
         caseNumber: true,
@@ -677,6 +940,7 @@ export async function getDistrictAuthorityCommandData(
       orderBy: { reportedAt: "desc" },
       take: 6,
     }),
+    // Recent Visits
     prisma.fieldVisit.findMany({
       where: {
         assistanceRequest: {
@@ -700,6 +964,7 @@ export async function getDistrictAuthorityCommandData(
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
+    // Recent Vet Reports
     prisma.veterinaryReport.findMany({
       where: {
         case: {
@@ -735,43 +1000,90 @@ export async function getDistrictAuthorityCommandData(
     }),
   ]);
 
-  // 4. Compute 15 Core KPI Metrics & Turnaround Speed
-  let pendingReviewsCount = 0;
-  let underExamCount = 0;
-  let labReferralCount = 0;
-  let confirmedCount = 0;
-  let closedHarmlessCount = 0;
-  let followUpsDueCount = 0;
-  let totalReviewMs = 0;
-  let reviewedCasesWithTime = 0;
-  let totalConfirmationMs = 0;
-  let confirmedCasesWithTime = 0;
+  // 4. Compute Current District Status (Snapshot)
+  let currentPendingReviews = 0;
+  let currentUnderExam = 0;
+  let currentLabReferrals = 0;
+  let currentConfirmedCases = 0;
+  let currentClosedHarmless = 0;
+  let currentFollowUpsDue = 0;
 
   const nowTime = Date.now();
 
   for (const c of allDistrictCases) {
-    if (c.status === "PENDING_REVIEW") pendingReviewsCount++;
-    else if (c.status === "UNDER_EXAMINATION") underExamCount++;
-    else if (c.status === "LAB_REFERRAL") labReferralCount++;
-    else if (c.status === "CONFIRMED") confirmedCount++;
-    else if (c.status === "CLOSED_HARMLESS") closedHarmlessCount++;
+    if (c.status === "PENDING_REVIEW") currentPendingReviews++;
+    else if (c.status === "UNDER_EXAMINATION") currentUnderExam++;
+    else if (c.status === "LAB_REFERRAL") currentLabReferrals++;
+    else if (c.status === "CONFIRMED") currentConfirmedCases++;
+    else if (c.status === "CLOSED_HARMLESS") currentClosedHarmless++;
 
-    // Follow ups check
     const isDue =
       (c.vetFollowUpDate && !c.followUpCompleted && new Date(c.vetFollowUpDate).getTime() <= nowTime) ||
       (c.veterinaryReports[0]?.followUpDate &&
         !c.veterinaryReports[0]?.followUpCompleted &&
         new Date(c.veterinaryReports[0].followUpDate).getTime() <= nowTime);
     if (isDue) {
-      followUpsDueCount++;
+      currentFollowUpsDue++;
     }
+  }
 
-    // Turnaround calculations
+  const currentActiveCases = currentPendingReviews + currentUnderExam + currentLabReferrals;
+
+  let currentActiveRequests = 0;
+  for (const r of allAssistanceRequests) {
+    if (["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"].includes(r.status)) {
+      currentActiveRequests++;
+    }
+  }
+
+  let currentActiveVisits = 0;
+  for (const v of allFieldVisits) {
+    if (!v.completedAt) {
+      currentActiveVisits++;
+    }
+  }
+
+  const snapshot: DistrictSnapshotMetrics = {
+    totalFarmers: farmersCount,
+    totalFarms: farmsCount,
+    totalAnimals: animalsCount,
+    currentActiveCases,
+    currentPendingReviews,
+    currentUnderExam,
+    currentLabReferrals,
+    currentConfirmedCases,
+    currentClosedHarmless,
+    currentActiveVisits,
+    currentActiveRequests,
+    totalVeterinarians: veterinariansList.length,
+    totalFieldAgents: fieldAgentsList.length,
+    currentActiveAlerts: activeAlertsList.length,
+    currentFollowUpsDue,
+  };
+
+  // 5. Compute Selected Period Metrics (Time-Filtered)
+  let periodPendingReviews = 0;
+  let periodUnderExam = 0;
+  let periodLabReferrals = 0;
+  let periodConfirmed = 0;
+  let periodClosedHarmless = 0;
+  let periodReviewedCount = 0;
+  let totalReviewMs = 0;
+  let totalConfirmationMs = 0;
+  let confirmedCasesWithTime = 0;
+
+  for (const c of periodCases) {
+    if (c.status === "PENDING_REVIEW") periodPendingReviews++;
+    else if (c.status === "UNDER_EXAMINATION") periodUnderExam++;
+    else if (c.status === "LAB_REFERRAL") periodLabReferrals++;
+    else if (c.status === "CONFIRMED") periodConfirmed++;
+    else if (c.status === "CLOSED_HARMLESS") periodClosedHarmless++;
+
     if (c.reviewedAt) {
       const ms = new Date(c.reviewedAt).getTime() - new Date(c.reportedAt).getTime();
       if (ms >= 0) {
         totalReviewMs += ms;
-        reviewedCasesWithTime++;
+        periodReviewedCount++;
       }
     }
     if (c.confirmedAt) {
@@ -783,91 +1095,103 @@ export async function getDistrictAuthorityCommandData(
     }
   }
 
-  const activeCasesCount = pendingReviewsCount + underExamCount + labReferralCount;
-
-  let activeRequestsCount = 0;
-  for (const r of assistanceRequests) {
-    if (["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"].includes(r.status)) {
-      activeRequestsCount++;
-    }
-  }
-
-  let activeVisitsCount = 0;
-  for (const v of fieldVisits) {
-    if (!v.completedAt) {
-      activeVisitsCount++;
-    }
-  }
-
   const avgTimeToReviewHours =
-    reviewedCasesWithTime > 0 ? Math.round((totalReviewMs / (reviewedCasesWithTime * 3600000)) * 10) / 10 : null;
+    periodReviewedCount > 0 ? Math.round((totalReviewMs / (periodReviewedCount * 3600000)) * 10) / 10 : null;
 
   const avgTimeToConfirmationHours =
     confirmedCasesWithTime > 0
       ? Math.round((totalConfirmationMs / (confirmedCasesWithTime * 3600000)) * 10) / 10
       : null;
 
-  const kpis: KpiSummaryMetrics = {
-    totalFarmers: farmersCount,
-    totalFarms: farmsCount,
-    totalAnimals: animalsCount,
-    activeCases: activeCasesCount,
-    pendingReviews: pendingReviewsCount,
-    underExamination: underExamCount,
-    labReferrals: labReferralCount,
-    confirmedCases: confirmedCount,
-    closedHarmlessCases: closedHarmlessCount,
-    activeAssistanceRequests: activeRequestsCount,
-    activeFieldVisits: activeVisitsCount,
-    totalVeterinarians: veterinariansList.length,
-    totalFieldAgents: fieldAgentsList.length,
-    activeAlerts: activeAlertsList.length,
-    followUpsDue: followUpsDueCount,
+  const periodMetrics: SelectedPeriodMetrics = {
+    periodLabel: periodBounds.label,
+    periodSubLabel: periodBounds.subLabel,
+    timeRange: timeRange as "today" | "7d" | "30d" | "90d" | "custom" | "all",
+    startDate: periodBounds.startIso,
+    endDate: periodBounds.endIso,
+    casesReported: periodCases.length,
+    assistanceRequests: periodAssistanceRequests.length,
+    fieldVisits: periodFieldVisits.length,
+    veterinaryReports: allPeriodVetReports.length,
+    alertsCreated: periodAlertsList.length,
+    vaccinationsRecorded: periodVaccinationsCount,
+    treatmentsRecorded: periodTreatmentsCount,
+    casesConfirmed: periodConfirmed,
+    casesReviewed: periodReviewedCount,
     avgTimeToReviewHours,
     avgTimeToConfirmationHours,
   };
 
-  // 5. Compute District Case Pipeline
-  const totalCasesAll = allDistrictCases.length;
+  // KPI summary metrics for backward compatibility
+  const kpis: KpiSummaryMetrics = {
+    totalFarmers: farmersCount,
+    totalFarms: farmsCount,
+    totalAnimals: animalsCount,
+    activeCases: timeRange === "all" ? currentActiveCases : (periodPendingReviews + periodUnderExam + periodLabReferrals),
+    pendingReviews: timeRange === "all" ? currentPendingReviews : periodPendingReviews,
+    underExamination: timeRange === "all" ? currentUnderExam : periodUnderExam,
+    labReferrals: timeRange === "all" ? currentLabReferrals : periodLabReferrals,
+    confirmedCases: timeRange === "all" ? currentConfirmedCases : periodConfirmed,
+    closedHarmlessCases: timeRange === "all" ? currentClosedHarmless : periodClosedHarmless,
+    activeAssistanceRequests: currentActiveRequests,
+    activeFieldVisits: currentActiveVisits,
+    totalVeterinarians: veterinariansList.length,
+    totalFieldAgents: fieldAgentsList.length,
+    activeAlerts: activeAlertsList.length,
+    followUpsDue: currentFollowUpsDue,
+    avgTimeToReviewHours,
+    avgTimeToConfirmationHours,
+  };
+
+  // 6. Compute District Case Pipeline from Period Cases
+  const pipelineCases = timeRange === "all" ? allDistrictCases : periodCases;
+  const pipelineTotal = pipelineCases.length;
+
+  const pPending = pipelineCases.filter((c) => c.status === "PENDING_REVIEW").length;
+  const pUnderExam = pipelineCases.filter((c) => c.status === "UNDER_EXAMINATION").length;
+  const pLabRef = pipelineCases.filter((c) => c.status === "LAB_REFERRAL").length;
+  const pConfirmed = pipelineCases.filter((c) => c.status === "CONFIRMED").length;
+  const pClosed = pipelineCases.filter((c) => c.status === "CLOSED_HARMLESS").length;
+
   const pipeline: DistrictPipelineStage[] = [
     {
       status: "PENDING_REVIEW",
       label: "Pending Review",
-      count: pendingReviewsCount,
-      percentage: totalCasesAll > 0 ? Math.round((pendingReviewsCount / totalCasesAll) * 100) : 0,
+      count: pPending,
+      percentage: pipelineTotal > 0 ? Math.round((pPending / pipelineTotal) * 100) : 0,
       color: "#F59E0B",
     },
     {
       status: "UNDER_EXAMINATION",
       label: "Under Examination",
-      count: underExamCount,
-      percentage: totalCasesAll > 0 ? Math.round((underExamCount / totalCasesAll) * 100) : 0,
+      count: pUnderExam,
+      percentage: pipelineTotal > 0 ? Math.round((pUnderExam / pipelineTotal) * 100) : 0,
       color: "#EA580C",
     },
     {
       status: "LAB_REFERRAL",
       label: "Lab Referral",
-      count: labReferralCount,
-      percentage: totalCasesAll > 0 ? Math.round((labReferralCount / totalCasesAll) * 100) : 0,
+      count: pLabRef,
+      percentage: pipelineTotal > 0 ? Math.round((pLabRef / pipelineTotal) * 100) : 0,
       color: "#8B5CF6",
     },
     {
       status: "CONFIRMED",
       label: "Confirmed Case",
-      count: confirmedCount,
-      percentage: totalCasesAll > 0 ? Math.round((confirmedCount / totalCasesAll) * 100) : 0,
+      count: pConfirmed,
+      percentage: pipelineTotal > 0 ? Math.round((pConfirmed / pipelineTotal) * 100) : 0,
       color: "#DC2626",
     },
     {
       status: "CLOSED_HARMLESS",
       label: "Closed / Harmless",
-      count: closedHarmlessCount,
-      percentage: totalCasesAll > 0 ? Math.round((closedHarmlessCount / totalCasesAll) * 100) : 0,
+      count: pClosed,
+      percentage: pipelineTotal > 0 ? Math.round((pClosed / pipelineTotal) * 100) : 0,
       color: "#059669",
     },
   ];
 
-  // 6. Compute Personnel & Coverage Overview (Veterinarians & Field Agents)
+  // 7. Compute Personnel & Coverage Overview (Veterinarians & Field Agents)
   const veterinarians: VetCoverageItem[] = veterinariansList.map((vet) => {
     const assignedCases = allDistrictCases.filter((c) => c.assignedVeterinarianUserId === vet.id);
     const activeAssignedCases = assignedCases.filter((c) =>
@@ -950,16 +1274,18 @@ export async function getDistrictAuthorityCommandData(
   });
 
   const fieldAgents: FieldAgentCoverageItem[] = fieldAgentsList.map((agent) => {
-    const assignedRequests = assistanceRequests.filter((r) => r.assignedFieldAgentUserId === agent.id);
-    const agentVisits = fieldVisits.filter((v) => v.fieldAgentUserId === agent.id);
+    const assignedRequests = allAssistanceRequests.filter((r) => r.assignedFieldAgentUserId === agent.id);
+    const agentVisits = allFieldVisits.filter((v) => v.fieldAgentUserId === agent.id);
 
     const pending = assignedRequests.filter((r) => ["REQUESTED", "ASSIGNED"].includes(r.status)).length;
     const accepted = assignedRequests.filter((r) => ["ACCEPTED", "IN_PROGRESS"].includes(r.status)).length;
-    const scheduled = assignedRequests.filter((r) => !!r.scheduledAt && r.status !== "COMPLETED").length;
-    const completed = agentVisits.filter((v) => !!v.completedAt).length;
     const openRequests = assignedRequests.filter((r) =>
       ["REQUESTED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS"].includes(r.status)
     ).length;
+    const scheduled = periodAssistanceRequests.filter(
+      (r) => r.assignedFieldAgentUserId === agent.id && !!r.scheduledAt && r.status !== "COMPLETED"
+    ).length;
+    const completed = agentVisits.filter((v) => !!v.completedAt).length;
 
     const farmerIdSet = new Set<string>();
     const animalIdSet = new Set<string>();
@@ -983,22 +1309,24 @@ export async function getDistrictAuthorityCommandData(
       ? `${agent.district.name} District`
       : "District-wide Jurisdiction";
 
-    const activeRequestsList = assignedRequests.map((r) => ({
-      id: r.id,
-      reason: r.reason,
-      status: r.status,
-      requestedAt: r.requestedAt.toISOString(),
-      scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
-      farmerName: r.farmerUser?.name || "Farmer",
-      farmName: r.farm.name,
-      villageName: r.farm.village?.name || "Village",
-      blockName: r.farm.village?.block?.name || "Block",
-      animalTag: r.animal?.tag || null,
-      species: r.animal?.species || null,
-      caseNumber: r.case?.caseNumber || null,
-      visitObservations: r.visit?.observations || null,
-      visitCompletedAt: r.visit?.completedAt ? r.visit.completedAt.toISOString() : null,
-    }));
+    const activeRequestsList = periodAssistanceRequests
+      .filter((r) => r.assignedFieldAgentUserId === agent.id)
+      .map((r) => ({
+        id: r.id,
+        reason: r.reason,
+        status: r.status,
+        requestedAt: r.requestedAt.toISOString(),
+        scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
+        farmerName: r.farmerUser?.name || "Farmer",
+        farmName: r.farm.name,
+        villageName: r.farm.village?.name || "Village",
+        blockName: r.farm.village?.block?.name || "Block",
+        animalTag: r.animal?.tag || null,
+        species: r.animal?.species || null,
+        caseNumber: r.case?.caseNumber || null,
+        visitObservations: r.visit?.observations || null,
+        visitCompletedAt: r.visit?.completedAt ? r.visit.completedAt.toISOString() : null,
+      }));
 
     return {
       id: agent.id,
@@ -1017,7 +1345,9 @@ export async function getDistrictAuthorityCommandData(
     };
   });
 
-  // 7. Compute 9 Real-Data Charts
+  // 8. Compute 9 Real-Data Charts (Filtered to Selected Period)
+  const chartCases = timeRange === "all" ? allDistrictCases : periodCases;
+
   const casesByStatus: ChartDataPoint[] = pipeline.map((p) => ({
     label: p.label,
     value: p.count,
@@ -1032,7 +1362,7 @@ export async function getDistrictAuthorityCommandData(
     LOW: 0,
     UNKNOWN: 0,
   };
-  for (const c of allDistrictCases) {
+  for (const c of chartCases) {
     const analysis = (c.analysisResult as Record<string, unknown> | null) || {};
     const risk = ((analysis.overall_risk_level as string) || "UNKNOWN").toUpperCase();
     if (risk in riskCounts) {
@@ -1050,20 +1380,79 @@ export async function getDistrictAuthorityCommandData(
     { label: "Unclassified", value: riskCounts.UNKNOWN, color: "#9CA3AF" },
   ];
 
+  // Temporal Trend Chart (Mapped strictly in Indian Standard Time)
+  const getISTDateKey = (d: Date | string) => {
+    const dateObj = typeof d === "string" ? new Date(d) : d;
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(dateObj); // "YYYY-MM-DD"
+  };
+
   const temporalMap = new Map<string, number>();
-  allDistrictCases.forEach((c) => {
-    const dStr = new Date(c.reportedAt).toISOString().split("T")[0];
+  chartCases.forEach((c) => {
+    const dStr = getISTDateKey(c.reportedAt);
     temporalMap.set(dStr, (temporalMap.get(dStr) || 0) + 1);
   });
-  const sortedDates = Array.from(temporalMap.keys()).sort();
-  const casesOverTime: ChartDataPoint[] = sortedDates.map((dateKey) => ({
-    label: formatDate(dateKey, false),
-    value: temporalMap.get(dateKey) || 0,
-    meta: dateKey,
-  }));
+
+  let casesOverTime: ChartDataPoint[] = [];
+
+  if (timeRange === "today") {
+    // If today is selected, display today's data point
+    const todayKey = getISTDateKey(new Date());
+    const countToday = chartCases.length;
+    if (countToday > 0) {
+      casesOverTime = [
+        {
+          label: formatDate(todayKey, false),
+          value: countToday,
+          meta: todayKey,
+        },
+      ];
+    }
+  } else if (timeRange === "7d") {
+    // Generate daily points for the last 7 days
+    const points: ChartDataPoint[] = [];
+    const nowTime = Date.now();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(nowTime - i * 24 * 60 * 60 * 1000);
+      const dStr = getISTDateKey(d);
+      points.push({
+        label: formatDate(dStr, false),
+        value: temporalMap.get(dStr) || 0,
+        meta: dStr,
+      });
+    }
+    const hasAny7d = points.some((p) => p.value > 0);
+    casesOverTime = hasAny7d ? points : [];
+  } else if (timeRange === "30d") {
+    // Generate daily points for the last 30 days
+    const points: ChartDataPoint[] = [];
+    const nowTime = Date.now();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(nowTime - i * 24 * 60 * 60 * 1000);
+      const dStr = getISTDateKey(d);
+      points.push({
+        label: formatDate(dStr, false),
+        value: temporalMap.get(dStr) || 0,
+        meta: dStr,
+      });
+    }
+    const hasAny30d = points.some((p) => p.value > 0);
+    casesOverTime = hasAny30d ? points : [];
+  } else {
+    const sortedDates = Array.from(temporalMap.keys()).sort();
+    casesOverTime = sortedDates.map((dateKey) => ({
+      label: formatDate(dateKey, false),
+      value: temporalMap.get(dateKey) || 0,
+      meta: dateKey,
+    }));
+  }
 
   const villageCaseCountMap = new Map<string, number>();
-  allDistrictCases.forEach((c) => {
+  chartCases.forEach((c) => {
     const vName = c.animal?.herd?.farm?.village?.name || "Other";
     villageCaseCountMap.set(vName, (villageCaseCountMap.get(vName) || 0) + 1);
   });
@@ -1091,7 +1480,7 @@ export async function getDistrictAuthorityCommandData(
   }));
 
   const speciesCountMap: Record<string, number> = {};
-  allDistrictCases.forEach((c) => {
+  chartCases.forEach((c) => {
     const sp = c.animal?.species || "OTHER";
     speciesCountMap[sp] = (speciesCountMap[sp] || 0) + 1;
   });
@@ -1102,7 +1491,8 @@ export async function getDistrictAuthorityCommandData(
   }));
 
   const alertTypeMap = new Map<string, number>();
-  allAlertsList.forEach((a) => {
+  const chartAlerts = timeRange === "all" ? activeAlertsList : periodAlertsList;
+  chartAlerts.forEach((a) => {
     const key = a.diseaseName || "General Cluster Alert";
     alertTypeMap.set(key, (alertTypeMap.get(key) || 0) + 1);
   });
@@ -1120,7 +1510,7 @@ export async function getDistrictAuthorityCommandData(
     COMPLETED: 0,
     CANCELLED: 0,
   };
-  assistanceRequests.forEach((r) => {
+  periodAssistanceRequests.forEach((r) => {
     if (r.status in requestStatusCounts) {
       requestStatusCounts[r.status]++;
     }
@@ -1134,7 +1524,7 @@ export async function getDistrictAuthorityCommandData(
     { label: "Cancelled", value: requestStatusCounts.CANCELLED, color: "#6B7280" },
   ];
 
-  // 8. Compute Village Analysis Table Rows
+  // 9. Compute Village Analysis Table Rows
   const villageAnalysis: VillageAnalysisRow[] = allVillagesInScope.map((v) => {
     const farmCount = v.farms.length;
     let animalCount = 0;
@@ -1180,11 +1570,11 @@ export async function getDistrictAuthorityCommandData(
     };
   });
 
-  // 9. Compute 7 Real Map Layers with Strict Authoritative Coordinate Hierarchy
+  // 10. Compute 7 Real Map Layers with Strict Authoritative Coordinate Hierarchy
   const mapCases: DistrictMapLayersData["cases"] = [];
   const heatmapPoints: DistrictMapLayersData["heatmapPoints"] = [];
 
-  for (const c of allDistrictCases) {
+  for (const c of chartCases) {
     let lat: number | null = null;
     let lng: number | null = null;
 
@@ -1279,7 +1669,7 @@ export async function getDistrictAuthorityCommandData(
 
   const mapAgents: DistrictMapLayersData["fieldAgents"] = [];
   for (const agent of fieldAgents) {
-    const activeVisitWithCoord = fieldVisits.find((v) => {
+    const activeVisitWithCoord = allFieldVisits.find((v) => {
       if (v.fieldAgentUserId !== agent.id) return false;
       const m = v.measurements as Record<string, unknown> | null;
       if (m && isValidCoordinate(m.latitude, m.longitude)) return true;
@@ -1321,7 +1711,7 @@ export async function getDistrictAuthorityCommandData(
   }
 
   const mapVisits: DistrictMapLayersData["fieldVisits"] = [];
-  for (const v of fieldVisits) {
+  for (const v of allFieldVisits) {
     let lat: number | null = null;
     let lng: number | null = null;
 
@@ -1384,7 +1774,7 @@ export async function getDistrictAuthorityCommandData(
     alerts: mapAlerts,
   };
 
-  // 10. Compute Recent Activity Stream
+  // 11. Compute Recent Activity Stream
   const recentActivity: RecentActivityItem[] = [];
 
   recentCases.forEach((c) => {
@@ -1445,7 +1835,7 @@ export async function getDistrictAuthorityCommandData(
     districtName,
     districtId,
     activeFilters: {
-      timeRange,
+      timeRange: timeRange as "today" | "7d" | "30d" | "90d" | "custom" | "all",
       blockId: blockId || null,
       villageId: villageId || null,
       startDate: customStartDate || null,
@@ -1455,6 +1845,8 @@ export async function getDistrictAuthorityCommandData(
       blocks: filterBlocks,
       villages: filterVillages,
     },
+    snapshot,
+    periodMetrics,
     kpis,
     pipeline,
     veterinarians,
@@ -1481,13 +1873,13 @@ export async function getAuthorityDashboardMetrics(districtId: string | null) {
   const fullData = await getDistrictAuthorityCommandData({ districtId, timeRange: "7d" });
   return {
     districtName: fullData.districtName,
-    animalsMonitored: fullData.kpis.totalAnimals,
-    reportsThisWeek: fullData.pipeline.reduce((acc, curr) => acc + curr.count, 0),
+    animalsMonitored: fullData.snapshot.totalAnimals,
+    reportsThisWeek: fullData.periodMetrics.casesReported,
     highRiskCases: fullData.charts.casesByRisk.find((r) => r.label === "High")?.value || 0,
-    confirmedCases: fullData.kpis.confirmedCases,
-    activeAlerts: fullData.kpis.activeAlerts,
+    confirmedCases: fullData.snapshot.currentConfirmedCases,
+    activeAlerts: fullData.snapshot.currentActiveAlerts,
     pendingApprovalsCount: 0,
-    avgTimeToReviewHours: fullData.kpis.avgTimeToReviewHours,
-    avgTimeToConfirmationHours: fullData.kpis.avgTimeToConfirmationHours,
+    avgTimeToReviewHours: fullData.periodMetrics.avgTimeToReviewHours,
+    avgTimeToConfirmationHours: fullData.periodMetrics.avgTimeToConfirmationHours,
   };
 }

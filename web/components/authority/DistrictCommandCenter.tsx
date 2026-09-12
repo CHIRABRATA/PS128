@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   MapPin,
   Clock,
-  Sparkles,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 interface DistrictCommandCenterProps {
@@ -42,6 +43,7 @@ export function DistrictCommandCenter({
   const [villageId, setVillageId] = useState<string>(initialData.activeFilters.villageId || "");
   const [customStart, setCustomStart] = useState<string>(initialData.activeFilters.startDate || "");
   const [customEnd, setCustomEnd] = useState<string>(initialData.activeFilters.endDate || "");
+  const [error, setError] = useState<string | null>(null);
 
   const [isPending, startTransition] = useTransition();
 
@@ -58,15 +60,21 @@ export function DistrictCommandCenter({
     newStart = customStart,
     newEnd = customEnd
   ) => {
+    setError(null);
     startTransition(async () => {
-      const refreshedData = await getDistrictAuthorityCommandDataAction({
-        timeRange: newTimeRange,
-        blockId: newBlockId ? newBlockId : null,
-        villageId: newVillageId ? newVillageId : null,
-        customStartDate: newTimeRange === "custom" ? newStart : null,
-        customEndDate: newTimeRange === "custom" ? newEnd : null,
-      });
-      setData(refreshedData);
+      try {
+        const refreshedData = await getDistrictAuthorityCommandDataAction({
+          timeRange: newTimeRange,
+          blockId: newBlockId ? newBlockId : null,
+          villageId: newVillageId ? newVillageId : null,
+          customStartDate: newTimeRange === "custom" ? newStart : null,
+          customEndDate: newTimeRange === "custom" ? newEnd : null,
+        });
+        setData(refreshedData);
+      } catch (err) {
+        console.error("[District Command Center] Filter query failure:", err);
+        setError("Unable to load district data.");
+      }
     });
   };
 
@@ -79,7 +87,7 @@ export function DistrictCommandCenter({
     handleApplyFilters("30d", "", "", "", "");
   };
 
-  const activeAlertsCount = data.kpis.activeAlerts;
+  const activeAlertsCount = data.snapshot.currentActiveAlerts;
 
   return (
     <div className="space-y-8 text-[#191F1C]">
@@ -118,7 +126,32 @@ export function DistrictCommandCenter({
         </div>
       </div>
 
-      {/* 2. LIVE QUERY FILTER CONTROLS (Affects Database Queries Server-Side) */}
+      {/* 2. ERROR STATE BANNER (If query fails, never fallback to fake numbers) */}
+      {error && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-red-50 border border-red-200 text-red-900 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-red-100 border border-red-300 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-700" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-red-950">Unable to load district data.</h3>
+              <p className="text-xs text-red-800 mt-0.5">
+                The database query could not be completed. Zero mock data is presented.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => handleApplyFilters(timeRange, blockId, villageId, customStart, customEnd)}
+            className="bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs gap-1.5 shrink-0"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry Query</span>
+          </Button>
+        </div>
+      )}
+
+      {/* 3. LIVE QUERY FILTER CONTROLS (Server-Side Database Filtering) */}
       <div className="p-4 rounded-3xl bg-white border border-[#E5E0D8] shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E0D8] pb-3">
           <div className="flex items-center gap-2 text-xs font-bold text-stone-800">
@@ -264,24 +297,21 @@ export function DistrictCommandCenter({
         )}
       </div>
 
-      {/* 3. SUMMARY KPI METRICS CARDS (15 Key Metrics) */}
+      {/* 4. SUMMARY METRICS (Snapshot + Selected Period + Clinical Turnaround) */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-[#191F1C] flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-emerald-700" />
-            <span>District Operational & Clinical Indicators</span>
-          </h2>
-          <span className="text-xs text-stone-500 font-mono">15 Live DB Counters</span>
-        </div>
-        <AuthorityMetricsCards metrics={data.kpis} />
+        <AuthorityMetricsCards
+          snapshot={data.snapshot}
+          periodMetrics={data.periodMetrics}
+          metrics={data.kpis}
+        />
       </section>
 
-      {/* 4. DISTRICT CASE PIPELINE PROGRESSION */}
+      {/* 5. DISTRICT CASE PIPELINE PROGRESSION */}
       <section>
         <DistrictCasePipeline pipeline={data.pipeline} />
       </section>
 
-      {/* 5. GEOGRAPHIC SURVEILLANCE & GIS HEATMAP */}
+      {/* 6. GEOGRAPHIC SURVEILLANCE & GIS HEATMAP */}
       <section>
         <SurveillanceHeatmap
           mapLayers={data.mapLayers}
@@ -290,12 +320,12 @@ export function DistrictCommandCenter({
         />
       </section>
 
-      {/* 6. PUBLIC HEALTH SURVEILLANCE CHARTS (9 Real-Data Views) */}
+      {/* 7. PUBLIC HEALTH SURVEILLANCE CHARTS (9 Real-Data Views) */}
       <section>
         <AuthorityVisualCharts charts={data.charts} />
       </section>
 
-      {/* 7. PERSONNEL RESPONSIBILITY & COVERAGE */}
+      {/* 8. PERSONNEL RESPONSIBILITY & COVERAGE */}
       <section>
         <PersonnelCoverageSection
           veterinarians={data.veterinarians}
@@ -303,12 +333,12 @@ export function DistrictCommandCenter({
         />
       </section>
 
-      {/* 8. VILLAGE / SUB-DISTRICT BREAKDOWN */}
+      {/* 9. VILLAGE / SUB-DISTRICT BREAKDOWN */}
       <section>
         <VillageAnalysisTable villages={data.villageAnalysis} />
       </section>
 
-      {/* 9. RECENT ACTIVITY FEED */}
+      {/* 10. RECENT ACTIVITY FEED */}
       <section>
         <RecentActivityFeed activities={data.recentActivity} />
       </section>

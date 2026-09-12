@@ -29,7 +29,7 @@ interface AuthorityVisualChartsProps {
 }
 
 // Clean Empty State Component
-function ChartEmptyState({ message = "No data available for this period." }: { message?: string }) {
+function ChartEmptyState({ message = "No activity recorded during this period." }: { message?: string }) {
   return (
     <div className="h-48 w-full flex flex-col items-center justify-center text-center p-4 bg-[#FAF8F3]/50 rounded-2xl border border-dashed border-[#E5E0D8] space-y-1">
       <p className="text-xs font-semibold text-stone-600">{message}</p>
@@ -41,7 +41,7 @@ function ChartEmptyState({ message = "No data available for this period." }: { m
 // 1. Donut / Progress Distribution Visualizer
 function DonutVisualizer({ data }: { data: ChartDataPoint[] }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
-  if (total === 0) return <ChartEmptyState message="No case status records in this period." />;
+  if (total === 0) return <ChartEmptyState message="No activity recorded during this period." />;
 
   return (
     <div className="space-y-3">
@@ -78,7 +78,7 @@ function DonutVisualizer({ data }: { data: ChartDataPoint[] }) {
 }
 
 // 2. Horizontal Ranked Bar Visualizer
-function HorizontalRankedBarVisualizer({ data, emptyMsg }: { data: ChartDataPoint[]; emptyMsg?: string }) {
+function HorizontalRankedBarVisualizer({ data, emptyMsg = "No activity recorded during this period." }: { data: ChartDataPoint[]; emptyMsg?: string }) {
   const maxValue = Math.max(...data.map((d) => d.value), 0);
   if (maxValue === 0 || data.length === 0) return <ChartEmptyState message={emptyMsg} />;
 
@@ -108,7 +108,28 @@ function HorizontalRankedBarVisualizer({ data, emptyMsg }: { data: ChartDataPoin
 // 3. Pure Responsive SVG Line/Area Temporal Chart
 function TemporalLineVisualizer({ data }: { data: ChartDataPoint[] }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
-  if (total === 0 || data.length === 0) return <ChartEmptyState message="No timeline data available for this period." />;
+  if (total === 0 || data.length === 0) {
+    return <ChartEmptyState message="No activity recorded during this period." />;
+  }
+
+  // Single-day snapshot view (e.g. for "Today")
+  if (data.length === 1) {
+    const singlePoint = data[0];
+    return (
+      <div className="h-36 w-full flex flex-col items-center justify-center bg-[#FAF8F3]/60 rounded-2xl border border-[#E5E0D8] p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-emerald-600 animate-pulse" />
+          <span className="text-xs font-bold text-stone-700">{singlePoint.label}</span>
+        </div>
+        <div className="text-3xl font-extrabold text-emerald-800 font-mono">
+          {singlePoint.value} {singlePoint.value === 1 ? "case" : "cases"}
+        </div>
+        <span className="text-[11px] text-stone-500 font-mono">
+          Actual database activity recorded today
+        </span>
+      </div>
+    );
+  }
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
   const width = 500;
@@ -174,7 +195,7 @@ function TemporalLineVisualizer({ data }: { data: ChartDataPoint[] }) {
 }
 
 // 4. Comparison Workload Bar Visualizer
-function WorkloadComparisonVisualizer({ data, emptyMsg }: { data: ChartDataPoint[]; emptyMsg?: string }) {
+function WorkloadComparisonVisualizer({ data, emptyMsg = "No personnel assigned in this district." }: { data: ChartDataPoint[]; emptyMsg?: string }) {
   if (data.length === 0) return <ChartEmptyState message={emptyMsg} />;
 
   return (
@@ -273,7 +294,7 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardContent className="pt-2">
             <HorizontalRankedBarVisualizer
               data={charts.casesByVillage}
-              emptyMsg="No case hotspots detected for this period."
+              emptyMsg="No case hotspots recorded during this period."
             />
           </CardContent>
         </Card>

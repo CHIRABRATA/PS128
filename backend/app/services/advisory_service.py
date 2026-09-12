@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 import requests
 from typing import Dict, Any
@@ -9,13 +9,14 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-GEMINI_KEY_1 = os.getenv("GEMINI_API_KEY_1", "AQ.Ab8RN6Jxx9JXVFzialvgskCbCcu1nE4sb-boLb8FafKQ9xMqYg")
-GEMINI_KEY_2 = os.getenv("GEMINI_API_KEY_2", "AQ.Ab8RN6IUKUBq-F3C2V-yADZ-FyQtbVJBgYJ-p34EQFhEk52v4Q")
-GROQ_KEY = os.getenv("GROQ_API_KEY", "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")
+GEMINI_KEY_1 = os.getenv("GEMINI_API_KEY_1", os.getenv("GEMINI_API_KEY", ""))
+GEMINI_KEY_2 = os.getenv("GEMINI_API_KEY_2", "")
+GROQ_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 def _call_gemini(api_key: str, prompt: str) -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [{

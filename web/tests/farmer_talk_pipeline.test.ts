@@ -631,4 +631,108 @@ describe("Maitri Farmer Talk AI Pipeline & Question Answering Suite", () => {
       AuthorizationError
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // 19. Gemini Key Configuration Helper & Error Categorization
+  // ---------------------------------------------------------------------------
+  it("19. getGeminiConfig and getGeminiApiKey correctly resolve GEMINI_API_KEY_1 and GEMINI_API_KEY_2", async () => {
+    const { getGeminiConfig, getGeminiApiKey, logGeminiDiagnostics } = await import("@/lib/ai/farmer-talk");
+
+    // Case 1: Both GEMINI_API_KEY_1 and GEMINI_API_KEY_2 set
+    process.env.GEMINI_API_KEY_1 = "key-primary-1";
+    process.env.GEMINI_API_KEY_2 = "key-secondary-2";
+    delete process.env.GEMINI_API_KEY;
+
+    let config = getGeminiConfig();
+    expect(config.primaryKey).toBe("key-primary-1");
+    expect(config.secondaryKey).toBe("key-secondary-2");
+    expect(getGeminiApiKey("primary")).toBe("key-primary-1");
+    expect(getGeminiApiKey("secondary")).toBe("key-secondary-2");
+
+    let diag = logGeminiDiagnostics();
+    expect(diag.key1Configured).toBe("YES");
+    expect(diag.key2Configured).toBe("YES");
+    expect(diag.model).toBe("gemini-1.5-flash");
+
+    // Case 2: Only legacy GEMINI_API_KEY set
+    delete process.env.GEMINI_API_KEY_1;
+    delete process.env.GEMINI_API_KEY_2;
+    process.env.GEMINI_API_KEY = "legacy-key";
+
+    config = getGeminiConfig();
+    expect(config.primaryKey).toBe("legacy-key");
+    expect(config.secondaryKey).toBeNull();
+    diag = logGeminiDiagnostics();
+    expect(diag.key1Configured).toBe("YES");
+    expect(diag.key2Configured).toBe("NO");
+  });
+
+  it("20. categorizeGeminiError categorizes error status codes and messages properly", async () => {
+    const { categorizeGeminiError } = await import("@/lib/ai/farmer-talk");
+
+    expect(categorizeGeminiError(null, 401)).toBe("401");
+    expect(categorizeGeminiError(null, 403)).toBe("403");
+    expect(categorizeGeminiError(null, 404)).toBe("404");
+    expect(categorizeGeminiError(null, 429)).toBe("429");
+    expect(categorizeGeminiError(null, 500)).toBe("500");
+    expect(categorizeGeminiError(null, 503)).toBe("503");
+
+    expect(categorizeGeminiError(new Error("API key not valid"))).toBe("401");
+    expect(categorizeGeminiError(new Error("Permission denied for resource"))).toBe("403");
+    expect(categorizeGeminiError(new Error("models/gemini-not-found was not found"))).toBe("404");
+    expect(categorizeGeminiError(new Error("Resource has been exhausted (e.g. check quota)"))).toBe("429");
+    expect(categorizeGeminiError(new Error("Internal server error"))).toBe("500");
+    expect(categorizeGeminiError(new Error("Service unavailable"))).toBe("503");
+    expect(categorizeGeminiError(new DOMException("The operation was aborted", "TimeoutError"))).toBe("timeout");
+    expect(categorizeGeminiError(new SyntaxError("Unexpected token in JSON"))).toBe("parsing");
+    expect(categorizeGeminiError(new Error("Some unexpected exception"))).toBe("other");
+  });
+
+  it("21. deterministically fails over from GEMINI_API_KEY_1 (on HTTP 429) to GEMINI_API_KEY_2", async () => {
+    process.env.GEMINI_API_KEY_1 = "rate-limited-key-1";
+    process.env.GEMINI_API_KEY_2 = "working-key-2";
+
+    const fetchUrls: string[] = [];
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      const urlStr = String(url);
+      fetchUrls.push(urlStr);
+      if (urlStr.includes("key=rate-limited-key-1")) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        });
+      } else if (urlStr.includes("key=working-key-2")) {
+        return new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        answer: "Successfully answered using GEMINI_API_KEY_2 failover.",
+                        needs_veterinarian: false,
+                        risk_notice: null,
+                        suggested_next_step: "Regular check",
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response("Not found", { status: 404 });
+    });
+
+    const res = await generateFarmerTalkResponse(sampleAnimalContext, [], "What vaccinations are recorded?", "en");
+
+    expect(fetchUrls.length).toBe(2);
+    expect(fetchUrls[0]).toContain("key=rate-limited-key-1");
+    expect(fetchUrls[1]).toContain("key=working-key-2");
+    expect(res.answer).toBe("Successfully answered using GEMINI_API_KEY_2 failover.");
+  });
 });
+

@@ -20,6 +20,24 @@ export const FarmerTalkResponseSchema = z.object({
 
 export type FarmerTalkResponse = z.infer<typeof FarmerTalkResponseSchema>;
 
+export type GeminiErrorCategory =
+  | "401"
+  | "403"
+  | "404"
+  | "429"
+  | "500"
+  | "503"
+  | "timeout"
+  | "parsing"
+  | "configuration"
+  | "other";
+
+export interface GeminiKeyConfig {
+  primaryKey: string | null;
+  secondaryKey: string | null;
+  model: string;
+}
+
 export interface AnimalContextPacket {
   animalIdentity: {
     tag: string;
@@ -87,6 +105,103 @@ export interface AnimalContextPacket {
     collectedAt: string;
     resultSummary: string | null;
   }>;
+}
+
+/**
+ * Server-only configuration helper to resolve Gemini API keys and model.
+ * Deterministically prioritizes GEMINI_API_KEY_1, then GEMINI_API_KEY / GOOGLE_API_KEY.
+ * Secondary key is GEMINI_API_KEY_2.
+ * NEVER exposes key values to the client.
+ */
+export function getGeminiConfig(): GeminiKeyConfig {
+  const primaryKey =
+    process.env.GEMINI_API_KEY_1 ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GEMINI_API_KEY ||
+    null;
+
+  const secondaryKey = process.env.GEMINI_API_KEY_2 || null;
+
+  // Real GA standard model on Google AI v1beta
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
+  return { primaryKey, secondaryKey, model };
+}
+
+/**
+ * Retrieves the configured key for primary or secondary slot.
+ */
+export function getGeminiApiKey(type: "primary" | "secondary" = "primary"): string | null {
+  const config = getGeminiConfig();
+  return type === "primary" ? config.primaryKey : config.secondaryKey;
+}
+
+/**
+ * Logs safe diagnostics (configured: YES/NO, model name) without exposing key strings.
+ */
+export function logGeminiDiagnostics(): { key1Configured: "YES" | "NO"; key2Configured: "YES" | "NO"; model: string } {
+  const config = getGeminiConfig();
+  const key1Configured: "YES" | "NO" = config.primaryKey ? "YES" : "NO";
+  const key2Configured: "YES" | "NO" = config.secondaryKey ? "YES" : "NO";
+
+  console.info(`[FarmerTalk] Gemini Config Diagnostics -> GEMINI_API_KEY_1 configured: ${key1Configured} | GEMINI_API_KEY_2 configured: ${key2Configured} | model: ${config.model}`);
+
+  return {
+    key1Configured,
+    key2Configured,
+    model: config.model,
+  };
+}
+
+/**
+ * Categorizes errors safely into standardized failure buckets.
+ */
+export function categorizeGeminiError(err: unknown, statusCode?: number): GeminiErrorCategory {
+  if (statusCode === 401) return "401";
+  if (statusCode === 403) return "403";
+  if (statusCode === 404) return "404";
+  if (statusCode === 429) return "429";
+  if (statusCode === 500) return "500";
+  if (statusCode === 503) return "503";
+
+  if (err && typeof err === "object") {
+    const errorObj = err as { message?: unknown; name?: unknown; status?: unknown; code?: unknown };
+    const msg = typeof errorObj.message === "string" ? errorObj.message.toLowerCase() : "";
+    const name = typeof errorObj.name === "string" ? errorObj.name.toLowerCase() : "";
+    const code = typeof errorObj.code === "string" ? errorObj.code.toLowerCase() : "";
+
+    if (msg.includes("401") || msg.includes("unauthorized") || msg.includes("api key not valid")) return "401";
+    if (msg.includes("403") || msg.includes("forbidden") || msg.includes("permission denied")) return "403";
+    if (msg.includes("404") || msg.includes("not found")) return "404";
+    if (msg.includes("429") || msg.includes("quota") || msg.includes("rate limit") || msg.includes("resource_exhausted")) return "429";
+    if (msg.includes("500") || msg.includes("internal")) return "500";
+    if (msg.includes("503") || msg.includes("unavailable") || msg.includes("overloaded")) return "503";
+    if (
+      msg.includes("timeout") ||
+      msg.includes("abort") ||
+      name.includes("timeout") ||
+      name.includes("abort") ||
+      code.includes("timeout") ||
+      code.includes("abort")
+    ) {
+      return "timeout";
+    }
+    if (msg.includes("json") || msg.includes("parse") || name.includes("syntaxerror")) return "parsing";
+    if (msg.includes("config") || msg.includes("missing")) return "configuration";
+  } else if (typeof err === "string") {
+    const msg = err.toLowerCase();
+    if (msg.includes("401") || msg.includes("unauthorized")) return "401";
+    if (msg.includes("403") || msg.includes("forbidden")) return "403";
+    if (msg.includes("404") || msg.includes("not found")) return "404";
+    if (msg.includes("429") || msg.includes("quota") || msg.includes("rate limit")) return "429";
+    if (msg.includes("500") || msg.includes("internal")) return "500";
+    if (msg.includes("503") || msg.includes("unavailable")) return "503";
+    if (msg.includes("timeout") || msg.includes("abort")) return "timeout";
+    if (msg.includes("json") || msg.includes("parse")) return "parsing";
+    if (msg.includes("config") || msg.includes("missing")) return "configuration";
+  }
+  return "other";
 }
 
 export const SYSTEM_PROMPT = `
@@ -267,29 +382,51 @@ export function buildSafeHistoryFallback(
 }
 
 /**
- * LLM Call: Gemini REST API for a specific API Key
+ * LLM Call: Gemini REST API for a specific API Key and model
  */
-async function callGeminiWithKey(prompt: string, apiKey: string): Promise<string> {
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+async function callGeminiWithKey(prompt: string, apiKey: string, model: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
-      generationConfig: { responseMimeType: "application/json" },
-    }),
-    signal: AbortSignal.timeout(8000),
-  });
 
-  if (!response.ok) {
-    throw new Error(`TRANSIENT_ERROR: Gemini HTTP ${response.status}`);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        },
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (fetchErr: unknown) {
+    const category = categorizeGeminiError(fetchErr);
+    throw new Error(`GEMINI_FETCH_FAILED:${category}`);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const category = categorizeGeminiError(null, response.status);
+    throw new Error(`GEMINI_HTTP_FAILED:${category}:${response.status}`);
+  }
+
+  let data: {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{ text?: string }>;
+      };
+    }>;
+  };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch {
+    throw new Error("GEMINI_PARSE_FAILED:parsing");
+  }
+
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    throw new Error("TRANSIENT_ERROR: Empty response from Gemini");
+    throw new Error("GEMINI_EMPTY_RESPONSE:parsing");
   }
   return text;
 }
@@ -398,31 +535,46 @@ export async function generateFarmerTalkResponse(
 ): Promise<FarmerTalkResponse> {
   const prompt = buildUserPrompt(animalContext, conversationHistory, userMessage, preferredLanguage);
 
+  const { primaryKey, secondaryKey, model } = getGeminiConfig();
+  logGeminiDiagnostics();
+
   let rawJsonText: string | null = null;
   let providerUsed: string = "Static Fallback";
+  let primaryCategory: GeminiErrorCategory | null = null;
 
-  // Step 1: Attempt Gemini Key 1
-  const geminiKey1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-  if (geminiKey1) {
+  // Step 1: Attempt Primary Gemini Key (GEMINI_API_KEY_1 / GEMINI_API_KEY)
+  if (primaryKey) {
     try {
-      rawJsonText = await callGeminiWithKey(prompt, geminiKey1);
-      providerUsed = "Gemini (Key 1)";
+      rawJsonText = await callGeminiWithKey(prompt, primaryKey, model);
+      providerUsed = "Gemini (Primary Key)";
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      console.warn("[Farmer Talk] Gemini Key 1 failed, failing over to Key 2:", errorMsg);
+      primaryCategory = categorizeGeminiError(err);
+      console.warn(`[FarmerTalk] Gemini failure | error category: ${primaryCategory} | key: Primary`);
     }
+  } else {
+    primaryCategory = "configuration";
+    console.warn("[FarmerTalk] Gemini failure | error category: configuration | key: Primary not configured");
   }
 
-  // Step 2: Attempt Gemini Key 2 if Key 1 failed or was not configured
-  if (!rawJsonText) {
-    const geminiKey2 = process.env.GEMINI_API_KEY_2;
-    if (geminiKey2) {
+  // Step 2: Attempt Secondary Gemini Key (GEMINI_API_KEY_2)
+  // If primary key failed (due to 429 quota, 500/503 transient error, timeout, or missing primary key) and secondary key exists
+  if (!rawJsonText && secondaryKey) {
+    const shouldAttemptSecondary =
+      !primaryKey ||
+      primaryCategory === "429" ||
+      primaryCategory === "500" ||
+      primaryCategory === "503" ||
+      primaryCategory === "timeout" ||
+      primaryCategory === "configuration" ||
+      primaryCategory === "other";
+
+    if (shouldAttemptSecondary) {
       try {
-        rawJsonText = await callGeminiWithKey(prompt, geminiKey2);
-        providerUsed = "Gemini (Key 2)";
+        rawJsonText = await callGeminiWithKey(prompt, secondaryKey, model);
+        providerUsed = "Gemini (Secondary Key)";
       } catch (err: unknown) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        console.warn("[Farmer Talk] Gemini Key 2 failed, failing over to Groq:", errorMsg);
+        const secCategory = categorizeGeminiError(err);
+        console.warn(`[FarmerTalk] Gemini failure | error category: ${secCategory} | key: Secondary`);
       }
     }
   }
@@ -434,7 +586,7 @@ export async function generateFarmerTalkResponse(
       providerUsed = "Groq";
     } catch (groqErr: unknown) {
       const groqMsg = groqErr instanceof Error ? groqErr.message : String(groqErr);
-      console.warn("[Farmer Talk] Groq fallback failed:", groqMsg);
+      console.warn("[FarmerTalk] Groq fallback failed:", groqMsg);
     }
   }
 
@@ -456,7 +608,7 @@ export async function generateFarmerTalkResponse(
         console.warn(`[Farmer Talk Guardrail] AI response failed safety check (${providerUsed}):`, safetyCheck.reason);
       }
     } catch (e: unknown) {
-      console.warn(`[Farmer Talk] Failed parsing structured response from ${providerUsed}:`, e);
+      console.warn(`[FarmerTalk] Failed parsing structured response from ${providerUsed}:`, e);
     }
   }
 
