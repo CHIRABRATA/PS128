@@ -2,24 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { ShieldCheck, Stethoscope, Building2, User, Home } from "lucide-react";
+import { Show, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { ShieldCheck, Stethoscope, Building2, User, Home, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/layout/LocaleProvider";
 
 export function Navbar() {
   const pathname = usePathname();
   const { dictionary } = useLocale();
+  const { user } = useUser();
+
+  const userRole = (user?.publicMetadata?.role as string | undefined);
+  const activeRoleKey = userRole || (
+    pathname.startsWith("/admin")
+      ? "ADMIN"
+      : pathname.startsWith("/authority")
+      ? "DISTRICT_AUTHORITY"
+      : pathname.startsWith("/vet")
+      ? "VETERINARIAN"
+      : pathname.startsWith("/agent")
+      ? "FIELD_AGENT"
+      : "FARMER"
+  );
+  const roleLabel = dictionary.roles[activeRoleKey as keyof typeof dictionary.roles] || dictionary.roles.FARMER;
 
   const navLinks = [
     { href: "/farmer", label: dictionary.nav.farmer, icon: User },
     { href: "/agent", label: dictionary.nav.agent, icon: ShieldCheck },
     { href: "/vet", label: dictionary.nav.vet, icon: Stethoscope },
     { href: "/authority", label: dictionary.nav.authority, icon: Building2 },
+    { href: "/admin", label: dictionary.nav.admin || "Admin Panel", icon: Settings },
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#E5E0D8] bg-[#FAF8F3]/90 px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#E5E0D8] bg-[#FAF8F3]/95 px-4 md:px-8 backdrop-blur-md">
       {/* Brand Logo & Identity */}
       <Link href="/" className="flex items-center gap-3 group">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-800 text-white font-extrabold shadow-sm group-hover:bg-emerald-700 transition-colors">
@@ -29,7 +45,7 @@ export function Navbar() {
           <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
             {dictionary.app.title}
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-              {dictionary.roles.FARMER}
+              {roleLabel}
             </span>
           </span>
           <span className="text-[11px] text-stone-500 hidden sm:inline leading-tight">

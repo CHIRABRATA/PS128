@@ -11,6 +11,7 @@
     "agent": "মাঠকর্মী",
     "vet": "পশুচিকিৎসক",
     "authority": "জেলা কর্তৃপক্ষ",
+    "admin": "অ্যাডমিন প্যানেল",
     "signIn": "সাইন ইন",
     "signUp": "নিবন্ধন করুন",
     "signOut": "সাইন আউট",
@@ -20,7 +21,8 @@
     "FARMER": "কৃষক",
     "FIELD_AGENT": "মাঠকর্মী",
     "VETERINARIAN": "পশুচিকিৎসক",
-    "DISTRICT_AUTHORITY": "জেলা কর্তৃপক্ষ"
+    "DISTRICT_AUTHORITY": "জেলা কর্তৃপক্ষ",
+    "ADMIN": "অ্যাডমিন"
   },
   "actions": {
     "submit": "জমা দিন",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, ShieldCheck, Stethoscope, Building2 } from "lucide-react";
+import { Home, User, ShieldCheck, Stethoscope, Building2, Settings } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 
 export function MobileNav() {
@@ -15,6 +15,7 @@ export function MobileNav() {
     { href: "/agent", label: dictionary.nav.agent, icon: ShieldCheck },
     { href: "/vet", label: dictionary.nav.vet, icon: Stethoscope },
     { href: "/authority", label: dictionary.nav.authority, icon: Building2 },
+    { href: "/admin", label: dictionary.nav.admin || "Admin", icon: Settings },
   ];
 
   return (

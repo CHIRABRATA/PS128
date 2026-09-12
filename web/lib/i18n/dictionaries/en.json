@@ -11,6 +11,7 @@
     "agent": "Field Agent",
     "vet": "Veterinarian",
     "authority": "District Authority",
+    "admin": "Admin Panel",
     "signIn": "Sign In",
     "signUp": "Sign Up",
     "signOut": "Sign Out",
@@ -20,7 +21,8 @@
     "FARMER": "Farmer",
     "FIELD_AGENT": "Field Agent",
     "VETERINARIAN": "Veterinarian",
-    "DISTRICT_AUTHORITY": "District Authority"
+    "DISTRICT_AUTHORITY": "District Authority",
+    "ADMIN": "Admin"
   },
   "actions": {
     "submit": "Submit",

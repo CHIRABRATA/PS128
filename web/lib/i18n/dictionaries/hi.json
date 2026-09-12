@@ -11,6 +11,7 @@
     "agent": "फील्ड एजेंट",
     "vet": "पशु चिकित्सक",
     "authority": "जिला प्राधिकरण",
+    "admin": "एडमिन पैनल",
     "signIn": "लॉग इन करें",
     "signUp": "खाता बनाएं",
     "signOut": "लॉग आउट",
@@ -20,7 +21,8 @@
     "FARMER": "किसान",
     "FIELD_AGENT": "फील्ड एजेंट",
     "VETERINARIAN": "पशु चिकित्सक (डॉक्टर)",
-    "DISTRICT_AUTHORITY": "जिला पशु चिकित्सा अधिकारी"
+    "DISTRICT_AUTHORITY": "जिला पशु चिकित्सा अधिकारी",
+    "ADMIN": "एडमिन (Admin)"
   },
   "actions": {
     "submit": "जमा करें",
