@@ -172,5 +172,61 @@ describe("Bug Fix Verification: Vet Assignment Tie-Breaker & IoT Ingestion Cold 
         "Unable to reach the backend IoT ingestion service. Please try again."
       );
     });
+
+    describe("AI Clinical Case Analysis Idle Cold-Start Handling", () => {
+      it("returns friendly wake-up message when analyzeCase times out due to cold start", async () => {
+        const { runCaseAnalysisAction } = await import("@/lib/actions/analysis");
+
+        vi.spyOn(sessionAuth, "requireActiveUser").mockResolvedValue({
+          id: "vet_user_test",
+          clerkId: "clerk_vet_test",
+          role: "VETERINARIAN",
+          status: "ACTIVE",
+          districtId: "dist_1",
+          blockId: "block_1",
+          villageId: "village_1",
+        } as any);
+
+        vi.spyOn(prisma.case, "findUnique").mockResolvedValue({
+          id: "case_test_999",
+          caseNumber: "CASE-2026-999",
+          symptoms: ["Fever"],
+          durationDays: 2,
+          affectedCount: 1,
+          mortalityCount: 0,
+          photoUrl: null,
+          gpsLat: 28.6,
+          gpsLng: 77.2,
+          iotTelemetry: null,
+          analysisResult: null,
+          visionResult: null,
+          animal: {
+            id: "animal_999",
+            tag: "COW-999",
+            herd: {
+              species: "COW",
+              farm: {
+                village: {
+                  block: {
+                    districtId: "dist_1",
+                  },
+                },
+              },
+            },
+          },
+        } as any);
+
+        vi.spyOn(backendClient, "analyzeCase").mockRejectedValueOnce(
+          new backendClient.BackendTimeoutError("Request to AI Engine timed out after 30000ms.")
+        );
+
+        const result = await runCaseAnalysisAction("case_test_999");
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe(
+          "The livestock health backend is waking up from an idle state — please wait about 30 seconds and try again."
+        );
+      });
+    });
   });
 });

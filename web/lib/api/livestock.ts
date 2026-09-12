@@ -4,8 +4,8 @@ import {
   YoloVisionAnalysis,
 } from "@/lib/types/livestock";
 
-const DEFAULT_API_URL = "http://localhost:8000";
-const REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_API_URL = "https://ps128-livestock-api.onrender.com";
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export class LivestockApiError extends Error {
   readonly status: number;
@@ -20,7 +20,17 @@ export class LivestockApiError extends Error {
 }
 
 function getApiBaseUrl() {
-  return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+  const raw =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.AI_ENGINE_URL ||
+    process.env.BACKEND_URL ||
+    DEFAULT_API_URL;
+  let url = raw.replace(/\/$/, "");
+  if (url.endsWith("/api")) {
+    url = url.slice(0, -4);
+  }
+  return url;
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {

@@ -68,7 +68,7 @@ export interface AnalyzeRequestPayload {
   historical_weekly_cases?: number[];
 }
 
-const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds timeout
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds timeout for Render cold starts and multi-stream AI processing
 
 /**
  * Resolves the FastAPI AI Microservice Engine base URL across all supported environment variables.
@@ -367,7 +367,7 @@ export async function ingestIoTData(payload: IoTDataRequest): Promise<IoTDataRes
         body: JSON.stringify(payload),
         cache: "no-store",
       },
-      20000 // 20 seconds timeout for Render cold starts
+      DEFAULT_TIMEOUT_MS // 30 seconds timeout for Render cold starts
     );
 
     if (!response.ok) {

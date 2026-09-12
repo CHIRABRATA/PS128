@@ -10,6 +10,7 @@ import {
   getBackendHealth,
   AnalyzeRequestPayload,
   logSafeBackendDiagnostics,
+  BackendTimeoutError,
 } from "@/lib/api/backend-client";
 import { getHistoricalWeeklyCases } from "@/lib/api/historical";
 import { Prisma } from "@prisma/client";
@@ -220,6 +221,13 @@ export async function runCasePhotoVisionAction(caseId: string): Promise<Analysis
       }
     } catch (err: unknown) {
       console.error("[YOLO Vision Analysis Error]:", err);
+      if (err instanceof BackendTimeoutError) {
+        return {
+          success: false,
+          error:
+            "The livestock health backend is waking up from an idle state — please wait about 30 seconds and try again.",
+        };
+      }
       return {
         success: false,
         error: "AI vision service is temporarily unavailable. Please try again.",
@@ -288,6 +296,9 @@ export async function runCasePhotoVisionAction(caseId: string): Promise<Analysis
  */
 export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisActionResult> {
   try {
+    // Non-blocking pre-warm of idle backend container
+    getBackendHealth().catch(() => {});
+
     // 1. Authenticate user
     const appUser = await requireActiveUser();
 
@@ -390,6 +401,7 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
     };
 
     let analyzeSuccess = false;
+    let isTimeoutError = false;
 
     // 8. Execute POST /api/analyze with weather coordinates and YOLO output.
     try {
@@ -398,6 +410,9 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
       analyzeSuccess = true;
     } catch (err: unknown) {
       console.warn("[Case Analysis Execution Warning]:", err);
+      if (err instanceof BackendTimeoutError) {
+        isTimeoutError = true;
+      }
     }
 
     // 9. Update Prisma database record with results
@@ -414,7 +429,9 @@ export async function runCaseAnalysisAction(caseId: string): Promise<AnalysisAct
     if (!analyzeSuccess && !updatedVisionResult) {
       return {
         success: false,
-        error: "Report submitted. AI analysis is temporarily unavailable.",
+        error: isTimeoutError
+          ? "The livestock health backend is waking up from an idle state — please wait about 30 seconds and try again."
+          : "Report submitted. AI analysis is temporarily unavailable.",
         analysisResult: null,
         visionResult: null,
       };
