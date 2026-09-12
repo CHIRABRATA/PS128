@@ -92,6 +92,7 @@ export async function getAuthorizedCasePhoto(caseId: string): Promise<{
         id: true,
         photoUrl: true,
         createdByUserId: true,
+        assignedVeterinarianUserId: true,
         animal: {
           select: {
             herd: {
@@ -156,6 +157,7 @@ export async function deleteCasePhoto(caseId: string): Promise<{ success: boolea
         id: true,
         photoUrl: true,
         createdByUserId: true,
+        assignedVeterinarianUserId: true,
         animal: {
           select: {
             herd: {

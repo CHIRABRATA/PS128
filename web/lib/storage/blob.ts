@@ -1,5 +1,5 @@
 // import "server-only";
-import { put, del } from "@vercel/blob";
+import { put, del, get, GetBlobResult } from "@vercel/blob";
 
 export interface UploadResult {
   url: string;
@@ -31,7 +31,8 @@ export function validateImageFile(mimeType: string, sizeBytes: number): { valid:
 }
 
 /**
- * Uploads an image payload to Vercel Blob under a non-guessable private key structure.
+ * Uploads an image payload to Vercel Blob under a private key structure.
+ * Stored securely as access: 'private' so animal health data is protected.
  */
 export async function uploadToBlob(
   pathKey: string,
@@ -47,13 +48,7 @@ export async function uploadToBlob(
   }
 
   const blob = await put(pathKey, buffer, {
-    /**
-     * access: "public" is required for Vercel Blob to provide a public URL.
-     * If your Vercel Blob store is configured as 'Private' in the dashboard,
-     * this call will fail. To fix, go to Vercel Dashboard -> Storage -> Blob 
-     * and ensure the store is set to 'Public'.
-     */
-    access: "public",
+    access: "private",
     contentType,
     token,
   });
@@ -62,6 +57,29 @@ export async function uploadToBlob(
     url: blob.url,
     key: pathKey,
   };
+}
+
+/**
+ * Retrieves a private blob stream server-side for authorized users.
+ */
+export async function getPrivateBlobStream(
+  urlOrPathname: string
+): Promise<GetBlobResult | null> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+  if (!token || token.includes("placeholder") || urlOrPathname.includes("mock-blob.vercel-storage.com")) {
+    return null;
+  }
+
+  try {
+    return await get(urlOrPathname, {
+      access: "private",
+      token,
+    });
+  } catch (err) {
+    console.error(`[Private Blob Retrieval Failed] ${urlOrPathname}:`, err);
+    return null;
+  }
 }
 
 /**

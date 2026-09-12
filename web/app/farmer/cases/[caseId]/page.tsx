@@ -1,8 +1,8 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getFarmerCaseDetailAction } from "@/lib/actions/farmer";
+import { CasePhotoViewer } from "@/components/media/CasePhotoViewer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -357,16 +357,13 @@ export default async function FarmerCaseDetailPage({
             </div>
 
             {healthCase.photoUrl && (
-              <div className="space-y-1 pt-2">
+              <div className="space-y-1.5 pt-2">
                 <span className="text-stone-500 block font-medium">Submitted Lesion / Animal Photo:</span>
-                <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-[#E5E0D8]">
-                  <Image
-                    src={healthCase.photoUrl}
-                    alt="Clinical observation"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
+                <CasePhotoViewer
+                  caseId={healthCase.id}
+                  photoUrl={healthCase.photoUrl}
+                  alt="Submitted lesion photo"
+                />
               </div>
             )}
           </CardContent>

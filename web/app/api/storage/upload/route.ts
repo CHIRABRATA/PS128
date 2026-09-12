@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     // 2. Parse form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const submissionId = (formData.get("submissionId") as string | null) || "upload";
 
     if (!file) {
       return NextResponse.json({ error: "No image file provided." }, { status: 400 });
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // 4. Generate deterministic key structure based on submissionId for upload idempotency
+    // 4. Server-side pathname construction: uses authenticated user ID + cryptographically random UUID
     const extensionMap: Record<string, string> = {
       "image/jpeg": "jpg",
       "image/jpg": "jpg",
@@ -46,16 +45,10 @@ export async function POST(request: NextRequest) {
       "image/webp": "webp",
     };
     const ext = extensionMap[mimeType.toLowerCase()] || "jpg";
-    const sanitizeSubId = submissionId.replace(/[^a-zA-Z0-9_-]/g, "");
-    
-    // Deterministic key ensures retries after browser crashes re-use the exact same storage key
-    const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-    const objectKey =
-      submissionId && submissionId !== "upload" && submissionId !== "pending-submission"
-        ? `cases/${sanitizeSubId}/photo.${ext}`
-        : `cases/upload/${uniqueId}.${ext}`;
+    const randomIdentifier = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+    const objectKey = `cases/${appUser.id}/${randomIdentifier}.${ext}`;
 
-    // 5. Convert file to buffer and upload via storage abstraction
+    // 5. Convert file to buffer and upload via private storage abstraction
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 

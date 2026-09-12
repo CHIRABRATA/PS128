@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthorizedCasePhoto } from "@/lib/storage/auth";
+import { getPrivateBlobStream } from "@/lib/storage/blob";
 import fs from "fs";
 import path from "path";
 
@@ -16,15 +17,16 @@ export async function GET(
     const authResult = await getAuthorizedCasePhoto(caseId);
 
     if (!authResult.success || !authResult.photoUrl) {
+      const status = authResult.error?.includes("Unauthorized") ? 403 : authResult.error?.includes("not found") ? 404 : 403;
       return NextResponse.json(
         { error: authResult.error || "Photo access unauthorized or missing." },
-        { status: authResult.error?.includes("not found") ? 404 : 403 }
+        { status }
       );
     }
 
     const photoUrl = authResult.photoUrl;
 
-    // Helper to get fallback clinical image buffer
+    // Helper to get fallback clinical image buffer for dev/offline testing
     const getFallbackImageBuffer = () => {
       try {
         const filePath = path.join(process.cwd(), "public", "images", "clinical", "cattle_skin_lesions.jpg");
@@ -50,7 +52,8 @@ export async function GET(
             status: 200,
             headers: {
               "Content-Type": mime,
-              "Cache-Control": "private, max-age=3600",
+              "Cache-Control": "private, no-cache, no-store, must-revalidate",
+              "X-Content-Type-Options": "nosniff",
             },
           });
         }
@@ -69,28 +72,46 @@ export async function GET(
           status: 200,
           headers: {
             "Content-Type": mimeType,
-            "Cache-Control": "private, max-age=3600",
+            "Cache-Control": "private, no-cache, no-store, must-revalidate",
+            "X-Content-Type-Options": "nosniff",
           },
         });
       }
     }
 
-    // 3. Handle External URLs (Vercel Blob, S3, Cloudinary, Unsplash, etc.)
-    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
-      // If it's a mock url, return realistic fallback photo immediately
-      if (photoUrl.includes("mock-blob.vercel-storage.com")) {
-        const fallback = getFallbackImageBuffer();
-        if (fallback) {
-          return new NextResponse(fallback.buffer, {
-            status: 200,
-            headers: {
-              "Content-Type": fallback.contentType,
-              "Cache-Control": "private, max-age=3600",
-            },
-          });
-        }
+    // 3. Handle Private Vercel Blob Storage Retrieval
+    // Use native @vercel/blob get() with access: 'private'
+    if (photoUrl.includes("blob.vercel-storage.com") || photoUrl.startsWith("cases/")) {
+      const blobResult = await getPrivateBlobStream(photoUrl);
+      if (blobResult && blobResult.statusCode === 200 && blobResult.stream) {
+        return new NextResponse(blobResult.stream, {
+          status: 200,
+          headers: {
+            "Content-Type": blobResult.blob.contentType || "image/jpeg",
+            "Cache-Control": "private, no-cache, no-store, must-revalidate",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
       }
+    }
 
+    // 4. Handle Mock URL in local/dev environments
+    if (photoUrl.includes("mock-blob.vercel-storage.com")) {
+      const fallback = getFallbackImageBuffer();
+      if (fallback) {
+        return new NextResponse(fallback.buffer, {
+          status: 200,
+          headers: {
+            "Content-Type": fallback.contentType,
+            "Cache-Control": "private, no-cache, no-store, must-revalidate",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+    }
+
+    // 5. Handle External HTTP/HTTPS URLs with authenticated server fetch
+    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
       try {
         const blobResponse = await fetch(photoUrl, {
           headers: {
@@ -107,7 +128,7 @@ export async function GET(
               status: 200,
               headers: {
                 "Content-Type": contentType,
-                "Cache-Control": "private, max-age=3600",
+                "Cache-Control": "private, no-cache, no-store, must-revalidate",
                 "X-Content-Type-Options": "nosniff",
               },
             });
@@ -118,14 +139,15 @@ export async function GET(
       }
     }
 
-    // 4. Fallback: If external source is unreachable or 404s, return the realistic clinical photo
+    // 6. Fallback: If external source is unreachable or in dev without live blob token
     const fallback = getFallbackImageBuffer();
     if (fallback) {
       return new NextResponse(fallback.buffer, {
         status: 200,
         headers: {
           "Content-Type": fallback.contentType,
-          "Cache-Control": "private, max-age=3600",
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          "X-Content-Type-Options": "nosniff",
         },
       });
     }

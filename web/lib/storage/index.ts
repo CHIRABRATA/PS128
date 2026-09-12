@@ -2,6 +2,7 @@
 import {
   uploadToBlob,
   deleteFromBlob,
+  getPrivateBlobStream,
   validateImageFile,
   UploadResult,
   MAX_FILE_SIZE_BYTES,
@@ -11,6 +12,7 @@ import {
 export interface StorageProvider {
   upload(pathKey: string, buffer: Buffer, contentType: string): Promise<UploadResult>;
   delete(urlOrKey: string): Promise<void>;
+  getStream(urlOrPathname: string): ReturnType<typeof getPrivateBlobStream>;
 }
 
 /**
@@ -19,7 +21,8 @@ export interface StorageProvider {
 export const storageProvider: StorageProvider = {
   upload: uploadToBlob,
   delete: deleteFromBlob,
+  getStream: getPrivateBlobStream,
 };
 
-export { validateImageFile, MAX_FILE_SIZE_BYTES, ALLOWED_MIME_TYPES };
+export { validateImageFile, getPrivateBlobStream, MAX_FILE_SIZE_BYTES, ALLOWED_MIME_TYPES };
 export type { UploadResult };

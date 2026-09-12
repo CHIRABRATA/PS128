@@ -63,6 +63,7 @@ export function HealthReportForm({
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState<"idle" | "uploading" | "uploaded" | "failed">("idle");
   const [yoloVisionResult, setYoloVisionResult] = useState<YoloVisionAnalysis | null>(null);
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLng, setGpsLng] = useState<number | null>(null);
@@ -113,6 +114,7 @@ export function HealthReportForm({
     setHeartRate(null);
     setPhotoUrl(null);
     setPhotoBlob(null);
+    setPhotoUploadStatus("idle");
     setYoloVisionResult(null);
     setGpsLat(null);
     setGpsLng(null);
@@ -143,6 +145,10 @@ export function HealthReportForm({
         return;
       }
     }
+    if (step === 4 && photoUploadStatus === "uploading") {
+      setFormError("Please wait for the photo upload to complete before proceeding.");
+      return;
+    }
     setStep((prev) => Math.min(prev + 1, 7));
   };
 
@@ -160,6 +166,10 @@ export function HealthReportForm({
       setFormError("At least one symptom is required.");
       return;
     }
+    if (photoUploadStatus === "uploading") {
+      setFormError("Please wait for the photo upload to complete before submitting.");
+      return;
+    }
 
     const reportSubmissionId = submissionId === "pending-submission"
       ? `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -170,6 +180,9 @@ export function HealthReportForm({
     setFormError("");
 
     const activeClerkUserId = user?.id || "anonymous_user";
+
+    // Cleanse photoUrl so browser-local blob: URLs are never persisted as permanent server references
+    const persistentPhotoUrl = photoUrl && !photoUrl.startsWith("blob:") ? photoUrl : undefined;
 
     const reportPayload = {
       submissionId: reportSubmissionId,
@@ -182,7 +195,7 @@ export function HealthReportForm({
       temperature: temperature || undefined,
       activity: activity || undefined,
       heartRate: heartRate || undefined,
-      photoUrl: photoUrl || undefined,
+      photoUrl: persistentPhotoUrl,
       yoloVisionResult: yoloVisionResult || undefined,
       gpsLat: gpsLat || undefined,
       gpsLng: gpsLng || undefined,
@@ -211,7 +224,7 @@ export function HealthReportForm({
           mortalityCount,
           heartRate: heartRate || null,
           photoBlob: photoBlob || null,
-          photoUrl: photoUrl || null,
+          photoUrl: persistentPhotoUrl || null,
           gpsLat: gpsLat || null,
           gpsLng: gpsLng || null,
           iotData: {
@@ -246,7 +259,7 @@ export function HealthReportForm({
           heartRate: heartRate || null,
           gpsLat: gpsLat || null,
           gpsLng: gpsLng || null,
-          photoUrl: photoUrl || null,
+          photoUrl: persistentPhotoUrl || null,
           iotData: {
             temperature: temperature || null,
             activity: activity || null,
@@ -699,6 +712,7 @@ export function HealthReportForm({
               setPhotoBlob(blob);
             }}
             onChangePhotoUrl={setPhotoUrl}
+            onUploadStatusChange={setPhotoUploadStatus}
             onVisionResult={setYoloVisionResult}
             submissionId={submissionId}
             animalCategory={

@@ -2,16 +2,21 @@
 
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
+import { Camera, Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
 import { predictYoloImage } from "@/lib/api/livestock";
 import type { YoloVisionAnalysis } from "@/lib/types/livestock";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { getReportCopy } from "@/lib/i18n/report";
+
+export type PhotoUploadStatus = "idle" | "uploading" | "uploaded" | "failed";
 
 interface PhotoCaptureProps {
   photoUrl: string | null;
   onChangePhotoUrl?: (url: string | null) => void;
   onChangePhoto?: (url: string | null, blob: Blob | null) => void;
   onVisionResult?: (result: YoloVisionAnalysis | null) => void;
+  onUploadStatusChange?: (status: PhotoUploadStatus) => void;
   submissionId: string;
   animalCategory?: string;
 }
@@ -21,12 +26,16 @@ export function PhotoCapture({
   onChangePhotoUrl,
   onChangePhoto,
   onVisionResult,
+  onUploadStatusChange,
   submissionId,
   animalCategory = "cow"
 }: PhotoCaptureProps) {
+  const { locale } = useLocale();
+  const copy = getReportCopy(locale);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<boolean>(false);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<PhotoUploadStatus>(photoUrl ? "uploaded" : "idle");
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [visionResult, setVisionResult] = useState<YoloVisionAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +44,14 @@ export function PhotoCapture({
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
+  const setStatus = (status: PhotoUploadStatus) => {
+    setUploadStatus(status);
+    onUploadStatusChange?.(status);
+  };
+
   const processFile = async (file: File) => {
     setError(null);
+    setCurrentFile(file);
 
     // 1. Client-side UX Validation
     if (!ALLOWED_TYPES.includes(file.type.toLowerCase())) {
@@ -52,14 +67,14 @@ export function PhotoCapture({
       return;
     }
 
-    // 2. Set immediate local preview and notify parent of blob for offline resiliency
+    // 2. Set immediate local preview and notify parent of raw blob for offline resilience
     const previewUrl = URL.createObjectURL(file);
     setLocalPreview(previewUrl);
     onChangePhoto?.(null, file);
     onChangePhotoUrl?.(null);
-    setUploading(true);
+    setStatus("uploading");
 
-    // 3. Trigger AI Vision Prediction immediately (Parallel to upload for smoothness)
+    // 3. Trigger AI Vision Prediction in parallel
     const runVision = async () => {
       try {
         setAnalyzing(true);
@@ -75,11 +90,10 @@ export function PhotoCapture({
       }
     };
 
-    // Run vision in parallel
     runVision();
 
     try {
-      // 4. Attempt upload to secure endpoint
+      // 4. Attempt upload to secure endpoint (private Vercel Blob)
       const formData = new FormData();
       formData.append("file", file);
       formData.append("submissionId", submissionId);
@@ -95,25 +109,37 @@ export function PhotoCapture({
         throw new Error(data.error || "Failed to upload image to secure storage.");
       }
 
-      // 5. Update parent state with authorized storage reference and blob
+      // 5. Update parent state with durable private storage reference
       onChangePhoto?.(data.url, file);
       onChangePhotoUrl?.(data.url);
-      setError(null); // Clear any previous storage error on success
+      setStatus("uploaded");
+      setError(null);
     } catch (err: unknown) {
-      // F-01: On upload failure (e.g. offline), retain raw Blob in parent state for IndexedDB queue
+      // On upload failure: retain raw Blob in parent state for offline IndexedDB queue if offline,
+      // and display localized retry prompt without instructing user to make Blob public
       onChangePhoto?.(null, file);
       onChangePhotoUrl?.(null);
-      const msg = err instanceof Error ? err.message : "Image upload failed.";
-      
-      // If it's the Vercel Blob private store error, provide a more helpful message but don't block
-      if (msg.includes("private store")) {
-        setError(`Storage Configuration: The image is saved locally but could not be uploaded because the storage is set to 'Private'. Please set your Vercel Blob store to 'Public' for live sharing.`);
+      setStatus("failed");
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (isOffline) {
+        setError("Network offline: Photo saved locally on device and will sync automatically when reconnected.");
       } else {
-        setError(`Network unreachable: Photo stored locally on device for offline sync (${msg}).`);
+        const errorMsg = err instanceof Error ? err.message : "";
+        setError(
+          copy.photoUploadFailed ||
+          (errorMsg ? `Photo upload failed: ${errorMsg}. Please try uploading again.` : "Photo upload failed. Your photo is still available for retry. Please try uploading again.")
+        );
       }
     } finally {
-      setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRetry = () => {
+    if (currentFile) {
+      processFile(currentFile);
+    } else {
+      fileInputRef.current?.click();
     }
   };
 
@@ -144,8 +170,10 @@ export function PhotoCapture({
 
   const handleRemovePhoto = () => {
     setLocalPreview(null);
+    setCurrentFile(null);
     setVisionResult(null);
     setError(null);
+    setStatus("idle");
     onVisionResult?.(null);
     onChangePhoto?.(null, null);
     onChangePhotoUrl?.(null);
@@ -173,21 +201,22 @@ export function PhotoCapture({
         className="hidden"
       />
 
-      {/* Error display */}
+      {/* Error display with localized retry */}
       {error && (
-        <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2 animate-fade-in">
+        <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2.5 animate-fade-in shadow-2xs">
           <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-medium">{error}</p>
+          <div className="space-y-1.5 flex-1">
+            <p className="font-medium text-red-900">{error}</p>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-7 text-[11px] border-red-300 bg-white text-red-800 hover:bg-red-50 rounded-xl hover-lift-sm"
+              onClick={handleRetry}
+              disabled={uploadStatus === "uploading"}
+              className="h-7 text-xs border-red-300 bg-white text-red-800 hover:bg-red-50 rounded-xl cursor-pointer font-semibold gap-1.5"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Try again
+              <RefreshCw className="h-3 w-3" />
+              <span>{copy.photoRetry || "Try again"}</span>
             </Button>
           </div>
         </div>
@@ -196,10 +225,10 @@ export function PhotoCapture({
       {/* Preview or Upload Box */}
       {displayImage ? (
         <div className="relative rounded-2xl overflow-hidden border border-[#E5E0D8] bg-[#FAF8F3] max-h-64 flex flex-col items-center justify-center p-2 shadow-2xs animate-fade-in group">
-          {uploading && (
+          {uploadStatus === "uploading" && (
             <div className="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
               <Loader2 className="h-6 w-6 text-emerald-700 animate-spin" />
-              <span className="text-xs text-stone-700 font-medium">Uploading image securely...</span>
+              <span className="text-xs text-stone-700 font-medium">{copy.photoUploading || "Uploading image securely..."}</span>
             </div>
           )}
 
@@ -207,8 +236,18 @@ export function PhotoCapture({
           <img
             src={displayImage}
             alt="Animal Health Inspection Preview"
-            className="max-h-56 object-contain rounded-xl transition-transform duration-300 group-hover:scale-[1.02]"
+            className="max-h-56 object-contain rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
           />
+
+          {/* Upload Status Badge */}
+          {uploadStatus === "uploaded" && (
+            <div className="absolute top-3 left-3">
+              <Badge className="bg-emerald-600 text-white border-emerald-500 backdrop-blur-sm gap-1 px-2.5 py-0.5 shadow-md text-[10px] font-bold">
+                <CheckCircle2 className="h-3 w-3" />
+                <span>{copy.photoUploaded || "Photo uploaded securely"}</span>
+              </Badge>
+            </div>
+          )}
 
           {visionResult && !analyzing && (
             <div className="absolute bottom-3 left-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -236,8 +275,8 @@ export function PhotoCapture({
               size="sm"
               variant="destructive"
               onClick={handleRemovePhoto}
-              disabled={uploading}
-              className="h-8 w-8 p-0 rounded-full bg-red-700 hover:bg-red-800 text-white shadow-md cursor-pointer hover-lift-sm"
+              disabled={uploadStatus === "uploading"}
+              className="h-8 w-8 p-0 rounded-full bg-red-700 hover:bg-red-800 text-white shadow-md cursor-pointer"
               title="Remove photo"
             >
               <Trash2 className="h-4 w-4" />
@@ -246,7 +285,7 @@ export function PhotoCapture({
         </div>
       ) : (
         <div
-          onClick={() => !uploading && fileInputRef.current?.click()}
+          onClick={() => uploadStatus !== "uploading" && fileInputRef.current?.click()}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
