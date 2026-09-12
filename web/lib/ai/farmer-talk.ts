@@ -346,12 +346,16 @@ INSTRUCTIONS FOR GENERATING RESPONSE:
 export function buildSafeHistoryFallback(
   animalContext: AnimalContextPacket,
   preferredLanguage: string,
-  hasHighRisk: boolean
+  hasHighRisk: boolean,
+  userMessage?: string
 ): FarmerTalkResponse {
   const vaxCount = animalContext.vaccinations.length;
   const treatCount = animalContext.treatments.length;
   const caseCount = animalContext.recentCases.length;
   const tag = animalContext.animalIdentity.tag;
+
+  const isAskingVet = userMessage ? /\b(doctor|vet|veterinarian|hospital|clinic|डाक्टर|डॉक्टर|पशु\s*चिकित्सक|ডাক্তার|পশুवैद्य)\b/i.test(userMessage) : false;
+  const needsVet = hasHighRisk || isAskingVet || animalContext.recentCases.some((c) => c.symptoms.length > 0);
 
   const fallbackMessages: Record<string, string> = {
     en: `I am currently unable to generate an AI response right now. Here is the information recorded for Animal ${tag}: ${caseCount} recent health record(s), ${vaxCount} vaccination record(s), and ${treatCount} treatment record(s). For clinical advice, please consult your local veterinarian or field agent.`,
@@ -364,7 +368,7 @@ export function buildSafeHistoryFallback(
 
   return {
     answer,
-    needs_veterinarian: hasHighRisk,
+    needs_veterinarian: needsVet,
     risk_notice: hasHighRisk
       ? {
           en: `Escalation Notice: A HIGH or CRITICAL risk is recorded for animal #${tag}. Please contact a veterinarian immediately.`,
@@ -417,7 +421,10 @@ async function callGeminiWithKey(
   try {
     response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         systemInstruction: {
           parts: [{ text: SYSTEM_PROMPT }],
@@ -713,6 +720,6 @@ export async function generateFarmerTalkResponse(
     (c) => c.overallRiskLevel === "HIGH" || c.overallRiskLevel === "CRITICAL"
   );
 
-  return buildSafeHistoryFallback(animalContext, preferredLanguage, hasHighRisk);
+  return buildSafeHistoryFallback(animalContext, preferredLanguage, hasHighRisk, userMessage);
 }
 
