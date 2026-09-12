@@ -733,6 +733,223 @@ describe("Maitri Farmer Talk AI Pipeline & Question Answering Suite", () => {
     expect(fetchUrls[0]).toContain("key=rate-limited-key-1");
     expect(fetchUrls[1]).toContain("key=working-key-2");
     expect(res.answer).toBe("Successfully answered using GEMINI_API_KEY_2 failover.");
+    expect(res.provider).toBe("GEMINI");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 22. Gemini Key 1 Success sets provider = GEMINI
+  // ---------------------------------------------------------------------------
+  it("22. Gemini Key 1 success returns valid response with provider = GEMINI", async () => {
+    process.env.GEMINI_API_KEY_1 = "valid-key-1";
+    delete process.env.GEMINI_API_KEY_2;
+
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      if (String(url).includes("key=valid-key-1")) {
+        return new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        answer: "Cow COW-101 has 2 vaccinations recorded.",
+                        needs_veterinarian: false,
+                        risk_notice: null,
+                        suggested_next_step: "Monitor routine care",
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response("Not found", { status: 404 });
+    });
+
+    const res = await generateFarmerTalkResponse(sampleAnimalContext, [], "What vaccinations are recorded?", "en");
+    expect(res.answer).toBe("Cow COW-101 has 2 vaccinations recorded.");
+    expect(res.provider).toBe("GEMINI");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 23. Both Gemini Keys Fail -> Groq Success
+  // ---------------------------------------------------------------------------
+  it("23. Both Gemini keys fail -> falls back to Groq successfully with provider = GROQ", async () => {
+    process.env.GEMINI_API_KEY_1 = "failing-key-1";
+    process.env.GEMINI_API_KEY_2 = "failing-key-2";
+    process.env.GROQ_API_KEY = "working-groq-key";
+    process.env.GROQ_MODEL = "llama-3.3-70b-versatile";
+
+    const fetchUrls: string[] = [];
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      const urlStr = String(url);
+      fetchUrls.push(urlStr);
+      if (urlStr.includes("key=failing-key-1")) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401 });
+      }
+      if (urlStr.includes("key=failing-key-2")) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401 });
+      }
+      if (urlStr.includes("groq.com")) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    answer: "Generated via Groq fallback: Cow COW-101 is doing well.",
+                    needs_veterinarian: false,
+                    risk_notice: null,
+                    suggested_next_step: "Routine checkup",
+                  }),
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response("Not found", { status: 404 });
+    });
+
+    const res = await generateFarmerTalkResponse(sampleAnimalContext, [], "How is my cow?", "en");
+    expect(fetchUrls.length).toBe(3);
+    expect(fetchUrls[0]).toContain("key=failing-key-1");
+    expect(fetchUrls[1]).toContain("key=failing-key-2");
+    expect(fetchUrls[2]).toContain("groq.com");
+    expect(res.answer).toBe("Generated via Groq fallback: Cow COW-101 is doing well.");
+    expect(res.provider).toBe("GROQ");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 24. All Providers Fail -> Deterministic Fallback
+  // ---------------------------------------------------------------------------
+  it("24. All providers fail (Gemini 1, Gemini 2, Groq) -> returns honest deterministic fallback", async () => {
+    process.env.GEMINI_API_KEY_1 = "failing-key-1";
+    process.env.GEMINI_API_KEY_2 = "failing-key-2";
+    process.env.GROQ_API_KEY = "failing-groq-key";
+
+    global.fetch = vi.fn().mockImplementation(async () => {
+      return new Response(JSON.stringify({ error: "Service unavailable" }), { status: 503 });
+    });
+
+    const res = await generateFarmerTalkResponse(sampleAnimalContext, [], "Should I contact a veterinarian?", "en");
+    expect(res.provider).toBe("DETERMINISTIC_FALLBACK");
+    expect(res.answer).toContain("I am currently unable to generate an AI response right now.");
+    expect(res.answer).toContain("1 recent health record(s), 2 vaccination record(s), and 1 treatment record(s)");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 25. Consistent Context Across Consecutive Requests for cow-004
+  // ---------------------------------------------------------------------------
+  it("25. verifies cow-004 context remains consistent across consecutive questions without record count fluctuating", async () => {
+    const cow004Context: AnimalContextPacket = {
+      animalIdentity: {
+        tag: "cow-004",
+        species: "COW",
+        breed: "Gir Cross",
+        ageMonths: 24,
+      },
+      location: {
+        farmName: "Patil Farm",
+        villageName: "Wagholi",
+        blockName: "Haveli",
+        districtName: "Pune",
+      },
+      recentCases: [
+        {
+          caseNumber: "CASE-2026-004A",
+          status: "PENDING_REVIEW",
+          reportedAt: "2026-09-10T10:00:00.000Z",
+          symptoms: ["Fever"],
+          durationDays: 2,
+          affectedCount: 1,
+          mortalityCount: 0,
+          overallRiskLevel: "MEDIUM",
+          suspectedCondition: null,
+          vetDiagnosis: null,
+          vetAction: null,
+          sanitizedVetNotes: null,
+        },
+        {
+          caseNumber: "CASE-2026-004B",
+          status: "CLOSED_HARMLESS",
+          reportedAt: "2026-08-15T09:00:00.000Z",
+          symptoms: ["Mild lethargy"],
+          durationDays: 1,
+          affectedCount: 1,
+          mortalityCount: 0,
+          overallRiskLevel: "LOW",
+          suspectedCondition: null,
+          vetDiagnosis: null,
+          vetAction: null,
+          sanitizedVetNotes: null,
+        },
+      ],
+      vaccinations: [],
+      treatments: [],
+      veterinaryReports: [],
+      iotTelemetry: null,
+      samples: [],
+    };
+
+    // Simulated provider outage -> both requests trigger fallback
+    global.fetch = vi.fn().mockImplementation(async () => {
+      return new Response(JSON.stringify({ error: "Quota exceeded" }), { status: 429 });
+    });
+
+    // Request 1: "Why is my animal at risk?"
+    const res1 = await generateFarmerTalkResponse(cow004Context, [], "Why is my animal at risk?", "en");
+
+    // Request 2: "Should I contact a veterinarian?"
+    const res2 = await generateFarmerTalkResponse(
+      cow004Context,
+      [
+        { role: "user", content: "Why is my animal at risk?" },
+        { role: "assistant", content: res1.answer },
+      ],
+      "Should I contact a veterinarian?",
+      "en"
+    );
+
+    // Both requests evaluate against the same verified record counts
+    expect(res1.answer).toContain("2 recent health record(s), 0 vaccination record(s), and 0 treatment record(s)");
+    expect(res2.answer).toContain("2 recent health record(s), 0 vaccination record(s), and 0 treatment record(s)");
+    expect(res1.provider).toBe("DETERMINISTIC_FALLBACK");
+    expect(res2.provider).toBe("DETERMINISTIC_FALLBACK");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 26. Malformed JSON Provider Response Handled Gracefully
+  // ---------------------------------------------------------------------------
+  it("26. handles malformed/corrupted JSON from provider and gracefully falls back", async () => {
+    process.env.GEMINI_API_KEY_1 = "key-malformed";
+    delete process.env.GEMINI_API_KEY_2;
+    delete process.env.GROQ_API_KEY;
+
+    global.fetch = vi.fn().mockImplementation(async () => {
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: "NOT_VALID_JSON { answer: unclosed..." }],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    });
+
+    const res = await generateFarmerTalkResponse(sampleAnimalContext, [], "What is my animal's temperature?", "en");
+    expect(res.provider).toBe("DETERMINISTIC_FALLBACK");
+    expect(res.answer).toContain("I am currently unable to generate an AI response right now.");
   });
 });
+
 

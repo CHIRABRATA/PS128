@@ -85,16 +85,16 @@ describe("Error Boundaries with Recovery Actions (Batch 2)", () => {
     expect(resetMock).toHaveBeenCalledTimes(1);
   });
 
-  it("renders Authority portal error boundary and triggers reset on Reload Surveillance click", () => {
+  it("renders Authority portal error boundary and triggers reset on Retry Query click", () => {
     const resetMock = vi.fn();
     const testError = new Error("GIS service unreachable");
 
     render(<AuthorityError error={testError} reset={resetMock} />);
 
-    expect(screen.getByText(/Surveillance Portal Error/i)).toBeInTheDocument();
+    expect(screen.getByText(/Unable to load district data/i)).toBeInTheDocument();
     expect(screen.getByText(/GIS service unreachable/i)).toBeInTheDocument();
 
-    const reloadBtn = screen.getByRole("button", { name: /Reload Surveillance/i });
+    const reloadBtn = screen.getByRole("button", { name: /Retry Query/i });
     fireEvent.click(reloadBtn);
     expect(resetMock).toHaveBeenCalledTimes(1);
   });

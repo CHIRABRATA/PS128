@@ -16,6 +16,7 @@ export const FarmerTalkResponseSchema = z.object({
   needs_veterinarian: z.boolean().default(false),
   risk_notice: z.string().nullable().optional(),
   suggested_next_step: z.string().optional(),
+  provider: z.enum(["GEMINI", "GROQ", "DETERMINISTIC_FALLBACK"]).optional(),
 });
 
 export type FarmerTalkResponse = z.infer<typeof FarmerTalkResponseSchema>;
@@ -378,13 +379,38 @@ export function buildSafeHistoryFallback(
       mr: "पशुवैद्यकाशी संपर्क साधा",
       en: "Contact Veterinarian",
     }[preferredLanguage] || "Contact Veterinarian",
+    provider: "DETERMINISTIC_FALLBACK",
   };
+}
+
+export class ProviderError extends Error {
+  statusCode?: number;
+  category: GeminiErrorCategory;
+  provider: "Gemini (Key 1)" | "Gemini (Key 2)" | "Groq";
+
+  constructor(
+    provider: "Gemini (Key 1)" | "Gemini (Key 2)" | "Groq",
+    category: GeminiErrorCategory,
+    message: string,
+    statusCode?: number
+  ) {
+    super(message);
+    this.name = "ProviderError";
+    this.provider = provider;
+    this.category = category;
+    this.statusCode = statusCode;
+  }
 }
 
 /**
  * LLM Call: Gemini REST API for a specific API Key and model
  */
-async function callGeminiWithKey(prompt: string, apiKey: string, model: string): Promise<string> {
+async function callGeminiWithKey(
+  prompt: string,
+  apiKey: string,
+  model: string,
+  keyLabel: "Gemini (Key 1)" | "Gemini (Key 2)"
+): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   let response: Response;
@@ -393,7 +419,15 @@ async function callGeminiWithKey(prompt: string, apiKey: string, model: string):
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
+        systemInstruction: {
+          parts: [{ text: SYSTEM_PROMPT }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.2,
@@ -403,12 +437,17 @@ async function callGeminiWithKey(prompt: string, apiKey: string, model: string):
     });
   } catch (fetchErr: unknown) {
     const category = categorizeGeminiError(fetchErr);
-    throw new Error(`GEMINI_FETCH_FAILED:${category}`);
+    throw new ProviderError(keyLabel, category, `Fetch failed: ${category}`);
   }
 
   if (!response.ok) {
     const category = categorizeGeminiError(null, response.status);
-    throw new Error(`GEMINI_HTTP_FAILED:${category}:${response.status}`);
+    throw new ProviderError(
+      keyLabel,
+      category,
+      `HTTP ${response.status}`,
+      response.status
+    );
   }
 
   let data: {
@@ -421,12 +460,12 @@ async function callGeminiWithKey(prompt: string, apiKey: string, model: string):
   try {
     data = (await response.json()) as typeof data;
   } catch {
-    throw new Error("GEMINI_PARSE_FAILED:parsing");
+    throw new ProviderError(keyLabel, "parsing", "Failed to parse JSON response");
   }
 
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    throw new Error("GEMINI_EMPTY_RESPONSE:parsing");
+    throw new ProviderError(keyLabel, "parsing", "Empty candidate response text");
   }
   return text;
 }
@@ -437,37 +476,50 @@ async function callGeminiWithKey(prompt: string, apiKey: string, model: string):
 async function callGroqProvider(prompt: string): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    throw new Error("CONFIG_ERROR: GROQ_API_KEY is missing from environment");
+    throw new ProviderError("Groq", "configuration", "GROQ_API_KEY is missing from environment");
   }
 
   const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
   const url = "https://api.groq.com/openai/v1/chat/completions";
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    }),
-    signal: AbortSignal.timeout(8000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`TRANSIENT_ERROR: Groq HTTP ${response.status}`);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (err: unknown) {
+    const category = categorizeGeminiError(err);
+    throw new ProviderError("Groq", category, `Groq fetch failed: ${category}`);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const category = categorizeGeminiError(null, response.status);
+    throw new ProviderError("Groq", category, `HTTP ${response.status}`, response.status);
+  }
+
+  let data: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch {
+    throw new ProviderError("Groq", "parsing", "Failed to parse Groq JSON response");
+  }
+
   const text = data?.choices?.[0]?.message?.content;
   if (!text) {
-    throw new Error("TRANSIENT_ERROR: Empty response from Groq");
+    throw new ProviderError("Groq", "parsing", "Empty response from Groq");
   }
   return text;
 }
@@ -539,28 +591,41 @@ export async function generateFarmerTalkResponse(
   logGeminiDiagnostics();
 
   let rawJsonText: string | null = null;
-  let providerUsed: string = "Static Fallback";
+  let providerUsed: "GEMINI" | "GROQ" | "DETERMINISTIC_FALLBACK" = "DETERMINISTIC_FALLBACK";
   let primaryCategory: GeminiErrorCategory | null = null;
 
   // Step 1: Attempt Primary Gemini Key (GEMINI_API_KEY_1 / GEMINI_API_KEY)
   if (primaryKey) {
+    const startTime1 = Date.now();
+    console.info(`[FarmerTalk] Gemini attempt 1 started (Model: ${model})`);
     try {
-      rawJsonText = await callGeminiWithKey(prompt, primaryKey, model);
-      providerUsed = "Gemini (Primary Key)";
+      rawJsonText = await callGeminiWithKey(prompt, primaryKey, model, "Gemini (Key 1)");
+      providerUsed = "GEMINI";
+      console.info(`[FarmerTalk] Gemini attempt 1 succeeded in ${Date.now() - startTime1}ms`);
     } catch (err: unknown) {
-      primaryCategory = categorizeGeminiError(err);
-      console.warn(`[FarmerTalk] Gemini failure | error category: ${primaryCategory} | key: Primary`);
+      const elapsed = Date.now() - startTime1;
+      if (err instanceof ProviderError) {
+        primaryCategory = err.category;
+        console.warn(
+          `[FarmerTalk] Gemini attempt 1 failed: ${err.statusCode ? `HTTP ${err.statusCode}` : err.message} (${err.category}) in ${elapsed}ms`
+        );
+      } else {
+        primaryCategory = categorizeGeminiError(err);
+        console.warn(`[FarmerTalk] Gemini attempt 1 failed: (${primaryCategory}) in ${elapsed}ms`);
+      }
     }
   } else {
     primaryCategory = "configuration";
-    console.warn("[FarmerTalk] Gemini failure | error category: configuration | key: Primary not configured");
+    console.warn("[FarmerTalk] Gemini attempt 1 skipped: GEMINI_API_KEY_1 is not configured");
   }
 
   // Step 2: Attempt Secondary Gemini Key (GEMINI_API_KEY_2)
-  // If primary key failed (due to 429 quota, 500/503 transient error, timeout, or missing primary key) and secondary key exists
+  // If primary key failed and secondary key exists
   if (!rawJsonText && secondaryKey) {
     const shouldAttemptSecondary =
       !primaryKey ||
+      primaryCategory === "401" ||
+      primaryCategory === "403" ||
       primaryCategory === "429" ||
       primaryCategory === "500" ||
       primaryCategory === "503" ||
@@ -569,24 +634,51 @@ export async function generateFarmerTalkResponse(
       primaryCategory === "other";
 
     if (shouldAttemptSecondary) {
+      const startTime2 = Date.now();
+      console.info(`[FarmerTalk] Gemini attempt 2 started (Model: ${model})`);
       try {
-        rawJsonText = await callGeminiWithKey(prompt, secondaryKey, model);
-        providerUsed = "Gemini (Secondary Key)";
+        rawJsonText = await callGeminiWithKey(prompt, secondaryKey, model, "Gemini (Key 2)");
+        providerUsed = "GEMINI";
+        console.info(`[FarmerTalk] Gemini attempt 2 succeeded in ${Date.now() - startTime2}ms`);
       } catch (err: unknown) {
-        const secCategory = categorizeGeminiError(err);
-        console.warn(`[FarmerTalk] Gemini failure | error category: ${secCategory} | key: Secondary`);
+        const elapsed = Date.now() - startTime2;
+        if (err instanceof ProviderError) {
+          console.warn(
+            `[FarmerTalk] Gemini attempt 2 failed: ${err.statusCode ? `HTTP ${err.statusCode}` : err.message} (${err.category}) in ${elapsed}ms`
+          );
+        } else {
+          const secCategory = categorizeGeminiError(err);
+          console.warn(`[FarmerTalk] Gemini attempt 2 failed: (${secCategory}) in ${elapsed}ms`);
+        }
       }
     }
+  } else if (!rawJsonText && !secondaryKey) {
+    console.info("[FarmerTalk] Gemini attempt 2 skipped: GEMINI_API_KEY_2 is not configured");
   }
 
   // Step 3: Attempt Groq Fallback if both Gemini keys failed or were not configured
   if (!rawJsonText) {
-    try {
-      rawJsonText = await callGroqProvider(prompt);
-      providerUsed = "Groq";
-    } catch (groqErr: unknown) {
-      const groqMsg = groqErr instanceof Error ? groqErr.message : String(groqErr);
-      console.warn("[FarmerTalk] Groq fallback failed:", groqMsg);
+    if (process.env.GROQ_API_KEY) {
+      const startTimeGroq = Date.now();
+      const groqModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+      console.info(`[FarmerTalk] Groq attempt started (Model: ${groqModel})`);
+      try {
+        rawJsonText = await callGroqProvider(prompt);
+        providerUsed = "GROQ";
+        console.info(`[FarmerTalk] Groq succeeded in ${Date.now() - startTimeGroq}ms`);
+      } catch (groqErr: unknown) {
+        const elapsed = Date.now() - startTimeGroq;
+        if (groqErr instanceof ProviderError) {
+          console.warn(
+            `[FarmerTalk] Groq failed: ${groqErr.statusCode ? `HTTP ${groqErr.statusCode}` : groqErr.message} (${groqErr.category}) in ${elapsed}ms`
+          );
+        } else {
+          const groqMsg = groqErr instanceof Error ? groqErr.message : String(groqErr);
+          console.warn(`[FarmerTalk] Groq failed: ${groqMsg} in ${elapsed}ms`);
+        }
+      }
+    } else {
+      console.info("[FarmerTalk] Groq fallback skipped: GROQ_API_KEY is not configured");
     }
   }
 
@@ -603,7 +695,10 @@ export async function generateFarmerTalkResponse(
       // Layer 3 & 4: Application & Heuristic Safety Checks
       const safetyCheck = inspectOutputSafety(validated.answer);
       if (safetyCheck.isSafe) {
-        return validated;
+        return {
+          ...validated,
+          provider: providerUsed,
+        };
       } else {
         console.warn(`[Farmer Talk Guardrail] AI response failed safety check (${providerUsed}):`, safetyCheck.reason);
       }
@@ -613,9 +708,11 @@ export async function generateFarmerTalkResponse(
   }
 
   // Layer 5: Safe Fallback Response (Honest Fallback)
+  console.info("[FarmerTalk] Executing deterministic safe-history fallback");
   const hasHighRisk = animalContext.recentCases.some(
     (c) => c.overallRiskLevel === "HIGH" || c.overallRiskLevel === "CRITICAL"
   );
 
   return buildSafeHistoryFallback(animalContext, preferredLanguage, hasHighRisk);
 }
+

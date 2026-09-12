@@ -85,18 +85,33 @@ def disease_metadata(label: str, animal_lower: str) -> dict:
 
 
 class VisionService:
-    def __init__(self, models_dir: str | None = None):
+    def __init__(self, models_dir: str | Path | None = None):
         if models_dir is None:
             models_dir = Path(__file__).resolve().parents[1] / "ml_artifacts"
         else:
             models_dir = Path(models_dir)
 
-        # Load models using Ultralytics YOLO class
-        pet_path = models_dir / "model_pet.pt"
-        cow_path = models_dir / "model_cow.pt"
+        self.models_dir = models_dir
+        self._pet_model = None
+        self._cow_model = None
 
-        self.pet_model = YOLO(pet_path)
-        self.cow_model = YOLO(cow_path)
+    @property
+    def pet_model(self) -> YOLO:
+        if self._pet_model is None:
+            pet_path = self.models_dir / "model_pet.pt"
+            if not pet_path.exists():
+                raise FileNotFoundError(f"Pet YOLO model file not found at: {pet_path}")
+            self._pet_model = YOLO(str(pet_path))
+        return self._pet_model
+
+    @property
+    def cow_model(self) -> YOLO:
+        if self._cow_model is None:
+            cow_path = self.models_dir / "model_cow.pt"
+            if not cow_path.exists():
+                raise FileNotFoundError(f"Cow YOLO model file not found at: {cow_path}")
+            self._cow_model = YOLO(str(cow_path))
+        return self._cow_model
 
     def predict_image_lesions(
         self,
@@ -124,58 +139,57 @@ class VisionService:
         )
         return prediction
 
-    def predict(self, image_bytes: bytes, animal_type: str) -> dict:
+    def predict(self, image_bytes: bytes, animal_type: str = "cow") -> dict:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
         animal_lower = str(animal_type).strip().lower()
 
-        # Select the requested model explicitly; never use the cow model as a fallback.
-        if animal_lower in ["pet", "dog", "cat"] and self.pet_model is not None:
-            pet_labels = {str(label).strip().lower() for label in self.pet_model.names.values()}
+        # Select the requested model on-demand
+        if animal_lower in ["pet", "dog", "cat"]:
+            model = self.pet_model
+            pet_labels = {str(label).strip().lower() for label in model.names.values()}
             if pet_labels == CATTLE_MODEL_LABELS:
                 raise ValueError(
                     "The pet model contains cattle disease classes. "
                     "Replace app/ml_artifacts/model_pet.pt with a pet-trained model."
                 )
-            model = self.pet_model
-        elif animal_lower in ["cow", "cattle", "livestock", "buffalo", "sheep", "goat"] and self.cow_model is not None:
+        elif animal_lower in ["cow", "cattle", "livestock", "buffalo", "sheep", "goat"]:
             model = self.cow_model
         else:
-            # Fallback to cow model for other livestock species if available
-            if self.cow_model is not None:
-                model = self.cow_model
-            else:
-                raise ValueError(f"No valid model available for animal category: '{animal_type}'")
+            # Fallback to cow model for general livestock
+            model = self.cow_model
 
-        # Perform inference
-        results = model(image)
+        # Perform inference with verbose=False to minimize overhead
+        results = model(image, verbose=False)
         result = results[0]  # First image output
 
         # For Classification Models (YOLOv8-cls)
         if hasattr(result, "probs") and result.probs is not None:
-            top_idx = result.probs.top1
+            top_idx = int(result.probs.top1)
             top_conf = float(result.probs.top1conf)
             class_name = format_label(result.names[top_idx])
+
+            top_predictions = []
+            if hasattr(result.probs, "top5") and hasattr(result.probs, "top5conf"):
+                for idx, conf in zip(result.probs.top5, result.probs.top5conf):
+                    top_predictions.append({
+                        "condition": format_label(result.names[int(idx)]),
+                        "confidence": round(float(conf) * 100, 2)
+                    })
 
             return {
                 "primary_prediction": class_name,
                 "confidence": round(top_conf * 100, 2),
                 **disease_metadata(result.names[top_idx], animal_lower),
-                "top_predictions": [
-                    {
-                        "condition": format_label(result.names[idx]),
-                        "confidence": round(float(conf) * 100, 2)
-                    }
-                    for idx, conf in zip(result.probs.top5, result.probs.top5conf)
-                ]
+                "top_predictions": top_predictions
             }
 
         # For Object Detection Models (YOLOv8-det)
         detections = []
         if hasattr(result, "boxes") and result.boxes is not None:
             for box in result.boxes:
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
+                cls_id = int(box.cls[0].item() if hasattr(box.cls[0], "item") else box.cls[0])
+                conf = float(box.conf[0].item() if hasattr(box.conf[0], "item") else box.conf[0])
                 detections.append({
                     "condition": format_label(result.names[cls_id]),
                     "confidence": round(conf * 100, 2)
@@ -190,6 +204,6 @@ class VisionService:
         if animal_lower in ["pet", "dog", "cat"]:
             response.update(disease_metadata(primary_prediction, animal_lower))
         return response
-    
 
-vision_engine = VisionService()
+
+vision_engine = VisionService()
