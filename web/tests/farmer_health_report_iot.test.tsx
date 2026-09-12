@@ -223,9 +223,10 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
     expect(screen.getByRole("button", { name: /simulate iot data/i })).toBeInTheDocument();
   });
 
-  it("5. Clicking 'Simulate IoT Data' invokes ingestIoTTelemetryAction and populates fields with SIMULATED ESP32 source", async () => {
+  it("5. Clicking 'Simulate IoT Data' invokes ingestIoTTelemetryAction and populates fields including heart rate with SIMULATED ESP32 source", async () => {
     const mockChangeTemp = vi.fn();
     const mockChangeAct = vi.fn();
+    const mockChangeHeartRate = vi.fn();
     const mockChangeSource = vi.fn();
     const mockChangeReadingId = vi.fn();
 
@@ -272,7 +273,7 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
         iotReadingId={null}
         onChangeTemperature={mockChangeTemp}
         onChangeActivity={mockChangeAct}
-        onChangeHeartRate={vi.fn()}
+        onChangeHeartRate={mockChangeHeartRate}
         onChangeIotSource={mockChangeSource}
         onChangeIotReadingId={mockChangeReadingId}
       />
@@ -298,6 +299,7 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
       expect(mockChangeReadingId).toHaveBeenCalledWith("reading-sim-123");
       expect(mockChangeTemp).toHaveBeenCalledWith(39.8);
       expect(mockChangeAct).toHaveBeenCalledWith(22);
+      expect(mockChangeHeartRate).toHaveBeenCalledWith(68);
       expect(screen.getByText("Sensor anomaly detected")).toBeInTheDocument();
       expect(screen.getByText("Elevated core temperature (39.8°C)")).toBeInTheDocument();
     });
@@ -305,6 +307,7 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
 
   it("6. Manual input modification updates source to 'MANUAL INPUT'", async () => {
     const mockChangeTemp = vi.fn();
+    const mockChangeHeartRate = vi.fn();
     const mockChangeSource = vi.fn();
     const mockChangeReadingId = vi.fn();
 
@@ -323,12 +326,12 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
         animalTag="COW-105"
         temperature={38.5}
         activity={70}
-        heartRate={null}
+        heartRate={65}
         iotSource="SIMULATED"
         iotReadingId="reading-sim-456"
         onChangeTemperature={mockChangeTemp}
         onChangeActivity={vi.fn()}
-        onChangeHeartRate={vi.fn()}
+        onChangeHeartRate={mockChangeHeartRate}
         onChangeIotSource={mockChangeSource}
         onChangeIotReadingId={mockChangeReadingId}
       />
@@ -340,6 +343,11 @@ describe("Farmer Health Report - IoT Input & Simulation Integration", () => {
     expect(mockChangeTemp).toHaveBeenCalledWith(39.2);
     expect(mockChangeSource).toHaveBeenCalledWith("MANUAL");
     expect(mockChangeReadingId).toHaveBeenCalledWith(null);
+
+    const hrInput = screen.getByLabelText(/heart rate/i);
+    fireEvent.change(hrInput, { target: { value: "85" } });
+
+    expect(mockChangeHeartRate).toHaveBeenCalledWith(85);
   });
 
   it("7. Handles API error gracefully and shows Retry button", async () => {

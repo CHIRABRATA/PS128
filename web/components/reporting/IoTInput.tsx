@@ -45,26 +45,39 @@ export interface IoTInputProps {
 
 export type SimulationPreset = "NORMAL" | "WARNING" | "CRITICAL";
 
-const SIMULATION_PRESETS: Record<SimulationPreset, { temperature: number; activity: number; label: string; description: string; fever: boolean }> = {
+const SIMULATION_PRESETS: Record<
+  SimulationPreset,
+  {
+    temperature: number;
+    activity: number;
+    heartRate: number;
+    label: string;
+    description: string;
+    fever: boolean;
+  }
+> = {
   NORMAL: {
     temperature: 38.6,
     activity: 74,
+    heartRate: 68,
     label: "Normal",
-    description: "Standard physiological baseline (38.6°C, Act: 74)",
+    description: "Standard physiological baseline (38.6°C, Act: 74, HR: 68 bpm)",
     fever: false,
   },
   WARNING: {
     temperature: 39.3,
     activity: 38,
+    heartRate: 92,
     label: "Warning",
-    description: "Mild temperature elevation, declining mobility (39.3°C, Act: 38)",
+    description: "Mild temperature elevation, declining mobility (39.3°C, Act: 38, HR: 92 bpm)",
     fever: false,
   },
   CRITICAL: {
     temperature: 40.2,
     activity: 18,
+    heartRate: 118,
     label: "Critical (Fever / Lethargy)",
-    description: "Hyperthermia > 39.5°C & Severe lethargy < 30 (40.2°C, Act: 18)",
+    description: "Hyperthermia > 39.5°C & Severe lethargy < 30 (40.2°C, Act: 18, HR: 118 bpm)",
     fever: true,
   },
 };
@@ -279,9 +292,10 @@ export function IoTInput({
         return;
       }
 
-      // Populate input fields with backend-processed telemetry
+      // Populate input fields with backend-processed telemetry & simulated heart rate
       onChangeTemperature(result.reading.temperature);
       onChangeActivity(result.reading.activityIndex);
+      onChangeHeartRate(preset.heartRate);
       onChangeIotSource("SIMULATED");
       onChangeIotReadingId?.(result.reading.id);
 
@@ -305,7 +319,7 @@ export function IoTInput({
     if (val) {
       onChangeIotSource("MANUAL");
       onChangeIotReadingId?.(null);
-    } else if (activity === null) {
+    } else if (activity === null && heartRate === null) {
       onChangeIotSource(null);
     }
   };
@@ -316,7 +330,7 @@ export function IoTInput({
     if (val) {
       onChangeIotSource("MANUAL");
       onChangeIotReadingId?.(null);
-    } else if (temperature === null) {
+    } else if (temperature === null && heartRate === null) {
       onChangeIotSource(null);
     }
   };
@@ -324,6 +338,12 @@ export function IoTInput({
   const handleManualHeartRateChange = (val: string) => {
     const parsed = val ? parseInt(val, 10) : null;
     onChangeHeartRate(parsed);
+    if (val) {
+      onChangeIotSource("MANUAL");
+      onChangeIotReadingId?.(null);
+    } else if (temperature === null && activity === null) {
+      onChangeIotSource(null);
+    }
   };
 
   return (
@@ -641,18 +661,29 @@ export function IoTInput({
               <HeartPulse className="h-3.5 w-3.5 text-amber-700" />
               <span>{iotCopy.heartRate || "Heart Rate (BPM)"}</span>
             </Label>
-            <span className="text-[10px] text-stone-400 font-mono">Optional</span>
+            {heartRate !== null ? (
+              <span className="text-[10px] text-stone-500 font-mono">
+                {iotSource === "REAL" ? "Live ESP32" : iotSource === "SIMULATED" ? "Simulated" : "Manual"}
+              </span>
+            ) : (
+              <span className="text-[10px] text-stone-400 font-mono">Optional</span>
+            )}
           </div>
-          <Input
-            id="hr"
-            data-testid="iot-heartrate-input"
-            type="number"
-            step="1"
-            placeholder="e.g. 60 - 95"
-            value={heartRate !== null ? heartRate : ""}
-            onChange={(e) => handleManualHeartRateChange(e.target.value)}
-            className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl font-mono"
-          />
+          <div className="relative">
+            <Input
+              id="hr"
+              data-testid="iot-heartrate-input"
+              type="number"
+              step="1"
+              min="30"
+              max="220"
+              placeholder="e.g. 68 (normal) to 118"
+              value={heartRate !== null ? heartRate : ""}
+              onChange={(e) => handleManualHeartRateChange(e.target.value)}
+              className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl font-mono pr-12"
+            />
+            <span className="absolute right-3 top-2.5 text-[11px] text-stone-400 font-mono">BPM</span>
+          </div>
         </div>
       </div>
     </div>
