@@ -108,6 +108,12 @@ sequenceDiagram
 - **GIS Surveillance Heatmap**: Live OpenStreetMap spatial mapping of disease clusters with village micro-offsetting, disease filtering, and zoom focus.
 - **KPI Metrics**: District livestock count, active outbreak alerts, diagnostic turnaround times, and village-level case aggregations.
 - **Emergency Broadcasts**: Multi-channel SMS and Telegram alert dispatching for localized biosecurity lockdowns.
+- **Authority Data Exports (`/authority/reports`)**:
+  - **Supported Reports**: Case Summary (`CASE_SUMMARY`), Vaccination Coverage (`VACCINATION_COVERAGE`), and Outbreak / Alert Log (`OUTBREAK_ALERTS`).
+  - **Export Formats**: RFC 4180 CSV (with UTF-8 BOM) and zero-dependency server-side PDF 1.4 documents.
+  - **Server-Side Jurisdiction Enforcement**: District Authority exports are scoped server-side to the authenticated authority user's assigned district. The client cannot select or override the export jurisdiction.
+  - **Audit Logging**: Every export request records an immutable `AuthorityExportAudit` entry capturing user, authorized district, report type, format, date range, record count, and timestamp without storing sensitive patient datasets.
+  - **Read-Only Nature**: Operates strictly on read-only Prisma queries with zero mutations to existing clinical, case, or alert data.
 
 ---
 
@@ -138,9 +144,53 @@ erDiagram
 
 ---
 
-## 4. Test Strategy & Triple Verification Gate
+---
+ 
+ ## 4. Test Strategy & Triple Verification Gate
+ 
+ The platform mandates a three-tier quality gate for all changes:
+ 1. **Automated Unit & Regression Tests** (`npm test`): Vitest with `@testing-library/react` and `jsdom`.
+ 2. **Static Code Analysis** (`npm run lint`): ESLint with zero-tolerance for unused variables or type errors.
+ 3. **Type Safety** (`npx tsc --noEmit`): Strict TypeScript compilation ensuring end-to-end interface contracts.
+ 
+ ---
+ 
+ ## 5. Admin & Governance Subsystem (Phase 8)
+ 
+ ### A. Security Model & Trust Hierarchy
+ 
+ Initial administrator privileges cannot be granted or acquired through the web interface or standard API endpoints. There is strictly no self-service path or UI control to create an `ADMIN`.
+ 
+ ```mermaid
+ graph TD
+     Ops["Trusted Deployment / Operations Engine"] -->|CLI Invocation| Script["bootstrap-admin.ts <clerkUserId>"]
+     Script -->|Atomic DB Tx| User["Target Existing User"]
+     User -->|Role Assignment| Admin["UserRole.ADMIN (ACTIVE)"]
+     Admin -->|Server Guard| RequireAdmin["requireAdmin() Guard"]
+     RequireAdmin --> Dashboard["Admin Dashboard (/admin)"]
+     RequireAdmin --> AuditLedger["Audit Log Ledger (/admin/audit-log)"]
+     RequireAdmin --> GeographyCRUD["Geography Hierarchy CRUD (/admin/geography)"]
+     Admin -->|Mutation Trail| AuditLog[("Append-Only AuditLog Table")]
+ ```
+ 
+ ### B. Role Approval Matrix & Authority Derivation
+ 
+ Based on current application implementation:
+ | Target Role to Approve | Authorized Approver Role | Approval Scope / Mechanism |
+ | :--- | :--- | :--- |
+ | `FIELD_AGENT` | `DISTRICT_AUTHORITY` | Scoped strictly to the authority's assigned district jurisdiction |
+ | `VETERINARIAN` | `DISTRICT_AUTHORITY` | Scoped strictly to the authority's assigned district jurisdiction |
+ | `FARMER` | Automated / Agent Assisted | Verified at farm onboarding / registration |
+ | `DISTRICT_AUTHORITY` | System Bootstrap / Ops | Established through administrative provisioning |
+ | `ADMIN` | Ops Engineer via CLI | External CLI script `bootstrap-admin.ts` strictly |
+ 
+ ### C. Append-Only Audit Logging & Data Survival
+ - **Append-Only Contract**: `AuditLog` records (`id`, `action`, `actorUserId`, `targetUserId`, `previousValue`, `newValue`, `reason`, `createdAt`) are immutable. No update or delete operations are exposed.
+ - **User Deletion Resilience**: The foreign key constraints on `actorUserId` and `targetUserId` use `onDelete: SetNull`. If a user is deactivated or removed, the historical audit trail survives intact.
+ - **Secret Redaction**: Any sensitive keys (`password`, `token`, `secret`, `apiKey`, `credential`, `authorization`) in `previousValue` or `newValue` payloads are automatically masked with `"[REDACTED]"` prior to database insertion.
+ 
+ ### D. Geography Master Data Hierarchy
+ - **Strict 3-Tier Validation**: Districts contain Blocks; Blocks contain Villages.
+ - **Orphan Prevention**: Creating a Block requires a verified existing District (`districtId`). Creating a Village requires a verified existing Block (`blockId`).
+ - **Audit Trail**: Every geographic mutation (`DISTRICT_CREATED`, `DISTRICT_UPDATED`, `BLOCK_CREATED`, `BLOCK_UPDATED`, `VILLAGE_CREATED`, `VILLAGE_UPDATED`) logs the actor, previous state, new state, and mandatory administrative reason.
 
-The platform mandates a three-tier quality gate for all changes:
-1. **Automated Unit & Regression Tests** (`npm test`): Vitest with `@testing-library/react` and `jsdom`.
-2. **Static Code Analysis** (`npm run lint`): ESLint with zero-tolerance for unused variables or type errors.
-3. **Type Safety** (`npx tsc --noEmit`): Strict TypeScript compilation ensuring end-to-end interface contracts.

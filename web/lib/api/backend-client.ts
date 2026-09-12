@@ -3,9 +3,12 @@ import {
   AnalyzeResponseSchema,
   VisionResponseSchema,
   HealthCheckResponseSchema,
+  IoTDataResponseSchema,
   AnalyzeResponse,
   VisionResponse,
   HealthCheckResponse,
+  IoTDataRequest,
+  IoTDataResponse,
 } from "./schemas";
 
 export class BackendUnavailableError extends Error {
@@ -257,3 +260,53 @@ export async function getBackendHealth(): Promise<HealthCheckResponse> {
     return { status: "offline", healthy: false };
   }
 }
+
+/**
+ * Ingests live or simulated IoT telemetry via POST /api/iot/data.
+ */
+export async function ingestIoTData(payload: IoTDataRequest): Promise<IoTDataResponse> {
+  const baseUrl = getBackendBaseUrl();
+  const endpoint = `${baseUrl}/api/iot/data`;
+
+  try {
+    const response = await fetchWithTimeout(
+      endpoint,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      },
+      5000 // 5 seconds timeout
+    );
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new BackendResponseError(
+        `Backend /api/iot/data HTTP ${response.status}: ${errText}`,
+        response.status
+      );
+    }
+
+    const rawJson = await response.json();
+    const parseResult = IoTDataResponseSchema.safeParse(rawJson);
+    if (!parseResult.success) {
+      console.warn("[Backend IoT Schema Warning]:", parseResult.error.format());
+      return rawJson as IoTDataResponse;
+    }
+
+    return parseResult.data;
+  } catch (err: unknown) {
+    if (err instanceof BackendResponseError || err instanceof BackendTimeoutError) {
+      throw err;
+    }
+    console.error("[AI Engine IoT Ingestion Error]:", err);
+    throw new BackendUnavailableError(
+      err instanceof Error ? err.message : "Failed to ingest IoT telemetry."
+    );
+  }
+}
+

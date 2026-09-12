@@ -38,6 +38,7 @@ export default async function ScopedFarmerTalkPage({ params }: PageProps) {
         animalId={animalId}
         initialContext={contextRes.contextPacket}
         dictionary={dict.farmerTalk}
+        locale={locale}
       />
     </div>
   );

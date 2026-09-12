@@ -49,6 +49,10 @@ export async function requireDistrictAuthority(): Promise<FullAppUser> {
   return await requireRole("DISTRICT_AUTHORITY");
 }
 
+export async function requireAdmin(): Promise<FullAppUser> {
+  return await requireRole("ADMIN");
+}
+
 /* ==================================================
  * RESOURCE-LEVEL AUTHORIZATION HELPERS
  * ================================================== */

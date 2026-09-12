@@ -11,6 +11,7 @@ enum UserRole {
   FIELD_AGENT
   VETERINARIAN
   DISTRICT_AUTHORITY
+  ADMIN
 }
 
 enum UserStatus {
@@ -123,6 +124,9 @@ model User {
   appNotifications           InAppNotification[]
   telegramConnection         TelegramConnection?
   telegramLinkTokens         TelegramLinkToken[]
+  exportAudits               AuthorityExportAudit[]
+  auditLogsAsActor           AuditLog[]             @relation("AuditLogsAsActor")
+  auditLogsAsTarget          AuditLog[]             @relation("AuditLogsAsTarget")
 
   @@index([clerkId])
   @@index([role])
@@ -141,6 +145,7 @@ model District {
   blocks             Block[]
   users              User[]
   assistanceRequests AssistanceRequest[]
+  exportAudits       AuthorityExportAudit[]
 }
 
 model Block {
@@ -230,6 +235,8 @@ model Animal {
   conversations      ChatConversation[]
   veterinaryReports  VeterinaryReport[]
   assistanceRequests AssistanceRequest[]
+  iotDevices         IoTDevice[]
+  iotReadings        IoTReading[]
 
   @@unique([herdId, tag])
   @@index([herdId])
@@ -571,4 +578,112 @@ model TelegramNotificationDelivery {
   @@index([notificationId])
   @@index([telegramConnectionId])
 }
+
+enum AuthorityReportType {
+  CASE_SUMMARY
+  VACCINATION_COVERAGE
+  OUTBREAK_ALERTS
+}
+
+enum ExportFormat {
+  CSV
+  PDF
+}
+
+model AuthorityExportAudit {
+  id           String              @id @default(cuid())
+  userId       String
+  districtId   String
+  reportType   AuthorityReportType
+  format       ExportFormat
+  startDate    DateTime
+  endDate      DateTime
+  recordCount  Int                 @default(0)
+  success      Boolean             @default(true)
+  errorMessage String?
+  createdAt    DateTime            @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([createdAt])
+  @@index([reportType])
+}
+
+enum IoTDeviceSource {
+  REAL
+  SIMULATED
+}
+
+enum IoTDeviceStatus {
+  ONLINE
+  OFFLINE
+  SIMULATING
+}
+
+model IoTDevice {
+  id               String          @id @default(cuid())
+  deviceIdentifier String          @unique
+  animalId         String?
+  source           IoTDeviceSource @default(SIMULATED)
+  status           IoTDeviceStatus @default(OFFLINE)
+  lastSeenAt       DateTime?
+  lastTemperature  Float?
+  lastActivity     Int?
+  lastAnomalyState Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  animal   Animal?      @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  readings IoTReading[]
+
+  @@index([animalId])
+  @@index([deviceIdentifier])
+  @@index([source])
+  @@index([status])
+}
+
+model IoTReading {
+  id            String          @id @default(cuid())
+  deviceId      String
+  animalId      String?
+  source        IoTDeviceSource @default(SIMULATED)
+  temperature   Float
+  activityIndex Int
+  hasAnomaly    Boolean         @default(false)
+  anomalies     String[]        @default([])
+  recordedAt    DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+
+  device IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  animal Animal?   @relation(fields: [animalId], references: [id], onDelete: SetNull)
+
+  @@index([deviceId])
+  @@index([animalId])
+  @@index([recordedAt])
+  @@index([hasAnomaly])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  action        String
+  targetUserId  String?
+  previousValue String?
+  newValue      String?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  actorUser     User?    @relation("AuditLogsAsActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  targetUser    User?    @relation("AuditLogsAsTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId])
+  @@index([targetUserId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+
 

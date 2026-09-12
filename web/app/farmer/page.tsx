@@ -5,7 +5,7 @@ import { getFarmerDashboardMetricsAction } from "@/lib/actions/farmer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MotionFadeIn } from "@/components/motion/MotionFadeIn";
-import { formatDateTime, formatDate } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import {
   PlusCircle,
   MessageSquare,
@@ -18,6 +18,7 @@ import {
   UserCheck,
   User,
   MapPin,
+  Cpu,
 } from "lucide-react";
 import { DeleteAnimalButton } from "@/components/farmer/DeleteAnimalButton";
 
@@ -82,6 +83,12 @@ export default async function FarmerPortalPage() {
             <Button variant="outline" size="sm" className="gap-2 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 rounded-xl min-h-[40px] shadow-2xs hover-lift-sm">
               <MessageSquare className="h-4 w-4 text-emerald-700" />
               <span>Farmer Talk (AI)</span>
+            </Button>
+          </Link>
+          <Link href="/farmer/iot">
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 rounded-xl min-h-[40px] shadow-2xs hover-lift-sm font-semibold">
+              <Cpu className="h-4 w-4 text-emerald-700" />
+              <span>IoT Vitals</span>
             </Button>
           </Link>
           <Link href="/farmer/request-help">
@@ -215,13 +222,21 @@ export default async function FarmerPortalPage() {
                       </div>
                     </Link>
 
-                    <div className="px-5 pb-5 pt-2 border-t border-[#E5E0D8] flex items-center justify-between">
-                      <Link href={`/farmer/animals/${animal.id}`}>
-                        <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl cursor-pointer">
-                          <span>Health Passport</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </Link>
+                    <div className="px-5 pb-5 pt-2 border-t border-[#E5E0D8] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/farmer/animals/${animal.id}`}>
+                          <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-50 gap-1 rounded-xl cursor-pointer">
+                            <span>Health Passport</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                        <Link href={`/farmer/iot?animalId=${animal.id}`}>
+                          <Button size="sm" variant="outline" className="h-8 text-xs border-stone-200 text-stone-700 hover:bg-stone-50 gap-1 rounded-xl cursor-pointer">
+                            <Cpu className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>IoT</span>
+                          </Button>
+                        </Link>
+                      </div>
                       <DeleteAnimalButton animalId={animal.id} tag={animal.tag} />
                     </div>
                   </div>

@@ -6,8 +6,9 @@ import {
   getFarmerConversationHistoryAction,
 } from "@/lib/actions/farmer-talk";
 import { AnimalContextPacket } from "@/lib/ai/farmer-talk";
-import { MessageSquare, Send, AlertTriangle, ShieldCheck, RefreshCw, Stethoscope } from "lucide-react";
+import { MessageSquare, Send, AlertTriangle, ShieldCheck, RefreshCw, Stethoscope, Mic, MicOff } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 
 export interface ChatMessageItem {
   id: string;
@@ -33,7 +34,14 @@ interface FarmerChatBoxProps {
     prompt2: string;
     prompt3: string;
     prompt4: string;
+    voiceInputStart?: string;
+    voiceInputStop?: string;
+    voiceInputListening?: string;
+    voiceInputUnsupported?: string;
+    voiceInputPermissionDenied?: string;
+    voiceInputError?: string;
   };
+  locale?: string;
 }
 
 function generateSubmissionId(): string {
@@ -43,7 +51,7 @@ function generateSubmissionId(): string {
   return `sub_${Date.now()}_idempotent`;
 }
 
-export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerChatBoxProps) {
+export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: FarmerChatBoxProps) {
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [inputMessage, setInputMessage] = useState<string>("");
@@ -51,6 +59,52 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
   const [sending, setSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [riskNotice, setRiskNotice] = useState<string | null>(null);
+  const [dismissedVoiceError, setDismissedVoiceError] = useState<boolean>(false);
+
+  const {
+    isSupported,
+    isListening,
+    interimTranscript,
+    error: voiceError,
+    clearError: clearVoiceError,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition();
+
+  let voiceErrorMessage: string | null = null;
+  if (voiceError && !dismissedVoiceError) {
+    if (voiceError === "not-allowed" || voiceError === "service-not-allowed") {
+      voiceErrorMessage =
+        dictionary.voiceInputPermissionDenied ||
+        "Microphone permission denied. Please allow microphone access or type your message.";
+    } else if (voiceError === "unsupported") {
+      voiceErrorMessage =
+        dictionary.voiceInputUnsupported ||
+        "Voice input is not supported in this browser";
+    } else if (voiceError !== "no-speech") {
+      voiceErrorMessage =
+        dictionary.voiceInputError ||
+        "Voice input error. Please try again or type your message.";
+    }
+  }
+
+  const handleVoiceToggle = () => {
+    if (sending) return;
+    setDismissedVoiceError(false);
+    clearVoiceError();
+
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening({
+        locale: locale || "en",
+        baseText: inputMessage,
+        onTranscript: (reconciledText) => {
+          setInputMessage(reconciledText);
+        },
+      });
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -324,6 +378,27 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
         </div>
       )}
 
+      {/* Voice Recognition Error Notice (Non-blocking) */}
+      {voiceErrorMessage && (
+        <div
+          className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-amber-900 text-xs flex items-center justify-between animate-fade-in"
+          role="alert"
+          aria-live="polite"
+        >
+          <span>{voiceErrorMessage}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setDismissedVoiceError(true);
+              clearVoiceError();
+            }}
+            className="text-xs font-semibold hover:underline cursor-pointer ml-2 text-amber-800"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Quick Prompts */}
       <div className="p-3 bg-white border-t border-[#E5E0D8]">
         <p className="text-[11px] font-semibold text-stone-500 mb-2">{dictionary.quickPromptsTitle}:</p>
@@ -341,6 +416,36 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
         </div>
       </div>
 
+      {/* Listening State & Live Interim Transcript Feedback */}
+      {isListening && (
+        <div
+          className="px-4 py-2 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs text-emerald-900 animate-fade-in"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+            </span>
+            <span className="font-bold shrink-0">
+              {dictionary.voiceInputListening || "Listening..."}
+            </span>
+            {interimTranscript && (
+              <span className="italic text-emerald-700 truncate">
+                &ldquo;{interimTranscript}&rdquo;
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={stopListening}
+            className="text-xs font-bold text-emerald-800 hover:text-emerald-950 underline shrink-0 cursor-pointer"
+          >
+            {dictionary.voiceInputStop || "Stop"}
+          </button>
+        </div>
+      )}
+
       {/* Input Area */}
       <form
         onSubmit={(e) => {
@@ -357,6 +462,39 @@ export function FarmerChatBox({ animalId, initialContext, dictionary }: FarmerCh
           disabled={sending}
           className="flex-1 bg-white border border-[#D9D3C7] focus:border-emerald-600 rounded-xl px-4 py-2.5 text-sm text-[#191F1C] placeholder-stone-400 focus:outline-none transition disabled:opacity-50 min-h-[44px] shadow-xs"
         />
+
+        {/* Microphone Button */}
+        <button
+          type="button"
+          onClick={handleVoiceToggle}
+          disabled={sending || (!isSupported && !isListening)}
+          aria-label={
+            !isSupported
+              ? dictionary.voiceInputUnsupported || "Voice input is not supported in this browser"
+              : isListening
+              ? dictionary.voiceInputStop || "Stop listening"
+              : dictionary.voiceInputStart || "Start voice input"
+          }
+          aria-pressed={isListening}
+          title={
+            !isSupported
+              ? dictionary.voiceInputUnsupported || "Voice input is not supported in this browser"
+              : isListening
+              ? dictionary.voiceInputStop || "Stop listening"
+              : dictionary.voiceInputStart || "Start voice input"
+          }
+          className={`p-3 rounded-xl font-medium transition-all duration-150 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer hover-lift-sm active:scale-[0.96] ${
+            !isSupported
+              ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-60"
+              : isListening
+              ? "bg-red-600 hover:bg-red-700 text-white shadow-sm ring-2 ring-red-300 animate-pulse"
+              : "bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 hover:border-emerald-300 shadow-2xs"
+          } disabled:opacity-50`}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
+
+        {/* Send Button */}
         <button
           type="submit"
           disabled={sending || !inputMessage.trim()}

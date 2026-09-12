@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireDistrictAuthority } from "@/lib/auth/permissions";
 import { Badge } from "@/components/ui/badge";
-import { Activity, BellRing, ShieldCheck, UserCheck, Building2 } from "lucide-react";
+import { Activity, BellRing, ShieldCheck, UserCheck, Building2, FileSpreadsheet } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 
 export default async function AuthorityLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +59,13 @@ export default async function AuthorityLayout({ children }: { children: React.Re
             <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-amber-50 text-stone-700 hover:text-amber-800 transition-colors cursor-pointer">
               <UserCheck className="h-3.5 w-3.5 text-amber-700" />
               <span>प्रलंबित पद मंजुऱ्या (Pending Approvals)</span>
+            </button>
+          </Link>
+
+          <Link href="/authority/reports">
+            <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-purple-50 text-stone-700 hover:text-purple-800 transition-colors cursor-pointer">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-purple-700" />
+              <span>अहवाल व निर्यात (Reports)</span>
             </button>
           </Link>
         </div>

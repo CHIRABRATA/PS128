@@ -97,6 +97,39 @@ Maitri implements a secure, private image pipeline for clinical animal photograp
 
 ---
 
+---
+
+## 🛡️ Admin & Governance Subsystem (Phase 8)
+
+Phase 8 implements the administrative control plane, governance cockpit, and append-only audit trail.
+
+### 1. Security Model & Admin Bootstrap
+- **No Self-Service Admin**: There is no UI or public API route to create or assign the `ADMIN` role.
+- **Out-of-Band CLI Bootstrap**: The first administrator must be created via the standalone CLI script by trusted operations engineers:
+  ```bash
+  # Run from the web/ directory
+  npx tsx scripts/bootstrap-admin.ts <clerkUserId>
+  ```
+- **CLI Behavior**:
+  - Validates that `<clerkUserId>` exists in both Clerk and PostgreSQL.
+  - Updates PostgreSQL `User.role = "ADMIN"` and `User.status = "ACTIVE"`.
+  - Stabs an audit log entry: `ADMIN_BOOTSTRAPPED`.
+  - Synchronizes Clerk `publicMetadata` (`{ role: "ADMIN", status: "ACTIVE" }`).
+  - Fails safely on missing/invalid arguments without partial mutations.
+
+### 2. Routes & Server Authorization
+- `/admin`: Administrative Cockpit (user distribution by role/status, district coverage gaps with 0 authorities, overdue credential approvals $>48\text{h}$, and recent audit feed).
+- `/admin/audit-log`: Immutable, searchable, paginated audit ledger with state mutation diffs (`previousValue` vs `newValue`).
+- `/admin/geography`: Hierarchical District $\to$ Block $\to$ Village master data management with parent validation and audit reasons.
+- **Server Guard**: All routes and actions are strictly guarded by `requireAdmin()`.
+
+### 3. Append-Only Audit Log
+- **Immutability**: The `AuditLog` table is strictly append-only. There are no update or delete server actions or UI controls.
+- **User Deletion Safety**: Actor and Target user foreign keys use `onDelete: SetNull` so historical audit records remain intact even if user accounts are deactivated or removed.
+- **Secret Redaction**: Any sensitive keys (e.g. passwords, tokens, API keys) are redacted automatically before JSON persistence.
+
+---
+
 ## 🗄️ Database Setup (Phase 2)
 
 Maitri uses **Neon PostgreSQL** as its primary authoritative relational datastore managed via **Prisma ORM**.
@@ -124,8 +157,8 @@ npx prisma validate
 # Format Prisma schema file
 npx prisma format
 
-# Push schema changes to Neon PostgreSQL database
-npx prisma db push
+# Run migrations against Neon PostgreSQL database
+npx prisma migrate deploy
 
 # Generate Prisma Client types
 npx prisma generate
@@ -141,16 +174,20 @@ npx prisma studio
 
 ### 3. Domain Entities & Hierarchy
 
-The database model covers 14 core entities:
+The database model covers 16 core entities:
 
-1. **User**: Roles (`FARMER`, `FIELD_AGENT`, `VETERINARIAN`, `DISTRICT_AUTHORITY`), Status (`PENDING_APPROVAL`, `ACTIVE`, `REJECTED`), linked via `clerkId`.
-2. **Geographic Hierarchy**: `District` → `Block` → `Village`.
-3. **Farm**: Belongs to `Village`, optional `farmerUserId` and `fieldAgentUserId`.
-4. **Herd**: Belongs to `Farm` (`species`).
-5. **Animal**: Belongs to `Herd`, unique tag per herd, optional `iotDeviceId`.
-6. **Case**: Central health report (`analysisResult` JSON & `visionResult` JSON preserved separately), veterinary workflow fields (`vetDiagnosis`, `vetRecommendedAction`, `vetFollowUpDate`, `vetNotes`).
-7. **VaccinationRecord**: History of administered vaccines.
-8. **TreatmentRecord**: History of administered treatments (clinical history, not AI prescription generator).
-9. **Sample**: Lab diagnostic sample tracker (`COLLECTED`, `SENT`, `RESULT_PENDING`, `RESULT_RECEIVED`).
-10. **Alert**: High-risk village epidemic surge alert window.
-11. **ChatConversation** & **ChatMessage**: AI assistant chat storage per animal/user.
+1. **User**: Roles (`FARMER`, `FIELD_AGENT`, `VETERINARIAN`, `DISTRICT_AUTHORITY`, `ADMIN`), Status (`PENDING_APPROVAL`, `ACTIVE`, `REJECTED`), linked via `clerkId`.
+2. **AuditLog**: Append-only administrative ledger (`action`, `actorUserId`, `targetUserId`, `previousValue`, `newValue`, `reason`, `createdAt`).
+3. **Geographic Hierarchy**: `District` → `Block` → `Village`.
+4. **Farm**: Belongs to `Village`, optional `farmerUserId` and `fieldAgentUserId`.
+5. **Herd**: Belongs to `Farm` (`species`).
+6. **Animal**: Belongs to `Herd`, unique tag per herd, optional `iotDeviceId`.
+7. **Case**: Central health report (`analysisResult` JSON & `visionResult` JSON preserved separately), veterinary workflow fields (`vetDiagnosis`, `vetRecommendedAction`, `vetFollowUpDate`, `vetNotes`).
+8. **VaccinationRecord**: History of administered vaccines.
+9. **TreatmentRecord**: History of administered treatments (clinical history, not AI prescription generator).
+10. **Sample**: Lab diagnostic sample tracker (`COLLECTED`, `SENT`, `RESULT_PENDING`, `RESULT_RECEIVED`).
+11. **Alert**: High-risk village epidemic surge alert window.
+12. **ChatConversation** & **ChatMessage**: AI assistant chat storage per animal/user.
+13. **AssistanceRequest**: Field agent visit request & workflow.
+14. **AuthorityExportAudit**: Scoped CSV/PDF export ledger for District Authorities.
+

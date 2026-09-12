@@ -20,8 +20,9 @@ import {
   ShieldCheck,
   UserCheck,
   ChevronRight,
+  Cpu,
 } from "lucide-react";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 export default async function AnimalDetailPage({
   params,
@@ -78,6 +79,12 @@ export default async function AnimalDetailPage({
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href={`/farmer/iot?animalId=${animal.id}`}>
+            <Button variant="outline" size="sm" className="text-xs gap-1.5 border-emerald-300 text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl min-h-[36px] font-semibold">
+              <Cpu className="h-4 w-4 text-emerald-700" />
+              <span>IoT Vitals</span>
+            </Button>
+          </Link>
           <Link href={`/farmer/request-help?animalId=${animal.id}`}>
             <Button variant="outline" size="sm" className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-xl min-h-[36px]">
               <UserCheck className="h-4 w-4 text-amber-700" />

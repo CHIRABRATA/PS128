@@ -119,6 +119,28 @@ export const HealthCheckResponseSchema = z.object({
   version: z.string().optional(),
 }).passthrough();
 
+/**
+ * Zod schema for /api/iot/data request & response payloads
+ */
+export const IoTDataRequestSchema = z.object({
+  animal_id: z.string().default("ESP32-COW-01"),
+  temperature: z.number().optional().nullable(),
+  activity: z.number().optional().nullable(),
+  use_simulation: z.boolean().optional().default(false),
+  simulate_fever: z.boolean().optional().default(false),
+}).passthrough();
+
+export const IoTDataResponseSchema = z.object({
+  animal_id: z.string(),
+  temperature: z.number(),
+  activity_index: z.number(),
+  has_anomaly: z.boolean(),
+  anomalies: z.array(z.string()).default([]),
+}).passthrough();
+
 export type AnalyzeResponse = z.infer<typeof AnalyzeResponseSchema>;
 export type VisionResponse = z.infer<typeof VisionResponseSchema>;
 export type HealthCheckResponse = z.infer<typeof HealthCheckResponseSchema>;
+export type IoTDataRequest = z.infer<typeof IoTDataRequestSchema>;
+export type IoTDataResponse = z.infer<typeof IoTDataResponseSchema>;
+

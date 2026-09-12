@@ -39,6 +39,8 @@ export default async function DashboardPage() {
       redirect("/vet");
     case "DISTRICT_AUTHORITY":
       redirect("/authority");
+    case "ADMIN":
+      redirect("/admin");
     default:
       redirect("/onboarding");
   }
