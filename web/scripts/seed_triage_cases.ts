@@ -85,7 +85,7 @@ async function main() {
       durationDays: 2,
       affectedCount: 3,
       mortalityCount: 0,
-      photoUrl: "https://images.unsplash.com/photo-1546445317-29f4545f9d52?w=800",
+      photoUrl: "/images/clinical/cattle_skin_lesions.jpg",
       gpsLat: a1.herd.farm.latitude || 22.7196,
       gpsLng: a1.herd.farm.longitude || 88.4683,
       reportedAt: new Date(Date.now() - 3600 * 1000 * 1.5), // 1.5 hours ago
@@ -160,7 +160,7 @@ async function main() {
         durationDays: 4,
         affectedCount: 2,
         mortalityCount: 0,
-        photoUrl: "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=800",
+        photoUrl: "/images/clinical/cattle_oral_inspection.jpg",
         gpsLat: a2.herd.farm.latitude || 22.721,
         gpsLng: a2.herd.farm.longitude || 88.47,
         reportedAt: new Date(Date.now() - 3600 * 1000 * 5),

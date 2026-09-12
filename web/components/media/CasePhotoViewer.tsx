@@ -33,7 +33,7 @@ export function CasePhotoViewer({
       .then(async (res) => {
         if (!res.ok) {
           // If proxy fails, try using direct photoUrl if available
-          if (photoUrl && photoUrl.startsWith("http")) {
+          if (photoUrl && (photoUrl.startsWith("http") || photoUrl.startsWith("/"))) {
             if (isMounted) {
               setSrc(photoUrl);
               setLoading(false);
@@ -52,7 +52,7 @@ export function CasePhotoViewer({
       })
       .catch((err) => {
         if (isMounted) {
-          if (photoUrl && photoUrl.startsWith("http")) {
+          if (photoUrl && (photoUrl.startsWith("http") || photoUrl.startsWith("/"))) {
             setSrc(photoUrl);
             setLoading(false);
           } else {

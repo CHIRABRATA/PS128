@@ -290,7 +290,7 @@ async function main() {
       durationDays: 5,
       affectedCount: 4,
       mortalityCount: 0,
-      photoUrl: "https://images.unsplash.com/photo-1546445317-29f4545f9d52?w=800",
+      photoUrl: "/images/clinical/cattle_skin_lesions.jpg",
       gpsLat: 18.5795,
       gpsLng: 73.981,
       analysisResult: masterAnalysisPayload,
