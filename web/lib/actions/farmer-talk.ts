@@ -63,16 +63,28 @@ export async function getFarmerAnimalTalkContextAction(animalId: string): Promis
           },
         },
         cases: {
-          take: 3,
+          take: 5,
           orderBy: { reportedAt: "desc" },
         },
         vaccinations: {
-          take: 5,
+          take: 10,
           orderBy: { dateGiven: "desc" },
         },
         treatments: {
-          take: 5,
+          take: 10,
           orderBy: { dateGiven: "desc" },
+        },
+        veterinaryReports: {
+          take: 5,
+          orderBy: { createdAt: "desc" },
+        },
+        iotDevices: {
+          take: 1,
+          orderBy: { updatedAt: "desc" },
+        },
+        iotReadings: {
+          take: 1,
+          orderBy: { recordedAt: "desc" },
         },
       },
     });
@@ -91,10 +103,29 @@ export async function getFarmerAnimalTalkContextAction(animalId: string): Promis
     const samples = caseIds.length > 0
       ? await prisma.sample.findMany({
           where: { caseId: { in: caseIds } },
-          take: 3,
+          take: 5,
           orderBy: { collectedAt: "desc" },
         })
       : [];
+
+    const latestDevice = animal.iotDevices?.[0] || null;
+    const latestReading = animal.iotReadings?.[0] || null;
+
+    const iotTelemetry = (latestDevice || latestReading) ? {
+      hasDevice: !!latestDevice,
+      deviceIdentifier: latestDevice?.deviceIdentifier || null,
+      deviceStatus: latestDevice?.status || null,
+      source: latestReading?.source || latestDevice?.source || null,
+      lastSeenAt: latestDevice?.lastSeenAt ? latestDevice.lastSeenAt.toISOString() : null,
+      latestReading: latestReading ? {
+        temperature: latestReading.temperature,
+        activityIndex: latestReading.activityIndex,
+        hasAnomaly: latestReading.hasAnomaly,
+        anomalies: latestReading.anomalies,
+        source: latestReading.source,
+        recordedAt: latestReading.recordedAt.toISOString(),
+      } : null,
+    } : null;
 
     const contextPacket: AnimalContextPacket = {
       animalIdentity: {
@@ -138,6 +169,17 @@ export async function getFarmerAnimalTalkContextAction(animalId: string): Promis
         dateGiven: t.dateGiven.toISOString().split("T")[0],
         notes: t.notes,
       })),
+      veterinaryReports: animal.veterinaryReports.map((vr) => ({
+        id: vr.id,
+        diagnosis: vr.diagnosis,
+        action: vr.action,
+        createdAt: vr.createdAt.toISOString().split("T")[0],
+        followUpDate: vr.followUpDate ? vr.followUpDate.toISOString().split("T")[0] : null,
+        instructions: vr.instructions,
+        prescription: vr.prescription,
+        notes: sanitizeVetNotes(vr.notes),
+      })),
+      iotTelemetry,
       samples: samples.map((s) => ({
         status: s.status,
         collectedAt: s.collectedAt.toISOString().split("T")[0],

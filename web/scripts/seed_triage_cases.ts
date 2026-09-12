@@ -13,7 +13,6 @@ async function main() {
 
   // Target veterinarian Dr. Arnab (or any active vet)
   const arnabVet = vets.find((v) => v.name.toLowerCase().includes("arnab") || v.district?.name === "North 24 Parganas") || vets[0];
-  const kolkataVet = vets.find((v) => v.district?.name === "Kolkata");
 
   // Find animals in North 24 Parganas
   const n24Animals = await prisma.animal.findMany({

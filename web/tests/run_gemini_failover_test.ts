@@ -27,6 +27,8 @@ async function runGeminiFailoverTests() {
     ],
     vaccinations: [{ vaccineName: "FMD Vaccine", dateGiven: "2026-01-15", nextDueDate: null }],
     treatments: [{ medication: "Meloxicam", dateGiven: "2026-02-01", notes: null }],
+    veterinaryReports: [],
+    iotTelemetry: null,
     samples: [],
   };
 

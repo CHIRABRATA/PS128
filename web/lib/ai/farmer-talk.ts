@@ -3,12 +3,12 @@ import { z } from "zod";
 /**
  * PHASE 10: MAITRI FARMER TALK AI SERVICE
  *
- * Clinical Safety Boundary & Layered Guardrails:
- * Layer 1: System Prompt Injection
+ * Dynamic Question-Answering AI Architecture with Structured Real-Data Context & Layered Safety Guardrails:
+ * Layer 1: System Prompt Clinical Guardrails & Question Scoping
  * Layer 2: Structured Output Schema (Zod)
  * Layer 3: Application Semantic Safety Checks (Distinguishes historical vet summary vs new prescription instructions)
- * Layer 4: Dual-language (English/Hindi) Secondary Heuristic Regex Scan
- * Layer 5: Safe Fallback Override
+ * Layer 4: Multi-language (English/Hindi/Bengali/Marathi) Heuristic Regex Scan
+ * Layer 5: Safe Fallback Override (Honest System Notice on LLM Failure)
  */
 
 export const FarmerTalkResponseSchema = z.object({
@@ -57,6 +57,31 @@ export interface AnimalContextPacket {
     dateGiven: string;
     notes: string | null;
   }>;
+  veterinaryReports?: Array<{
+    id: string;
+    diagnosis: string;
+    action: string;
+    createdAt: string;
+    followUpDate: string | null;
+    instructions: string | null;
+    prescription: string | null;
+    notes: string | null;
+  }>;
+  iotTelemetry?: {
+    hasDevice: boolean;
+    deviceIdentifier: string | null;
+    deviceStatus: string | null;
+    source: string | null;
+    lastSeenAt: string | null;
+    latestReading: {
+      temperature: number | null;
+      activityIndex: number | null;
+      hasAnomaly: boolean;
+      anomalies: string[];
+      source: string;
+      recordedAt: string;
+    } | null;
+  } | null;
   samples: Array<{
     status: string;
     collectedAt: string;
@@ -64,67 +89,180 @@ export interface AnimalContextPacket {
   }>;
 }
 
-const SYSTEM_PROMPT = `
-You are Maitri Farmer Talk, an informational livestock health support assistant for farmers.
-You assist farmers by explaining recorded health information about their specific animal.
+export const SYSTEM_PROMPT = `
+You are Maitri Farmer Talk, an informational livestock health and veterinary assistance AI system for farmers.
+Your role is to answer the farmer's CURRENT QUESTION using ONLY the supplied Maitri animal data.
 
-CRITICAL CLINICAL SAFETY RULES:
-1. You are NOT a veterinarian. You MUST NOT diagnose any disease as confirmed.
-2. You MUST NOT prescribe new medications, recommend drug dosages (e.g. mg, ml, pills), or instruct the farmer to administer drugs.
-3. You MAY summarize existing historical records (e.g. "Your veterinarian previously recorded a treatment of Antiseptic Wash on 2026-09-05").
-4. You MUST NOT override or contradict a veterinarian's recorded advice.
-5. Use ONLY the provided animal context packet. Never invent missing medical records or telemetry data.
-6. If recorded risk level is HIGH or CRITICAL, explicitly advise the farmer to contact a local veterinarian immediately.
-7. Respond in JSON format with fields: {"answer": "...", "needs_veterinarian": boolean, "risk_notice": string | null, "suggested_next_step": "..."}.
-8. Respond in the requested language (English or Hindi).
+You are an AI assistance system, not a veterinarian.
+You may explain recorded information, clarify veterinary terms, and provide general livestock care and educational guidance.
+
+CRITICAL CLINICAL SAFETY & BOUNDARY RULES:
+1. Answer the CURRENT FARMER QUESTION directly and specifically.
+2. Use ONLY the supplied animal context data. Do NOT invent missing records, dates, medications, vaccinations, or sensor readings.
+3. If requested information is not recorded in Maitri (e.g. no vaccinations, no treatments, no IoT readings, no vet reports), clearly state that it is not recorded in Maitri (e.g. "I don't see any vaccination records for this animal in Maitri").
+4. Do NOT provide a generic health summary unless the farmer explicitly asks for a general summary or health overview.
+5. You MUST NOT:
+   - Diagnose disease or state definitive diagnoses (unless directly quoting a veterinarian's recorded diagnosis).
+   - Prescribe medications, change medications, stop medications, or start new medications.
+   - Recommend specific drug dosages (e.g. mg, ml, pills).
+   - Claim antimicrobial resistance (AMR).
+6. If the farmer asks about medical treatments, medications, or urgent health concerns beyond what is recorded, provide safe general educational care guidance and instruct them to contact their local veterinarian or field agent.
+7. If the recorded risk level is HIGH or CRITICAL, or if severe acute symptoms/anomalies are active, remind the farmer to seek veterinary assistance.
+8. Respond in JSON format with fields:
+   {
+     "answer": "Clear, direct, conversational answer addressing the CURRENT FARMER QUESTION",
+     "needs_veterinarian": boolean,
+     "risk_notice": string | null,
+     "suggested_next_step": "Actionable next step phrase"
+   }
+9. Respond in the requested language (English, Hindi, Bengali, or Marathi).
 `;
 
-function buildUserPrompt(
+export function buildUserPrompt(
   animalContext: AnimalContextPacket,
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
   userMessage: string,
   preferredLanguage: string
 ): string {
+  const languageMap: Record<string, string> = {
+    en: "English",
+    hi: "Hindi (हिंदी)",
+    bn: "Bengali (বাংলা)",
+    mr: "Marathi (मराठी)",
+  };
+  const languageName = languageMap[preferredLanguage] || preferredLanguage;
+
   const historyText = conversationHistory
-    .map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`)
+    .slice(-4)
+    .map((msg) => `${msg.role === "user" ? "Farmer" : "Assistant"}: ${msg.content}`)
     .join("\n");
 
+  const vaxList = animalContext.vaccinations.length > 0
+    ? animalContext.vaccinations
+        .map((v) => `- ${v.vaccineName} (Date Given: ${v.dateGiven}${v.nextDueDate ? `, Next Due: ${v.nextDueDate}` : ""})`)
+        .join("\n")
+    : "vaccinations: [] (No vaccination records available in Maitri)";
+
+  const treatList = animalContext.treatments.length > 0
+    ? animalContext.treatments
+        .map((t) => `- ${t.medication} (Date: ${t.dateGiven}${t.notes ? `, Notes: ${t.notes}` : ""})`)
+        .join("\n")
+    : "treatments: [] (No treatment records available in Maitri)";
+
+  const vetList = (animalContext.veterinaryReports && animalContext.veterinaryReports.length > 0)
+    ? animalContext.veterinaryReports
+        .map((vr) => `- Report (${vr.createdAt}): Diagnosis: ${vr.diagnosis}, Action: ${vr.action}${vr.followUpDate ? `, Follow-up: ${vr.followUpDate}` : ""}${vr.instructions ? `, Instructions: ${vr.instructions}` : ""}${vr.prescription ? `, Prescription: ${vr.prescription}` : ""}${vr.notes ? `, Notes: ${vr.notes}` : ""}`)
+        .join("\n")
+    : "veterinary_reports: [] (No veterinary reports recorded in Maitri)";
+
+  const iotInfo = animalContext.iotTelemetry?.latestReading
+    ? `- Device: ${animalContext.iotTelemetry.deviceIdentifier || "IoT Sensor"} (Status: ${animalContext.iotTelemetry.deviceStatus || "ONLINE"}, Source: ${animalContext.iotTelemetry.source || "UNKNOWN"})
+- Temperature: ${animalContext.iotTelemetry.latestReading.temperature !== null ? `${animalContext.iotTelemetry.latestReading.temperature} °C` : "Not recorded"}
+- Activity Index: ${animalContext.iotTelemetry.latestReading.activityIndex !== null ? animalContext.iotTelemetry.latestReading.activityIndex : "Not recorded"}
+- Anomaly Status: ${animalContext.iotTelemetry.latestReading.hasAnomaly ? `ANOMALY DETECTED: ${animalContext.iotTelemetry.latestReading.anomalies.join(", ") || "Active Alert"}` : "Normal (No anomalies detected)"}
+- Telemetry Source: ${animalContext.iotTelemetry.latestReading.source}
+- Last Reading Time: ${animalContext.iotTelemetry.latestReading.recordedAt}`
+    : "iot_readings: [] (No IoT sensor telemetry recorded in Maitri for this animal)";
+
+  const casesList = animalContext.recentCases.length > 0
+    ? animalContext.recentCases
+        .map((c) => `- Case ${c.caseNumber} (${c.status}, Reported: ${c.reportedAt}):
+  Symptoms: ${c.symptoms.join(", ") || "None"} (Duration: ${c.durationDays} days, Affected: ${c.affectedCount})
+  Suspected Condition: ${c.suspectedCondition || "None recorded"}
+  Risk Level: ${c.overallRiskLevel || "None recorded"}${c.vetDiagnosis ? `\n  Vet Diagnosis: ${c.vetDiagnosis}` : ""}${c.vetAction ? `\n  Vet Action: ${c.vetAction}` : ""}${c.sanitizedVetNotes ? `\n  Vet Notes: ${c.sanitizedVetNotes}` : ""}`)
+        .join("\n")
+    : "cases: [] (No recent cases or health reports recorded in Maitri)";
+
+  const samplesList = animalContext.samples.length > 0
+    ? animalContext.samples
+        .map((s) => `- Sample (${s.status}, Collected: ${s.collectedAt})${s.resultSummary ? `: ${s.resultSummary}` : ""}`)
+        .join("\n")
+    : "samples: [] (No lab sample records)";
+
   return `
-REQUESTED LANGUAGE: ${{ en: "English", bn: "Bengali", hi: "Hindi", mr: "Marathi" }[preferredLanguage] || preferredLanguage}
+REQUESTED RESPONSE LANGUAGE: ${languageName}
 
-ANIMAL CONTEXT PACKET (REAL VERIFIED RECORDS):
-${JSON.stringify(animalContext, null, 2)}
+ANIMAL CONTEXT:
+1. Animal Profile:
+- Tag: ${animalContext.animalIdentity.tag}
+- Species: ${animalContext.animalIdentity.species}
+- Breed: ${animalContext.animalIdentity.breed || "Not specified"}
+- Age: ${animalContext.animalIdentity.ageMonths ? `${animalContext.animalIdentity.ageMonths} months` : "Not specified"}
+- Location: ${animalContext.location.farmName}, Village: ${animalContext.location.villageName}, Block: ${animalContext.location.blockName}, District: ${animalContext.location.districtName}
 
-RECENT CONVERSATION HISTORY:
-${historyText || "No previous messages in this conversation."}
+2. VACCINATIONS:
+${vaxList}
 
-FARMER'S NEW MESSAGE:
+3. TREATMENTS:
+${treatList}
+
+4. VETERINARY REPORTS:
+${vetList}
+
+5. IOT SENSOR & TELEMETRY:
+${iotInfo}
+
+6. HEALTH REPORTS & CASES:
+${casesList}
+
+7. LAB SAMPLES:
+${samplesList}
+
+RECENT CONVERSATION (PREVIOUS MESSAGES FOR CONTEXT ONLY):
+${historyText || "No previous messages."}
+
+CURRENT FARMER QUESTION:
 "${userMessage}"
 
-Respond in JSON adhering strictly to the safety instructions.
+INSTRUCTIONS FOR GENERATING RESPONSE:
+- Address the CURRENT FARMER QUESTION directly in ${languageName}.
+- If the question is about vaccinations, focus on section 2 (VACCINATIONS).
+- If the question is about treatments or medicines given, focus on section 3 (TREATMENTS).
+- If the question is about what the vet said, focus on section 4 (VETERINARY REPORTS) and cases vet notes.
+- If the question is about sensor / IoT readings or temperature / activity, focus on section 5 (IOT SENSOR & TELEMETRY).
+- If the question is about why the animal is at risk or latest health report, focus on section 6 (HEALTH REPORTS & CASES).
+- If the question is a general or educational question (e.g. "what is a cow?"), answer the question directly.
+- If the relevant data category is empty, state clearly in ${languageName} that no records are found in Maitri for that category. Do NOT replace it with a general health summary.
+- Output ONLY valid JSON matching the schema.
 `;
 }
 
-function buildSafeHistoryFallback(animalContext: AnimalContextPacket, preferredLanguage: string, hasHighRisk: boolean): FarmerTalkResponse {
-  const latestCase = animalContext.recentCases[0];
-  const latestVaccination = animalContext.vaccinations[0];
-  const latestTreatment = animalContext.treatments[0];
-  const symptoms = latestCase?.symptoms.join(", ") || "none recorded";
-  const condition = latestCase?.suspectedCondition || "not recorded";
-  const risk = latestCase?.overallRiskLevel || "not recorded";
+export function buildSafeHistoryFallback(
+  animalContext: AnimalContextPacket,
+  preferredLanguage: string,
+  hasHighRisk: boolean
+): FarmerTalkResponse {
+  const vaxCount = animalContext.vaccinations.length;
+  const treatCount = animalContext.treatments.length;
+  const caseCount = animalContext.recentCases.length;
+  const tag = animalContext.animalIdentity.tag;
 
-  const summaries = {
-    en: `Animal ${animalContext.animalIdentity.tag}: ${animalContext.recentCases.length} recent health record(s). Latest symptoms: ${symptoms}. Suspected condition: ${condition}. Recorded risk: ${risk}. ${latestVaccination ? `Latest vaccination: ${latestVaccination.vaccineName} on ${latestVaccination.dateGiven}. ` : ""}${latestTreatment ? `Latest recorded treatment: ${latestTreatment.medication} on ${latestTreatment.dateGiven}. ` : ""}${hasHighRisk ? "A high or critical risk was recorded. Contact a veterinarian immediately." : "For examination or treatment guidance, contact your local veterinarian or field agent."}`,
-    bn: `${animalContext.animalIdentity.tag} পশুর ${animalContext.recentCases.length}টি সাম্প্রতিক স্বাস্থ্য রেকর্ড আছে। সর্বশেষ লক্ষণ: ${symptoms}। সন্দেহভাজন অবস্থা: ${condition}। নথিভুক্ত ঝুঁকি: ${risk}। ${latestVaccination ? `সর্বশেষ টিকা: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}। ` : ""}${latestTreatment ? `সর্বশেষ চিকিৎসা: ${latestTreatment.medication}, ${latestTreatment.dateGiven}। ` : ""}${hasHighRisk ? "উচ্চ বা গুরুতর ঝুঁকি নথিভুক্ত হয়েছে। অবিলম্বে পশুচিকিৎসকের সঙ্গে যোগাযোগ করুন।" : "পরীক্ষা বা চিকিৎসার পরামর্শের জন্য স্থানীয় পশুচিকিৎসক বা মাঠকর্মীর সঙ্গে যোগাযোগ করুন।"}`,
-    hi: `पशु ${animalContext.animalIdentity.tag} के ${animalContext.recentCases.length} हालिया स्वास्थ्य रिकॉर्ड हैं। नवीनतम लक्षण: ${symptoms}। संदिग्ध स्थिति: ${condition}। दर्ज जोखिम: ${risk}। ${latestVaccination ? `नवीनतम टीका: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}। ` : ""}${latestTreatment ? `नवीनतम दर्ज उपचार: ${latestTreatment.medication}, ${latestTreatment.dateGiven}। ` : ""}${hasHighRisk ? "उच्च या गंभीर जोखिम दर्ज है। तुरंत पशु चिकित्सक से संपर्क करें।" : "जांच या उपचार संबंधी सलाह के लिए स्थानीय पशु चिकित्सक या फील्ड एजेंट से संपर्क करें।"}`,
-    mr: `जनावर ${animalContext.animalIdentity.tag} चे ${animalContext.recentCases.length} अलीकडील आरोग्य नोंदी आहेत. नवीनतम लक्षणे: ${symptoms}. संशयित स्थिती: ${condition}. नोंदवलेला धोका: ${risk}. ${latestVaccination ? `नवीनतम लसीकरण: ${latestVaccination.vaccineName}, ${latestVaccination.dateGiven}. ` : ""}${latestTreatment ? `नवीनतम नोंदवलेला उपचार: ${latestTreatment.medication}, ${latestTreatment.dateGiven}. ` : ""}${hasHighRisk ? "उच्च किंवा गंभीर धोका नोंदवला आहे. त्वरित पशुवैद्यकाशी संपर्क साधा." : "तपासणी किंवा उपचाराच्या मार्गदर्शनासाठी स्थानिक पशुवैद्यक किंवा पशुसखीशी संपर्क साधा."}`,
+  const fallbackMessages: Record<string, string> = {
+    en: `I am currently unable to generate an AI response right now. Here is the information recorded for Animal ${tag}: ${caseCount} recent health record(s), ${vaxCount} vaccination record(s), and ${treatCount} treatment record(s). For clinical advice, please consult your local veterinarian or field agent.`,
+    hi: `मैं इस समय एआई प्रतिक्रिया उत्पन्न करने में असमर्थ हूँ। पशु ${tag} के लिए मैत्री में उपलब्ध रिकॉर्ड: ${caseCount} स्वास्थ्य रिकॉर्ड, ${vaxCount} टीकाकरण, और ${treatCount} उपचार। चिकित्सीय सलाह के लिए कृपया स्थानीय पशु चिकित्सक से संपर्क करें।`,
+    bn: `আমি এই মুহূর্তে এআই প্রতিক্রিয়া তৈরি করতে পারছি না। পশু ${tag}-এর জন্য উপলব্ধ রেকর্ড: ${caseCount}টি স্বাস্থ্য রেকর্ড, ${vaxCount}টি টিকাদান, এবং ${treatCount}টি চিকিৎসা। চিকিৎসার পরামর্শের জন্য স্থানীয় পশুচিকিৎসকের সাথে যোগাযোগ করুন।`,
+    mr: `मी सध्या एआय प्रतिसाद तयार करू शकत नाही. जनावर ${tag} साठी मैत्रीत उपलब्ध माहिती: ${caseCount} आरोग्य नोंदी, ${vaxCount} लसीकरण, आणि ${treatCount} उपचार. वैद्यकीय सल्ल्यासाठी कृपया स्थानिक पशुवैद्यकाशी संपर्क साधा.`,
   };
 
+  const answer = fallbackMessages[preferredLanguage] || fallbackMessages.en;
+
   return {
-    answer: summaries[preferredLanguage as keyof typeof summaries] || summaries.en,
+    answer,
     needs_veterinarian: hasHighRisk,
-    risk_notice: hasHighRisk ? summaries[preferredLanguage as keyof typeof summaries] || summaries.en : null,
-    suggested_next_step: { bn: "পশুচিকিৎসকের সঙ্গে যোগাযোগ করুন", hi: "पशु चिकित्सक से संपर्क करें", mr: "पशुवैद्यकाशी संपर्क साधा" }[preferredLanguage] || "Contact Veterinarian",
+    risk_notice: hasHighRisk
+      ? {
+          en: `Escalation Notice: A HIGH or CRITICAL risk is recorded for animal #${tag}. Please contact a veterinarian immediately.`,
+          hi: `चेतावनी सूचना: पशु #${tag} के लिए उच्च/गंभीर जोखिम दर्ज है। कृपया तुरंत पशु चिकित्सक से संपर्क करें।`,
+          bn: `সতর্কতা বিজ্ঞপ্তি: পশু #${tag}-এর জন্য উচ্চ/গুরুতর ঝুঁকি নথিভুক্ত হয়েছে। অবিলম্বে পশুচিকিৎসকের সাথে যোগাযোগ করুন।`,
+          mr: `सूचना: जनावर #${tag} साठी उच्च किंवा गंभीर धोका नोंदवला आहे. कृपया त्वरित पशुवैद्यकाशी संपर्क साधा.`,
+        }[preferredLanguage] || `Escalation Notice: High risk recorded for animal #${tag}.`
+      : null,
+    suggested_next_step: {
+      bn: "পশুচিকিৎসকের সঙ্গে যোগাযোগ করুন",
+      hi: "पशु चिकित्सक से संपर्क करें",
+      mr: "पशुवैद्यकाशी संपर्क साधा",
+      en: "Contact Veterinarian",
+    }[preferredLanguage] || "Contact Veterinarian",
   };
 }
 
@@ -132,7 +270,8 @@ function buildSafeHistoryFallback(animalContext: AnimalContextPacket, preferredL
  * LLM Call: Gemini REST API for a specific API Key
  */
 async function callGeminiWithKey(prompt: string, apiKey: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -164,7 +303,7 @@ async function callGroqProvider(prompt: string): Promise<string> {
     throw new Error("CONFIG_ERROR: GROQ_API_KEY is missing from environment");
   }
 
-  const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
   const url = "https://api.groq.com/openai/v1/chat/completions";
   const response = await fetch(url, {
     method: "POST",
@@ -212,13 +351,13 @@ export function inspectOutputSafety(text: string): { isSafe: boolean; reason?: s
     lower.includes("दर्ज है") ||
     lower.includes("पुराना रिकॉर्ड");
 
-  // Secondary English & Hindi Heuristic Patterns (Layer 4)
+  // Secondary English, Hindi, Bengali & Marathi Heuristic Patterns (Layer 4)
   const unsafePrescriptionPatterns = [
     /\bgive\s+\d+\s*(mg|ml|g|tablets|pills|shots|dose)\b/i,
     /\badminister\s+\d+\s*(mg|ml|g)\b/i,
     /\binject\s+\d+/i,
     /\bprescribe\s+[a-z0-9]+/i,
-    /\b take \d+\s*(mg|ml)\b/i,
+    /\btake\s+\d+\s*(mg|ml)\b/i,
     /\b\d+\s*mg\s+daily\b/i,
     /खुराक\s+\d+/i,
     /दवा\s+दें/i,
@@ -321,7 +460,7 @@ export async function generateFarmerTalkResponse(
     }
   }
 
-  // Layer 5: Safe Fallback Response
+  // Layer 5: Safe Fallback Response (Honest Fallback)
   const hasHighRisk = animalContext.recentCases.some(
     (c) => c.overallRiskLevel === "HIGH" || c.overallRiskLevel === "CRITICAL"
   );
