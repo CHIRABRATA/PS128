@@ -36,6 +36,11 @@ export interface CaseLocationData {
  * Checks whether the given authenticated user has authorization to access the specified Case photo.
  */
 export function canUserAccessCase(appUser: FullAppUser, healthCase: CaseLocationData): boolean {
+  // 0. Administrator Access: Universal access across all cases and media
+  if (appUser.role === "ADMIN") {
+    return true;
+  }
+
   // 1. Farmer Access: Farmer owns the animal OR created the report
   if (appUser.role === "FARMER") {
     return (

@@ -42,11 +42,11 @@ export async function requireFieldAgent(): Promise<FullAppUser> {
 }
 
 export async function requireVeterinarian(): Promise<FullAppUser> {
-  return await requireRole("VETERINARIAN");
+  return await requireAnyRole(["VETERINARIAN", "ADMIN"]);
 }
 
 export async function requireDistrictAuthority(): Promise<FullAppUser> {
-  return await requireRole("DISTRICT_AUTHORITY");
+  return await requireAnyRole(["DISTRICT_AUTHORITY", "ADMIN"]);
 }
 
 export async function requireAdmin(): Promise<FullAppUser> {
@@ -107,6 +107,9 @@ export async function assertFieldAgentCanAccessFarm(farmId: string): Promise<boo
  */
 export async function assertVetCanReviewCase(caseId: string): Promise<boolean> {
   const vet = await requireVeterinarian();
+  if (vet.role === "ADMIN") {
+    return true;
+  }
   const healthCase = await prisma.case.findUnique({
     where: { id: caseId },
     include: {
@@ -147,6 +150,9 @@ export async function assertVetCanReviewCase(caseId: string): Promise<boolean> {
  */
 export async function assertAuthorityCanAccessDistrict(districtId: string): Promise<boolean> {
   const authority = await requireDistrictAuthority();
+  if (authority.role === "ADMIN") {
+    return true;
+  }
   if (authority.districtId && authority.districtId !== districtId) {
     throw new AuthorizationError("Access denied for district outside assigned jurisdiction.");
   }

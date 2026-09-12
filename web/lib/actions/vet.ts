@@ -29,8 +29,8 @@ import { createInAppNotification } from "./notifications";
  */
 async function requireActiveVeterinarian(): Promise<FullAppUser> {
   const appUser = await requireActiveUser();
-  if (appUser.role !== "VETERINARIAN" || appUser.status !== "ACTIVE") {
-    throw new Error("Unauthorized: Only active veterinarians may perform clinical actions.");
+  if ((appUser.role !== "VETERINARIAN" && appUser.role !== "ADMIN") || appUser.status !== "ACTIVE") {
+    throw new Error("Unauthorized: Only active veterinarians and administrators may perform clinical actions.");
   }
   return appUser;
 }
