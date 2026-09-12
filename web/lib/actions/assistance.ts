@@ -417,8 +417,11 @@ const completeFieldReportSchema = z.object({
   photoUrl: z.string().optional().nullable(),
   iotData: z
     .object({
+      iotDeviceId: z.string().optional().nullable(),
       temperature: z.number().optional().nullable(),
       activity: z.number().optional().nullable(),
+      source: z.enum(["REAL", "SIMULATED", "MANUAL"]).optional().nullable(),
+      readingId: z.string().optional().nullable(),
     })
     .optional()
     .nullable(),
@@ -510,6 +513,8 @@ export async function completeAssistanceWithReportAction(input: CompleteFieldRep
             temperature: data.iotData?.temperature ?? null,
             activity: data.iotData?.activity ?? null,
             heartRate: data.heartRate ?? null,
+            source: data.iotData?.source ?? (data.iotData?.temperature != null || data.iotData?.activity != null ? "MANUAL" : null),
+            readingId: data.iotData?.readingId ?? null,
           }
         : undefined;
 

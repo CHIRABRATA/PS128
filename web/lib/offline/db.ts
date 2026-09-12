@@ -17,7 +17,13 @@ export interface OfflineQueueRecord {
   heartRate?: number | null;
   gpsLat?: number | null;
   gpsLng?: number | null;
-  iotData?: { iotDeviceId?: string | null; temperature?: number | null; activity?: number | null } | null;
+  iotData?: {
+    iotDeviceId?: string | null;
+    temperature?: number | null;
+    activity?: number | null;
+    source?: "REAL" | "SIMULATED" | "MANUAL" | null;
+    readingId?: string | null;
+  } | null;
   photoBlob?: Blob | null;
   photoUrl?: string | null;
   status: "QUEUED" | "SYNCING" | "SYNCED" | "FAILED" | "FAILED_AUTHORIZATION" | "NEEDS_MANUAL_RETRY";

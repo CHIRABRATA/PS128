@@ -71,6 +71,8 @@ export function HealthReportForm({
   // IoT State
   const [temperature, setTemperature] = useState<number | null>(null);
   const [activity, setActivity] = useState<number | null>(null);
+  const [iotSource, setIotSource] = useState<"REAL" | "SIMULATED" | "MANUAL" | null>(null);
+  const [iotReadingId, setIotReadingId] = useState<string | null>(null);
 
   // Submission & AI Analysis Status
   const [submitting, setSubmitting] = useState(false);
@@ -120,6 +122,8 @@ export function HealthReportForm({
     setGpsLng(null);
     setTemperature(null);
     setActivity(null);
+    setIotSource(null);
+    setIotReadingId(null);
     setSubmitResult(null);
     setAiState(null);
     setFormError("");
@@ -202,8 +206,11 @@ export function HealthReportForm({
       iotData:
         temperature || activity
           ? {
+              iotDeviceId: selectedAnimal.iotDeviceId || undefined,
               temperature: temperature || null,
               activity: activity || null,
+              source: iotSource || (selectedAnimal.iotDeviceId ? "REAL" : "MANUAL"),
+              readingId: iotReadingId || undefined,
             }
           : undefined,
     };
@@ -230,6 +237,8 @@ export function HealthReportForm({
           iotData: {
             temperature: temperature || null,
             activity: activity || null,
+            source: iotSource || (selectedAnimal.iotDeviceId ? "REAL" : "MANUAL"),
+            readingId: iotReadingId || null,
           },
           status: "QUEUED",
           retryCount: 0,
@@ -740,13 +749,19 @@ export function HealthReportForm({
         {/* STEP 6: IoT Telemetry */}
         {step === 6 && (
           <IoTInput
+            animalId={selectedAnimal?.id}
+            animalTag={selectedAnimal?.tag}
             linkedIotDeviceId={selectedAnimal?.iotDeviceId}
             temperature={temperature}
             activity={activity}
             heartRate={heartRate}
+            iotSource={iotSource}
+            iotReadingId={iotReadingId}
             onChangeTemperature={setTemperature}
             onChangeActivity={setActivity}
             onChangeHeartRate={setHeartRate}
+            onChangeIotSource={setIotSource}
+            onChangeIotReadingId={setIotReadingId}
           />
         )}
 
@@ -778,6 +793,21 @@ export function HealthReportForm({
                 <span className="text-stone-500">Deaths:</span>
                 <span className={mortalityCount > 0 ? "font-bold text-red-700" : "text-stone-600"}>
                   {mortalityCount}
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
+                <span className="text-stone-500">IoT Telemetry:</span>
+                <span>
+                  {temperature || activity || heartRate ? (
+                    <span className="font-medium text-stone-900 inline-flex items-center gap-1.5 flex-wrap justify-end">
+                      <span>{temperature ? `${temperature}°C` : ""}{activity ? ` • Act: ${activity}` : ""}{heartRate ? ` • HR: ${heartRate}` : ""}</span>
+                      {iotSource === "REAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">REAL ESP32</span>}
+                      {iotSource === "SIMULATED" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800">SIMULATED ESP32</span>}
+                      {iotSource === "MANUAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">MANUAL</span>}
+                    </span>
+                  ) : (
+                    "No sensor telemetry"
+                  )}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">

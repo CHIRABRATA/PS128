@@ -32,6 +32,8 @@ const caseReportSchema = z.object({
       iotDeviceId: z.string().optional().nullable(),
       temperature: z.number().optional().nullable(),
       activity: z.number().optional().nullable(),
+      source: z.enum(["REAL", "SIMULATED", "MANUAL"]).optional().nullable(),
+      readingId: z.string().optional().nullable(),
     })
     .optional()
     .nullable(),
@@ -181,6 +183,8 @@ export async function createCaseReportAction(input: CaseReportInput): Promise<Ca
             temperature: data.iotData?.temperature ?? null,
             activity: data.iotData?.activity ?? null,
             heartRate: data.heartRate ?? null,
+            source: data.iotData?.source ?? (animal.iotDeviceId ? "REAL" : "MANUAL"),
+            readingId: data.iotData?.readingId ?? null,
           }
         : undefined;
 
