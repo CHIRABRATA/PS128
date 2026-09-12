@@ -125,7 +125,7 @@ export function getGeminiConfig(): GeminiKeyConfig {
   const secondaryKey = process.env.GEMINI_API_KEY_2 || null;
 
   // Real GA standard model on Google AI v1beta
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
   return { primaryKey, secondaryKey, model };
 }
@@ -448,6 +448,10 @@ async function callGeminiWithKey(
   }
 
   if (!response.ok) {
+    const errBody = await response.text().catch(() => "");
+    if (errBody) {
+      console.error(`[FarmerTalk] Gemini error body (${response.status}): ${errBody.slice(0, 500)}`);
+    }
     const category = categorizeGeminiError(null, response.status);
     throw new ProviderError(
       keyLabel,
@@ -486,7 +490,7 @@ async function callGroqProvider(prompt: string): Promise<string> {
     throw new ProviderError("Groq", "configuration", "GROQ_API_KEY is missing from environment");
   }
 
-  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
   const url = "https://api.groq.com/openai/v1/chat/completions";
   let response: Response;
   try {
@@ -513,6 +517,10 @@ async function callGroqProvider(prompt: string): Promise<string> {
   }
 
   if (!response.ok) {
+    const errBody = await response.text().catch(() => "");
+    if (errBody) {
+      console.error(`[FarmerTalk] Groq error body (${response.status}): ${errBody.slice(0, 500)}`);
+    }
     const category = categorizeGeminiError(null, response.status);
     throw new ProviderError("Groq", category, `HTTP ${response.status}`, response.status);
   }
@@ -667,7 +675,7 @@ export async function generateFarmerTalkResponse(
   if (!rawJsonText) {
     if (process.env.GROQ_API_KEY) {
       const startTimeGroq = Date.now();
-      const groqModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+      const groqModel = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
       console.info(`[FarmerTalk] Groq attempt started (Model: ${groqModel})`);
       try {
         rawJsonText = await callGroqProvider(prompt);

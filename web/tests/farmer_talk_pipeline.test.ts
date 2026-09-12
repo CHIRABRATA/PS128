@@ -652,7 +652,7 @@ describe("Maitri Farmer Talk AI Pipeline & Question Answering Suite", () => {
     let diag = logGeminiDiagnostics();
     expect(diag.key1Configured).toBe("YES");
     expect(diag.key2Configured).toBe("YES");
-    expect(diag.model).toBe("gemini-1.5-flash");
+    expect(diag.model).toBe("gemini-3.8-flash");
 
     // Case 2: Only legacy GEMINI_API_KEY set
     delete process.env.GEMINI_API_KEY_1;
@@ -782,7 +782,7 @@ describe("Maitri Farmer Talk AI Pipeline & Question Answering Suite", () => {
     process.env.GEMINI_API_KEY_1 = "failing-key-1";
     process.env.GEMINI_API_KEY_2 = "failing-key-2";
     process.env.GROQ_API_KEY = "working-groq-key";
-    process.env.GROQ_MODEL = "llama-3.3-70b-versatile";
+    process.env.GROQ_MODEL = "openai/gpt-oss-120b";
 
     const fetchUrls: string[] = [];
     global.fetch = vi.fn().mockImplementation(async (url: string) => {
