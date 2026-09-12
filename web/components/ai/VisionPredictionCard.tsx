@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { runCaseAnalysisAction } from "@/lib/actions/analysis";
+import { runCasePhotoVisionAction } from "@/lib/actions/analysis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, RefreshCw, AlertTriangle, Eye, Sparkles } from "lucide-react";
@@ -25,7 +25,7 @@ export function VisionPredictionCard({
     setRunning(true);
     setError("");
     try {
-      const res = await runCaseAnalysisAction(caseId);
+      const res = await runCasePhotoVisionAction(caseId);
       if (res.success && res.visionResult) {
         const casted = res.visionResult as Record<string, unknown>;
         setVision(casted);
@@ -40,15 +40,38 @@ export function VisionPredictionCard({
     }
   };
 
-  const detectedDiseases = (vision?.detected_diseases as Array<{
-    disease_name: string;
-    confidence: number;
-    visual_features_observed: string[];
-  }>) || [];
+  // Normalize nested yolo_result or data payloads
+  const effectiveVision = ((vision?.yolo_result || vision?.data || vision) as Record<string, unknown>) || null;
 
-  const lesionSeverity = (vision?.lesion_severity as string) || (vision?.visual_anomaly_detected ? "ELEVATED" : "NONE DETECTED");
-  const confidenceScore = Number(vision?.confidence || vision?.confidence_score || (vision?.primary_prediction ? 0.92 : 0));
-  const diagnosticConfidence = (vision?.diagnostic_confidence as string) || (confidenceScore > 0.85 ? "HIGH" : "MODERATE");
+  const rawDetections = (
+    effectiveVision?.detected_diseases ||
+    effectiveVision?.top_predictions ||
+    effectiveVision?.all_detections
+  ) as Array<Record<string, unknown>> | undefined;
+
+  const detectedDiseases = (rawDetections || []).map((d) => ({
+    disease_name: (d.disease_name || d.condition || d.label || "Detected Signature") as string,
+    confidence: Number(d.confidence || 0),
+    visual_features_observed: (d.visual_features_observed || (d.description ? [d.description] : [])) as string[],
+  }));
+
+  const lesionSeverity =
+    (effectiveVision?.severity as string) ||
+    (effectiveVision?.lesion_severity as string) ||
+    (effectiveVision?.visual_anomaly_detected ? "ELEVATED" : "NONE DETECTED");
+
+  const rawConf = Number(
+    effectiveVision?.confidence ??
+    effectiveVision?.confidence_score ??
+    (effectiveVision?.primary_prediction ? 0.92 : 0)
+  );
+  const confidenceScore = rawConf > 1 ? rawConf : rawConf * 100;
+
+  const diagnosticConfidence =
+    (effectiveVision?.diagnostic_confidence as string) ||
+    (confidenceScore > 80 ? "HIGH" : confidenceScore > 40 ? "MODERATE" : "LOW");
+
+  const primaryPrediction = effectiveVision?.primary_prediction as string | undefined;
 
   return (
     <div className="p-5 rounded-3xl border border-[#D0E2FF] bg-white space-y-4 text-[#191F1C] shadow-xs">
@@ -81,7 +104,7 @@ export function VisionPredictionCard({
           className="h-8 text-xs border-[#D9D3C7] bg-[#FAF8F3] text-stone-800 hover:bg-white min-h-[32px] cursor-pointer self-end sm:self-auto rounded-xl font-semibold gap-1.5"
         >
           <RefreshCw className={`h-3.5 w-3.5 text-blue-700 ${running ? "animate-spin" : ""}`} />
-          <span>{vision ? "Rescan Image" : "Scan Image"}</span>
+          <span>{effectiveVision ? "Rescan Image" : "Scan Image"}</span>
         </Button>
       </div>
 
@@ -92,7 +115,7 @@ export function VisionPredictionCard({
         </div>
       )}
 
-      {!vision && !running && (
+      {!effectiveVision && !running && (
         <div className="text-center py-6 text-xs text-stone-500 space-y-2 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
           <Eye className="h-7 w-7 text-stone-400 mx-auto" />
           <p className="font-semibold text-stone-700">Photo attached and ready for neural inspection</p>
@@ -107,7 +130,7 @@ export function VisionPredictionCard({
         </div>
       )}
 
-      {vision && (
+      {effectiveVision && (
         <div className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#FAF8F3] p-3 rounded-2xl border border-[#E5E0D8] text-center">
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
@@ -117,7 +140,7 @@ export function VisionPredictionCard({
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
               <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">Confidence Score</span>
               <span className="font-bold text-emerald-700 font-mono text-sm">
-                {Math.round(confidenceScore > 1 ? confidenceScore : confidenceScore * 100)}%
+                {Math.round(confidenceScore)}%
               </span>
             </div>
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
@@ -126,11 +149,11 @@ export function VisionPredictionCard({
             </div>
           </div>
 
-          {Boolean(vision.primary_prediction) && (
+          {Boolean(primaryPrediction) && (
             <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-emerald-600" />
-                <span className="font-bold text-emerald-950">Primary Finding: {String(vision.primary_prediction)}</span>
+                <span className="font-bold text-emerald-950">Primary Finding: {String(primaryPrediction)}</span>
               </div>
               <Badge className="bg-emerald-600 text-white font-mono text-xs">
                 Verified Signatures
@@ -170,3 +193,4 @@ export function VisionPredictionCard({
     </div>
   );
 }
+

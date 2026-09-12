@@ -70,9 +70,59 @@ export interface AnalyzeRequestPayload {
 
 const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds timeout
 
-function getBackendBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL || process.env.AI_ENGINE_URL || "http://localhost:8000";
-  return url.replace(/\/$/, "");
+/**
+ * Resolves the FastAPI AI Microservice Engine base URL across all supported environment variables.
+ * Strips any trailing slashes and ensures no duplicate /api path segments.
+ * Never exposes secrets.
+ */
+export function getBackendBaseUrl(): string {
+  const raw =
+    process.env.AI_ENGINE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.BACKEND_URL ||
+    process.env.FASTAPI_URL ||
+    process.env.AI_BACKEND_URL ||
+    "http://localhost:8000";
+
+  let url = raw.trim().replace(/\/+$/, "");
+  if (url.endsWith("/api")) {
+    url = url.slice(0, -4);
+  }
+  return url;
+}
+
+/**
+ * Logs safe diagnostics (endpoint path, status, content type, byte size, error category)
+ * strictly WITHOUT logging API keys, Clerk tokens, cookies, auth headers, or raw image bytes.
+ */
+export function logSafeBackendDiagnostics(
+  operation: string,
+  targetUrl: string,
+  meta?: {
+    status?: number;
+    contentType?: string;
+    byteSize?: number;
+    mimeType?: string;
+    errorCategory?: string;
+    detail?: string;
+  }
+) {
+  try {
+    const parsed = new URL(targetUrl);
+    const sanitizedTarget = `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+    const statusPart = meta?.status !== undefined ? ` | status: ${meta.status}` : "";
+    const typePart = meta?.contentType ? ` | content-type: ${meta.contentType}` : "";
+    const bytesPart = meta?.byteSize !== undefined ? ` | bytes: ${meta.byteSize}` : "";
+    const mimePart = meta?.mimeType ? ` | mime: ${meta.mimeType}` : "";
+    const catPart = meta?.errorCategory ? ` | category: ${meta.errorCategory}` : "";
+    const detailPart = meta?.detail ? ` | detail: ${meta.detail}` : "";
+
+    console.info(
+      `[AI Engine Diagnostics] ${operation} | target: ${sanitizedTarget}${statusPart}${typePart}${bytesPart}${mimePart}${catPart}${detailPart}`
+    );
+  } catch {
+    console.info(`[AI Engine Diagnostics] ${operation} | target: [malformed URL]`);
+  }
 }
 
 /**
@@ -110,6 +160,10 @@ export async function analyzeCase(payload: AnalyzeRequestPayload): Promise<Analy
   const baseUrl = getBackendBaseUrl();
   const endpoint = `${baseUrl}/api/analyze`;
 
+  logSafeBackendDiagnostics("Livestock Multi-Stream Analysis Started", endpoint, {
+    mimeType: "application/json",
+  });
+
   const requestOptions: RequestInit = {
     method: "POST",
     headers: {
@@ -129,9 +183,15 @@ export async function analyzeCase(payload: AnalyzeRequestPayload): Promise<Analy
       const response = await fetchWithTimeout(endpoint, requestOptions);
 
       if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        logSafeBackendDiagnostics("Livestock Multi-Stream Analysis Failed", endpoint, {
+          status: response.status,
+          errorCategory: String(response.status),
+          detail: errText ? errText.slice(0, 150) : "HTTP Error",
+        });
+
         // Do NOT retry 4xx client validation errors
         if (response.status >= 400 && response.status < 500) {
-          const errText = await response.text().catch(() => "");
           throw new BackendResponseError(
             `Backend returned HTTP ${response.status}: ${errText}`,
             response.status
@@ -151,6 +211,10 @@ export async function analyzeCase(payload: AnalyzeRequestPayload): Promise<Analy
       }
 
       const rawJson = await response.json();
+      logSafeBackendDiagnostics("Livestock Multi-Stream Analysis Succeeded", endpoint, {
+        status: response.status,
+        contentType: response.headers.get("content-type") || undefined,
+      });
 
       // Runtime schema validation
       const parseResult = AnalyzeResponseSchema.safeParse(rawJson);
@@ -166,7 +230,10 @@ export async function analyzeCase(payload: AnalyzeRequestPayload): Promise<Analy
         throw err;
       }
       if (attempts >= maxAttempts) {
-        console.error("[AI Engine Analysis Error]:", err);
+        logSafeBackendDiagnostics("Livestock Multi-Stream Analysis Unavailable", endpoint, {
+          errorCategory: "unreachable",
+          detail: err instanceof Error ? err.message : "Connection failed",
+        });
         throw new BackendUnavailableError(
           err instanceof Error ? err.message : "Failed to connect to AI engine."
         );
@@ -188,12 +255,18 @@ export async function predictAnimalImage(
 ): Promise<VisionResponse> {
   const baseUrl = getBackendBaseUrl();
   const endpoint = `${baseUrl}/api/predict`;
+  const sanitizedCategory = category.toLowerCase().trim() || "cow";
+
+  logSafeBackendDiagnostics("YOLO Image Prediction Started", endpoint, {
+    byteSize: imageBuffer.length,
+    mimeType: contentType,
+  });
 
   const formData = new FormData();
   const uint8 = new Uint8Array(imageBuffer);
   const blob = new Blob([uint8], { type: contentType });
   formData.append("file", blob, "image.jpg");
-  formData.append("category", category);
+  formData.append("category", sanitizedCategory);
 
   try {
     const response = await fetchWithTimeout(endpoint, {
@@ -204,11 +277,21 @@ export async function predictAnimalImage(
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
+      logSafeBackendDiagnostics("YOLO Image Prediction Failed", endpoint, {
+        status: response.status,
+        errorCategory: String(response.status),
+        detail: errText ? errText.slice(0, 150) : "HTTP Error",
+      });
       throw new BackendResponseError(
         `Backend /api/predict HTTP ${response.status}: ${errText}`,
         response.status
       );
     }
+
+    logSafeBackendDiagnostics("YOLO Image Prediction Succeeded", endpoint, {
+      status: response.status,
+      contentType: response.headers.get("content-type") || undefined,
+    });
 
     const rawJson = await response.json();
     const parseResult = VisionResponseSchema.safeParse(rawJson);
@@ -223,7 +306,10 @@ export async function predictAnimalImage(
     if (err instanceof BackendResponseError || err instanceof BackendTimeoutError) {
       throw err;
     }
-    console.error("[AI Engine Vision Error]:", err);
+    logSafeBackendDiagnostics("YOLO Image Prediction Unavailable", endpoint, {
+      errorCategory: "unreachable",
+      detail: err instanceof Error ? err.message : "Connection failed",
+    });
     throw new BackendUnavailableError(
       err instanceof Error ? err.message : "Failed to run visual prediction."
     );

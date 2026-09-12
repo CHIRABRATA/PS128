@@ -64,7 +64,7 @@ export function canUserAccessCase(appUser: FullAppUser, healthCase: CaseLocation
   }
 
   // 3. Veterinarian Access: Directly assigned to Vet OR lies within Vet's assigned district (or unassigned/global vet)
-  if (appUser.role === "VETERINARIAN") {
+  if (appUser.role === "VETERINARIAN" || (appUser.role as string) === "VET") {
     if (healthCase.assignedVeterinarianUserId === appUser.id) return true;
     if (!appUser.districtId) return true;
     return healthCase.animal.herd.farm.village.block.districtId === appUser.districtId;
