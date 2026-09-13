@@ -1,7 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { requireDistrictAuthority } from "@/lib/auth/permissions";
 import { Badge } from "@/components/ui/badge";
-import { Activity, BellRing, ShieldCheck, UserCheck, Building2, FileSpreadsheet } from "lucide-react";
+import { Activity, BellRing, ShieldCheck, UserCheck, FileSpreadsheet } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 
 export default async function AuthorityLayout({ children }: { children: React.ReactNode }) {
@@ -14,8 +15,8 @@ export default async function AuthorityLayout({ children }: { children: React.Re
       <header className="border-b border-[#CFC6AF] bg-[#FBF9F3]/95 sticky top-0 z-20 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D] flex items-center justify-center text-[#274C36] font-bold text-sm">
-              <Building2 className="h-5 w-5 text-[#274C36]" />
+            <div className="h-9 w-9 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D] overflow-hidden flex items-center justify-center">
+              <Image src="/images/maitri-livestock-logo.png" alt="Maitri" width={36} height={36} className="h-full w-full object-contain scale-125" priority />
             </div>
             <div>
               <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Show, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { ShieldCheck, Stethoscope, Building2, User, Home, Settings } from "lucide-react";
@@ -38,8 +39,15 @@ export function Navbar() {
     <header className="sticky top-0 z-50 flex h-[4.25rem] w-full items-center justify-between border-b border-[#C9BFA0] bg-[#F3EFE5]/95 px-4 md:px-8 backdrop-blur-md">
       {/* Brand Logo & Identity */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-[#274C36] text-[#F3EFE5] font-extrabold border border-[#203D2C] group-hover:bg-[#203D2C] transition-colors">
-          <span className="text-lg tracking-tight font-serif font-black">M</span>
+        <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-[#E1E6D6] border border-[#AEBB9D] overflow-hidden transition-colors group-hover:bg-[#D4DDC3]">
+          <Image
+            src="/images/maitri-livestock-logo.png"
+            alt="Maitri livestock care logo"
+            width={40}
+            height={40}
+            className="h-full w-full object-contain scale-125"
+            priority
+          />
         </div>
         <div className="flex flex-col text-left">
           <span className="font-editorial text-lg md:text-xl font-semibold text-[#20271F] flex items-center gap-2">

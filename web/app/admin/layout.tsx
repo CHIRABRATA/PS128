@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, LayoutDashboard, ScrollText, MapPin } from "lucide-react";
+import { LayoutDashboard, ScrollText, MapPin } from "lucide-react";
 
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -14,8 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="border-b border-[#E5E0D8] bg-white/80 backdrop-blur-sm shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-slate-900 flex items-center justify-center text-white text-xs shadow-2xs">
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <div className="h-7 w-7 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D] overflow-hidden flex items-center justify-center">
+              <Image src="/images/maitri-livestock-logo.png" alt="Maitri" width={28} height={28} className="h-full w-full object-contain scale-125" priority />
             </div>
             <span className="font-bold text-xs tracking-wide text-stone-900 uppercase font-mono">
               Admin Cockpit
