@@ -42,15 +42,15 @@ describe("Error Boundaries with Recovery Actions (Batch 2)", () => {
 
     render(<FarmerError error={testError} reset={resetMock} />);
 
-    expect(screen.getByText(/काहीतरी चूक झाली/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
     expect(screen.getByText(/Database network timeout/i)).toBeInTheDocument();
 
-    const tryAgainBtn = screen.getByRole("button", { name: /पुन्हा प्रयत्न करा/i });
+    const tryAgainBtn = screen.getByRole("button", { name: /Try again/i });
     expect(tryAgainBtn).toBeInTheDocument();
     fireEvent.click(tryAgainBtn);
     expect(resetMock).toHaveBeenCalledTimes(1);
 
-    const homeLink = screen.getByRole("link", { name: /मुख्यपृष्ठ/i });
+    const homeLink = screen.getByRole("link", { name: /Home/i });
     expect(homeLink).toHaveAttribute("href", "/");
   });
 

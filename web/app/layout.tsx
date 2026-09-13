@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FAF8F3",
+  themeColor: "#F3EFE5",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -52,7 +52,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#FAF8F3] text-[#191F1C] selection:bg-emerald-700 selection:text-white pb-16 lg:pb-0">
+      <body className="min-h-full flex flex-col bg-[#F3EFE5] text-[#20271F] selection:bg-[#B9C69E] selection:text-[#20271F] pb-16 lg:pb-0">
         <meta name="language" content="en" />
         <ClerkProvider>
           <LocaleProvider initialLocale="en">

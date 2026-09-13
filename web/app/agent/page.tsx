@@ -62,12 +62,12 @@ export default async function FieldAgentPage() {
     ]);
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 max-w-6xl mx-auto w-full gap-6 text-[#191F1C]">
+    <div className="workspace-page flex-1 flex flex-col w-full gap-6 text-[#20271F]">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-5">
+      <div className="workspace-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">Field Agent Workstation</h1>
+            <h1 className="font-editorial text-3xl font-semibold text-[#20271F] tracking-tight">Field agent workstation</h1>
             <Badge className="text-[10px] bg-amber-50 text-amber-900 border-amber-200">
               Jurisdiction: {jurisdictionName}
             </Badge>
@@ -86,7 +86,7 @@ export default async function FieldAgentPage() {
       </div>
 
       {/* REAL DATABASE KPI METRICS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="metric-register grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-[#D7CFBB] border border-[#D7CFBB]">
         <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 shadow-2xs hover-lift flex flex-col justify-between">
           <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">New Requests</span>
           <div className="flex items-baseline justify-between mt-2">

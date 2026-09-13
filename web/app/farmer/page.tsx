@@ -46,14 +46,14 @@ export default async function FarmerPortalPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 max-w-6xl mx-auto w-full gap-8 text-[#191F1C]">
+    <div className="workspace-page flex-1 flex flex-col w-full gap-8 text-[#20271F]">
       {/* Top Banner & Opening Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-6">
+      <div className="workspace-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">
+          <span className="workspace-eyebrow">
             FARMER HEALTH REGISTER • LIVESTOCK PORTAL
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#191F1C] tracking-tight mt-1">
+          <h1 className="font-editorial text-3xl sm:text-4xl font-semibold text-[#20271F] tracking-tight mt-1">
             {greetingTime}, {farmerDisplayName}.
           </h1>
           <p className="text-stone-600 text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-1.5">
@@ -107,7 +107,7 @@ export default async function FarmerPortalPage() {
       </div>
 
       {/* REAL KPI DASHBOARD COUNTS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="metric-register grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-[#D7CFBB] border border-[#D7CFBB]">
         <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs hover-lift flex flex-col justify-between">
           <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">My Animals</span>
           <div className="flex items-baseline justify-between mt-2">

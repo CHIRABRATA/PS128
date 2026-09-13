@@ -137,7 +137,7 @@ export function AuthorityReportsClient({
     {
       type: "CASE_SUMMARY",
       title: "Case Summary",
-      marathiTitle: "रुग्ण सारांश अहवाल",
+      marathiTitle: "Case summary",
       description:
         "Comprehensive records of all clinical livestock health cases, disease symptoms, mortality counts, and veterinary assessments.",
       icon: <Activity className="h-5 w-5 text-emerald-700" />,
@@ -151,7 +151,7 @@ export function AuthorityReportsClient({
     {
       type: "VACCINATION_COVERAGE",
       title: "Vaccination Coverage",
-      marathiTitle: "लसीकरण व्याप्ती अहवाल",
+      marathiTitle: "Vaccination coverage",
       description:
         "Detailed immunization records, administered vaccines, target livestock species, booster schedules, and personnel logs.",
       icon: <Syringe className="h-5 w-5 text-purple-700" />,
@@ -165,7 +165,7 @@ export function AuthorityReportsClient({
     {
       type: "OUTBREAK_ALERTS",
       title: "Outbreak & Alert Log",
-      marathiTitle: "रोग प्रादुर्भाव सूचना नोंद",
+      marathiTitle: "Outbreak and alert log",
       description:
         "Historical log of biosecurity cluster alerts, suspected epidemic hotspots, cluster time-windows, and notification records.",
       icon: <BellRing className="h-5 w-5 text-amber-700" />,
@@ -185,7 +185,7 @@ export function AuthorityReportsClient({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-[#191F1C] tracking-tight">
-              जिल्हा डेटा निर्यात व अधिकृत अहवाल
+              District data exports and official reports
             </span>
             <Badge className="bg-purple-100 text-purple-900 border-purple-200 text-xs font-semibold">
               Data Exports &amp; Reports
@@ -260,7 +260,7 @@ export function AuthorityReportsClient({
           {/* 1. Report Type Selector */}
           <div className="space-y-3">
             <Label className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
-              1. Select Report Type (अहवाल प्रकार)
+              1. Select report type
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {reportOptions.map((opt) => {
@@ -308,7 +308,7 @@ export function AuthorityReportsClient({
           <div className="space-y-3 pt-4 border-t border-[#E5E0D8]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <Label className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-                2. Report Date Range (कालावधी)
+                2. Report date range
               </Label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold mr-1">
@@ -356,7 +356,7 @@ export function AuthorityReportsClient({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="start-date" className="text-xs text-stone-600 font-medium">
-                  Start Date (आरंभ तारीख)
+                  Start date
                 </Label>
                 <div className="relative">
                   <Input
@@ -371,7 +371,7 @@ export function AuthorityReportsClient({
 
               <div className="space-y-1.5">
                 <Label htmlFor="end-date" className="text-xs text-stone-600 font-medium">
-                  End Date (अंतिम तारीख)
+                  End date
                 </Label>
                 <div className="relative">
                   <Input
@@ -389,7 +389,7 @@ export function AuthorityReportsClient({
           {/* 3. Export Actions (CSV & PDF) */}
           <div className="pt-4 border-t border-[#E5E0D8] space-y-3">
             <Label className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
-              3. Generate Official Export (डेटा डाउनलोड करा)
+              3. Generate official export
             </Label>
 
             <div className="flex flex-col sm:flex-row items-center gap-3">

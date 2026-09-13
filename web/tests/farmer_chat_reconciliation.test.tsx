@@ -163,8 +163,8 @@ describe("FarmerChatBox Component (Batch 2)", () => {
     fireEvent.click(submitBtn);
 
     // Message shows failed status and retry button
-    expect(await screen.findByText(/संदेश अयशस्वी/i)).toBeInTheDocument();
-    const retryBtn = screen.getByRole("button", { name: /पुन्हा पाठवा \(Retry\)/i });
+    expect(await screen.findByText(/Message failed/i)).toBeInTheDocument();
+    const retryBtn = screen.getByRole("button", { name: /Retry/i });
     expect(retryBtn).toBeInTheDocument();
 
     // Second attempt (retry) succeeds

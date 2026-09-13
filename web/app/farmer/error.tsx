@@ -25,10 +25,10 @@ export default function FarmerError({
 
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">
-          काहीतरी चूक झाली (Something went wrong)
+          Something went wrong
         </h2>
         <p className="text-xs text-stone-600 leading-relaxed">
-          शेतकरी पोर्टलवरील माहिती लोड करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.
+          We could not load the farmer portal. Please try again.
         </p>
         {error.message && (
           <p className="text-[11px] text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100 font-mono">
@@ -43,7 +43,7 @@ export default function FarmerError({
           className="w-full sm:flex-1 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[42px] gap-2 cursor-pointer shadow-sm"
         >
           <RefreshCw className="h-4 w-4" />
-          <span>पुन्हा प्रयत्न करा (Try Again)</span>
+          <span>Try again</span>
         </Button>
 
         <Link href="/" className="w-full sm:flex-1">
@@ -52,7 +52,7 @@ export default function FarmerError({
             className="w-full text-xs border-[#D9D3C7] text-stone-700 hover:bg-white rounded-xl min-h-[42px] gap-2 cursor-pointer"
           >
             <Home className="h-4 w-4" />
-            <span>मुख्यपृष्ठ (Home)</span>
+            <span>Home</span>
           </Button>
         </Link>
       </div>

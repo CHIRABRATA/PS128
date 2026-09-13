@@ -35,16 +35,16 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#C9BFA0] bg-[#EDE7D3]/95 px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-50 flex h-[4.25rem] w-full items-center justify-between border-b border-[#C9BFA0] bg-[#F3EFE5]/95 px-4 md:px-8 backdrop-blur-md">
       {/* Brand Logo & Identity */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2F5233] text-[#EDE7D3] font-extrabold shadow-xs group-hover:bg-[#25401F] transition-colors">
+        <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-[#274C36] text-[#F3EFE5] font-extrabold border border-[#203D2C] group-hover:bg-[#203D2C] transition-colors">
           <span className="text-lg tracking-tight font-serif font-black">M</span>
         </div>
         <div className="flex flex-col text-left">
-          <span className="text-sm md:text-base font-bold text-[#191F1C] flex items-center gap-2">
+          <span className="font-editorial text-lg md:text-xl font-semibold text-[#20271F] flex items-center gap-2">
             {dictionary.app.title}
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#2F5233]/10 text-[#2F5233] border border-[#2F5233]/25">
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#DCE3CF] text-[#274C36] border border-[#AEBB9D]">
               {roleLabel}
             </span>
           </span>
@@ -55,7 +55,7 @@ export function Navbar() {
       </Link>
 
       {/* Desktop Navigation Links */}
-      <nav className="hidden xl:flex items-center gap-1.5 bg-[#F7F3E6] border border-[#C9BFA0] px-2 py-1 rounded-xl shadow-2xs">
+      <nav className="hidden xl:flex items-center gap-1 bg-[#FBF9F3] border border-[#C9BFA0] px-1.5 py-1 rounded-sm">
         {navLinks.map((link) => {
           const Icon = link.icon;
           const isActive = pathname.startsWith(link.href);
@@ -63,9 +63,9 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? "bg-[#2F5233] text-[#EDE7D3] shadow-xs"
+                  ? "bg-[#274C36] text-[#F3EFE5]"
                   : "text-[#5C5645] hover:text-[#22291F] hover:bg-[#EDE7D3]"
               }`}
             >
@@ -80,12 +80,12 @@ export function Navbar() {
       <div className="flex items-center gap-3">
         <Show when="signed-out">
           <SignInButton mode="modal">
-            <Button variant="outline" size="sm" className="text-xs border-[#C9BFA0] bg-[#F7F3E6] text-[#22291F] hover:bg-[#EDE7D3] rounded-xl">
+            <Button variant="outline" size="sm" className="text-xs">
               {dictionary.nav.signIn}
             </Button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <Button size="sm" className="text-xs bg-[#2F5233] hover:bg-[#25401F] text-[#EDE7D3] font-semibold shadow-xs rounded-xl">
+            <Button size="sm" className="text-xs">
               {dictionary.nav.signUp}
             </Button>
           </SignUpButton>
@@ -94,7 +94,7 @@ export function Navbar() {
         <Show when="signed-in">
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
-              <Button size="sm" variant="outline" className="text-xs border-[#C9BFA0] bg-[#F7F3E6] text-[#22291F] hover:bg-[#EDE7D3] flex items-center gap-1.5 rounded-xl shadow-2xs">
+              <Button size="sm" variant="outline" className="text-xs flex items-center gap-1.5">
                 <Home className="h-3.5 w-3.5 text-[#2F5233]" />
                 <span>{dictionary.nav.dashboard}</span>
               </Button>

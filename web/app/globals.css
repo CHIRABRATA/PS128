@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAF8F3;
-  --foreground: #191F1C;
+  --background: #f3efe5;
+  --foreground: #20271f;
+  --ink-muted: #5e6256;
+  --paper: #fbf9f3;
+  --forest: #274c36;
+  --moss: #60724c;
+  --clay: #a44d33;
   
   --primary: #047857;
   --primary-hover: #065F46;
@@ -35,13 +40,62 @@
 }
 
 body {
-  background-color: #FAF8F3;
-  color: #191F1C;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Maitri's visual language: field notebook paper, crop-line rules, and
+   confident editorial type. These are deliberately quiet so data stays easy
+   to scan in sheds, clinics, and district offices. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: .32;
+  background-image: radial-gradient(rgba(55, 66, 44, .12) .55px, transparent .55px);
+  background-size: 7px 7px;
+}
+
+h1, h2, h3, .font-editorial {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -.025em;
+}
+
+::selection { background: #b9c69e; color: #20271f; }
+
+.workspace-page {
+  position: relative;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.workspace-heading {
+  border-bottom: 1px solid #cfc6af;
+  padding-bottom: 1.25rem;
+}
+
+.workspace-eyebrow {
+  color: #496342;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.metric-register > * {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-color: #d7cfbb !important;
+  background: rgba(251, 249, 243, .78) !important;
 }
 
 /* Devanagari line height and rendering adjustments for Marathi & Hindi readability */

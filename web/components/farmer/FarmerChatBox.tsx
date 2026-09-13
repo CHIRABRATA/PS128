@@ -298,7 +298,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
         {loading ? (
           <div className="flex items-center justify-center h-full text-stone-500 text-sm gap-2">
             <RefreshCw className="w-4 h-4 animate-spin text-emerald-700" />
-            <span>संवाद इतिहास लोड होत आहे...</span>
+            <span>Loading conversation history…</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-stone-500 text-center p-6 space-y-3">
@@ -306,10 +306,10 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
               <MessageSquare className="w-8 h-8 text-emerald-700" />
             </div>
             <p className="text-sm font-bold text-stone-900">
-              जनावर <span className="text-emerald-800 font-mono">#{initialContext.animalIdentity.tag}</span> बाबत आरोग्य संवाद सुरू करा
+              Start a health conversation for animal <span className="text-emerald-800 font-mono">#{initialContext.animalIdentity.tag}</span>
             </p>
             <p className="text-xs text-stone-500 max-w-sm">
-              मागील तपासणी अहवाल, दिलेले लसीकरण, संभाव्य लक्षणे किंवा पशुखाद्य काळजीबाबत प्रश्न विचारा.
+              Ask about past examinations, vaccinations, possible symptoms, or feed and care.
             </p>
           </div>
         ) : (
@@ -335,7 +335,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
                     <div className="mt-2 pt-2 border-t border-red-200 flex items-center justify-between gap-3 text-xs">
                       <span className="text-red-700 text-[11px] flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3 text-red-600" />
-                        संदेश अयशस्वी (Failed)
+                        Message failed
                       </span>
                       <button
                         onClick={() => handleSend(msg.content, msg.id)}
@@ -343,7 +343,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
                         className="text-[11px] font-bold text-red-800 bg-red-100 hover:bg-red-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition cursor-pointer"
                       >
                         <RefreshCw className={`w-2.5 h-2.5 ${sending ? "animate-spin" : ""}`} />
-                        <span>पुन्हा पाठवा (Retry)</span>
+                        <span>Retry</span>
                       </button>
                     </div>
                   )}
@@ -359,7 +359,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
         {sending && (
           <div className="flex items-center gap-2 text-emerald-800 text-xs p-3 bg-emerald-50 border border-emerald-200 rounded-xl w-fit animate-fade-in">
             <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-700" />
-            <span>मैत्री सहाय्यक माहिती तपासत आहे...</span>
+            <span>Maitri Assistant is checking the record…</span>
           </div>
         )}
 

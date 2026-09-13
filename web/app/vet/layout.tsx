@@ -8,17 +8,17 @@ export default async function VetLayout({ children }: { children: React.ReactNod
   const vetUser = await requireVeterinarian();
 
   return (
-    <div className="min-h-screen bg-[#FAF8F3] text-[#191F1C] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F3EFE5] text-[#20271F] flex flex-col font-sans">
       {/* Top Navigation Bar */}
-      <header className="border-b border-[#E5E0D8] bg-white/95 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-[#CFC6AF] bg-[#FBF9F3]/95 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-xs">
-              <Stethoscope className="h-5 w-5 text-emerald-700" />
+            <div className="h-9 w-9 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D] text-[#274C36] flex items-center justify-center">
+              <Stethoscope className="h-5 w-5 text-[#274C36]" />
             </div>
             <div>
-              <span className="font-bold text-base tracking-tight text-[#191F1C] flex items-center gap-2">
-                MAITRI CLINICAL <span className="text-emerald-800 font-semibold text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">Veterinary Clinic</span>
+              <span className="font-editorial font-semibold text-lg tracking-tight text-[#20271F] flex items-center gap-2">
+                Maitri Clinical <span className="text-[#274C36] font-mono font-semibold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D]">Veterinary clinic</span>
               </span>
               <p className="text-[11px] text-stone-500 hidden sm:block">
                 Clinical Health Triage & Outbreak Surveillance Desk
@@ -38,11 +38,11 @@ export default async function VetLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Sub-Navigation Tabs */}
-        <div className="border-t border-[#E5E0D8] bg-[#FAF8F3] px-4 sm:px-6 lg:px-8">
+        <div className="border-t border-[#CFC6AF] bg-[#F3EFE5] px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex items-center gap-1 overflow-x-auto py-2 scrollbar-none">
             <Link
               href="/vet"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold text-stone-700 hover:text-[#274C36] hover:bg-[#E1E6D6] transition-colors whitespace-nowrap"
             >
               <Activity className="h-4 w-4 text-emerald-700" />
               <span>Triage Queue</span>

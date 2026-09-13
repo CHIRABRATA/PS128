@@ -23,7 +23,7 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-emerald-700" />
           <span className="text-xs font-bold text-[#191F1C] uppercase tracking-wider">
-            पशुपालक तातडीचा सल्ला (Livestock Owner Advisory)
+            Livestock owner advisory
           </span>
         </div>
         <Badge
@@ -38,7 +38,7 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
       {advisory.immediate_actions && advisory.immediate_actions.length > 0 && (
         <div className="space-y-1.5">
           <span className="text-[11px] font-semibold text-stone-700 uppercase tracking-wider">
-            तातडीने करावयाची कृती (Immediate Steps):
+            Immediate steps
           </span>
           <ul className="space-y-1 pl-1">
             {advisory.immediate_actions.map((act, idx) => (
@@ -57,10 +57,10 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-amber-950">
-              जनावरास तात्काळ इतर जनावरांपासून वेगळे करा (Isolate Animal)
+              Isolate this animal from the herd now
             </p>
             <p className="text-[11px] text-amber-800 mt-0.5">
-              शिफारस केलेला विलगीकरण कालावधी: <strong>{advisory.quarantine_days || 14} दिवस</strong>. चारा-पाण्याचे भांडे स्वतंत्र ठेवा.
+              Recommended isolation period: <strong>{advisory.quarantine_days || 14} days</strong>. Keep feed and water containers separate.
             </p>
           </div>
         </div>
@@ -70,7 +70,7 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
       {advisory.home_remedies_safe && advisory.home_remedies_safe.length > 0 && (
         <div className="space-y-1 pt-1">
           <span className="text-[11px] font-semibold text-stone-600 uppercase tracking-wider">
-            सुरक्षित पूरक काळजी (Supportive Care):
+            Safe supportive care
           </span>
           <div className="flex flex-wrap gap-1.5">
             {advisory.home_remedies_safe.map((rem, idx) => (

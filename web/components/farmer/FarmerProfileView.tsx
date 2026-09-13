@@ -258,9 +258,9 @@ export function FarmerProfileView({
 
   const languageLabels: Record<string, string> = {
     en: "English",
-    hi: "हिंदी (Hindi)",
-    mr: "मराठी (Marathi)",
-    bn: "বাংলা (Bengali)",
+    hi: "English",
+    mr: "English",
+    bn: "English",
   };
 
   const totalAnimals = profile.farms.reduce((acc, f) => acc + f.animalCount, 0);
@@ -574,9 +574,6 @@ export function FarmerProfileView({
                 className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
               >
                 <option value="en">English</option>
-                <option value="hi">हिंदी (Hindi)</option>
-                <option value="mr">मराठी (Marathi)</option>
-                <option value="bn">বাংলা (Bengali)</option>
               </select>
             </div>
 

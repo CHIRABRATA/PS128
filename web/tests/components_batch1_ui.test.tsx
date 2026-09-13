@@ -74,7 +74,7 @@ describe("Batch 1 Component UI Tests", () => {
       fireEvent.click(triggerBtn);
 
       await waitFor(() => {
-        expect(screen.getByText(/इतर खात्याचे प्रलंबित अहवाल/i)).toBeInTheDocument();
+        expect(screen.getByText(/Reports belonging to another account/i)).toBeInTheDocument();
       });
     });
 
@@ -106,10 +106,10 @@ describe("Batch 1 Component UI Tests", () => {
       fireEvent.click(triggerBtn);
 
       await waitFor(() => {
-        expect(screen.getByText(/पुन्हा प्रयत्न आवश्यक/i)).toBeInTheDocument();
+        expect(screen.getByText(/Retry needed/i)).toBeInTheDocument();
       });
 
-      const retryBtn = screen.getByRole("button", { name: /पुन्हा प्रयत्न करा/i });
+      const retryBtn = screen.getByRole("button", { name: /Retry/i });
       expect(retryBtn).toBeInTheDocument();
 
       fireEvent.click(retryBtn);

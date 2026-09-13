@@ -19,7 +19,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="xl:hidden fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-[#C9BFA0] bg-[#EDE7D3]/95 px-1 backdrop-blur-md pb-safe shadow-lg">
+    <nav className="xl:hidden fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-[#C9BFA0] bg-[#F3EFE5]/95 px-1 backdrop-blur-md pb-safe shadow-lg">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -29,7 +29,7 @@ export function MobileNav() {
             href={item.href}
             className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 text-[10px] font-semibold min-w-[56px] min-h-[44px] ${
               isActive
-                ? "bg-[#2F5233] text-[#EDE7D3] scale-105 shadow-2xs"
+            ? "bg-[#274C36] text-[#F3EFE5] scale-105 shadow-none rounded-sm"
                 : "text-[#5C5645] hover:text-[#22291F]"
             }`}
           >

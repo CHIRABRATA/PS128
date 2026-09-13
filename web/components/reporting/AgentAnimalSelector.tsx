@@ -57,7 +57,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
     return (
       <div className="p-8 flex flex-col items-center justify-center gap-3 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
         <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-        <span className="text-xs text-stone-600">क्षेत्रीय कार्यकक्षा लोड होत आहे...</span>
+        <span className="text-xs text-stone-600">Loading your assigned area…</span>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
       {/* 1. Farm Dropdown */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-          १. शेत / गोठा निवडा | 1. Select Farm *
+          1. Select farm *
         </label>
         <select
           value={selectedFarmId}
@@ -91,10 +91,10 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
           }}
           className="bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-amber-600 focus:outline-none min-h-[44px] shadow-xs"
         >
-          <option value="">अधिकृत शेत निवडा...</option>
+          <option value="">Choose an authorised farm…</option>
           {farms.map((f) => (
             <option key={f.id} value={f.id}>
-              {f.name} ({f.village?.name || "गाव"}) — शेतकरी: {f.farmerUser?.name || "नोंद नाही"}
+              {f.name} ({f.village?.name || "Village"}) — Farmer: {f.farmerUser?.name || "Not recorded"}
             </option>
           ))}
         </select>
@@ -104,17 +104,17 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
       {selectedFarm && (
         <div className="flex flex-col gap-2 animate-in fade-in-50 duration-200">
           <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-            २. कळप / गट निवडा | 2. Select Herd *
+            2. Select herd *
           </label>
           <select
             value={selectedHerdId}
             onChange={(e) => setSelectedHerdId(e.target.value)}
             className="bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-amber-600 focus:outline-none min-h-[44px] shadow-xs"
           >
-            <option value="">कळप निवडा...</option>
+            <option value="">Choose a herd…</option>
             {herds.map((h) => (
               <option key={h.id} value={h.id}>
-                {h.name || `${h.species} Herd`} ({h.animals.length} जनावरे)
+                {h.name || `${h.species} Herd`} ({h.animals.length} animals)
               </option>
             ))}
           </select>
@@ -126,16 +126,16 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
         <div className="space-y-3 animate-in fade-in-50 duration-200">
           <div className="flex justify-between items-center">
             <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-              ३. तपासणीसाठी जनावर निवडा | 3. Select Animal *
+              3. Select animal for inspection *
             </label>
             <span className="text-[11px] text-amber-900 font-mono font-bold">
-              {animals.length} उपलब्ध जनावरे
+              {animals.length} animals available
             </span>
           </div>
 
           {animals.length === 0 ? (
             <div className="p-6 rounded-2xl border border-[#E5E0D8] bg-[#FAF8F3] text-center text-xs text-stone-500">
-              या कळपात कोणतीही जनावरे नोंदवलेली नाहीत.
+              No animals are registered in this herd.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
@@ -153,7 +153,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
                         breed: animal.breed || null,
                         farmId: selectedFarm.id,
                         farmName: selectedFarm.name,
-                        villageName: selectedFarm.village?.name || "गाव",
+                        villageName: selectedFarm.village?.name || "Village",
                         iotDeviceId: animal.iotDeviceId || null,
                         herdSize: animals.length,
                       })
@@ -167,12 +167,12 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#191F1C] text-sm">टॅग: {animal.tag}</span>
+                          <span className="font-bold text-[#191F1C] text-sm">Tag: {animal.tag}</span>
                           <Badge className="text-[10px] bg-stone-100 text-stone-700 border-stone-200">
                             {animal.species}
                           </Badge>
                         </div>
-                        {animal.breed && <p className="text-xs text-stone-500 mt-0.5">जात: {animal.breed}</p>}
+                        {animal.breed && <p className="text-xs text-stone-500 mt-0.5">Breed: {animal.breed}</p>}
                       </div>
                       {isSelected && <CheckCircle2 className="h-5 w-5 text-amber-700 flex-shrink-0" />}
                     </div>

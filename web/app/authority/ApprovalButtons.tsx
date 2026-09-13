@@ -38,7 +38,7 @@ export function ApprovalButtons({ userId }: { userId: string }) {
         disabled={loading !== null}
       >
         {loading === "reject" ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-        <span>नामंजूर (Reject)</span>
+        <span>Reject</span>
       </Button>
 
       <Button
@@ -48,7 +48,7 @@ export function ApprovalButtons({ userId }: { userId: string }) {
         disabled={loading !== null}
       >
         {loading === "approve" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-        <span>मंजूर करा (Approve)</span>
+        <span>Approve</span>
       </Button>
     </div>
   );

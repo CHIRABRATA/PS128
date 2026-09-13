@@ -241,11 +241,9 @@ export function VetProfileView({
   const getLanguageLabel = (code: string) => {
     switch (code) {
       case "hi":
-        return "हिंदी (Hindi)";
       case "mr":
-        return "मराठी (Marathi)";
       case "bn":
-        return "বাংলা (Bengali)";
+        return "English";
       default:
         return "English";
     }
@@ -507,9 +505,6 @@ export function VetProfileView({
                           className="w-full bg-white border border-[#D9D3C7] text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-700"
                         >
                           <option value="en">English</option>
-                          <option value="hi">हिंदी (Hindi)</option>
-                          <option value="mr">मराठी (Marathi)</option>
-                          <option value="bn">বাংলা (Bengali)</option>
                         </select>
                       </div>
                     </div>
