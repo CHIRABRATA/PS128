@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { getReportCopy } from "@/lib/i18n/report";
+import { useTranslations } from "next-intl";
 
 interface AiAssessmentCardProps {
   caseId: string;
@@ -36,6 +37,7 @@ export function AiAssessmentCard({
   visionResult: initialVision,
   hasPhoto = false,
 }: AiAssessmentCardProps) {
+  const tAi = useTranslations("common.aiCard");
   const { locale } = useLocale();
   const copy = getReportCopy(locale);
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(
@@ -130,9 +132,9 @@ export function AiAssessmentCard({
           <div className="p-8 rounded-3xl border border-blue-200 bg-white text-center space-y-3 shadow-2xs">
             <Activity className="h-10 w-10 text-blue-500 mx-auto" />
             <div>
-              <p className="text-sm font-bold text-slate-900">Multimodal clinical assessment pending</p>
+              <p className="text-sm font-bold text-slate-900">{tAi("pendingAssessment")}</p>
               <p className="text-xs text-stone-500 max-w-sm mx-auto mt-1">
-                Run AI analysis to synthesize reported symptoms, visual photographs, vital sensors, and outbreak vectors.
+                {tAi("runPrompt")}
               </p>
             </div>
             <Button
@@ -150,7 +152,7 @@ export function AiAssessmentCard({
           <div className="p-10 flex flex-col items-center justify-center gap-3 bg-white rounded-3xl border border-blue-200 shadow-2xs">
             <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
             <span className="text-xs text-slate-800 font-semibold">
-              Evaluating clinical data, lesion patterns, and epidemiological risk vectors...
+              {tAi("evaluating")}
             </span>
           </div>
         )}
@@ -196,7 +198,7 @@ export function AiAssessmentCard({
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="h-4 w-4 text-amber-600" />
-                    <span>Differential Diagnoses Matrix</span>
+                    <span>{tAi("differentialMatrix")}</span>
                   </span>
                   <span className="text-xs text-stone-500 font-mono font-medium">
                     {differentials.length} candidate condition{differentials.length > 1 ? "s" : ""}

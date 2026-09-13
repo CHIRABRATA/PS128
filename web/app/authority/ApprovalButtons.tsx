@@ -4,9 +4,11 @@ import { useState } from "react";
 import { approveUserAction, rejectUserAction } from "@/lib/actions/authority";
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function ApprovalButtons({ userId }: { userId: string }) {
   const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
+  const t = useTranslations("common");
 
   const handleApprove = async () => {
     setLoading("approve");
@@ -38,7 +40,7 @@ export function ApprovalButtons({ userId }: { userId: string }) {
         disabled={loading !== null}
       >
         {loading === "reject" ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-        <span>Reject</span>
+        <span>{t("reject")}</span>
       </Button>
 
       <Button
@@ -48,7 +50,7 @@ export function ApprovalButtons({ userId }: { userId: string }) {
         disabled={loading !== null}
       >
         {loading === "approve" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-        <span>Approve</span>
+        <span>{t("approve")}</span>
       </Button>
     </div>
   );

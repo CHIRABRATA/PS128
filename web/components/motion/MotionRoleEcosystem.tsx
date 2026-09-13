@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { User, ShieldCheck, Stethoscope, Building2, ChevronRight } from "lucide-react";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 type ActiveRoleKey = "farmer" | "agent" | "vet" | "authority" | null;
 
 export function MotionRoleEcosystem() {
+  const t = useTranslations("landing.ecosystem");
   const [hoveredRole, setHoveredRole] = useState<ActiveRoleKey>(null);
 
   return (
@@ -38,15 +40,15 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-emerald-800 transition-colors">
-                    1. Farmer
+                    {t("role1Title")}
                   </h3>
-                  <span className="text-[11px] text-emerald-700 font-semibold">Animal Owner & First Responder</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold">{t("role1Sub")}</span>
                 </div>
               </div>
               <ChevronRight className={`h-4 w-4 text-stone-400 transition-transform ${hoveredRole === "farmer" ? "translate-x-1 text-emerald-700" : ""}`} />
             </div>
             <p className="text-stone-600 text-xs leading-relaxed">
-              Maintains digital identity ear tags, logs daily vitals, and accesses AI-powered Farmer Talk health consultation.
+              {t("role1Desc")}
             </p>
           </div>
         </Link>
@@ -74,15 +76,15 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-amber-800 transition-colors">
-                    2. Pashusakhi / Field Agent
+                    {t("role2Title")}
                   </h3>
-                  <span className="text-[11px] text-amber-700 font-semibold">Village Field Worker</span>
+                  <span className="text-[11px] text-amber-700 font-semibold">{t("role2Sub")}</span>
                 </div>
               </div>
               <ChevronRight className={`h-4 w-4 text-stone-400 transition-transform ${hoveredRole === "agent" ? "translate-x-1 text-amber-700" : ""}`} />
             </div>
             <p className="text-stone-600 text-xs leading-relaxed">
-              Conducts doorstep visits, records IoT vitals, captures clinical lesion photos, and operates fully offline in remote areas.
+              {t("role2Desc")}
             </p>
           </div>
         </Link>
@@ -103,8 +105,8 @@ export function MotionRoleEcosystem() {
             <Badge className="bg-white/95 text-[#191F1C] border border-[#E5E0D8] font-mono text-[11px] px-2.5 py-0.5 mb-1.5 shadow-xs">
               TAG: MH-14-1029 • Murrah
             </Badge>
-            <div className="text-white text-xs font-semibold">One Live Animal Record</div>
-            <div className="text-stone-300 text-[10px] mt-0.5">Shared across all 4 stakeholders</div>
+            <div className="text-white text-xs font-semibold">{t("oneAnimalRecord")}</div>
+            <div className="text-stone-300 text-[10px] mt-0.5">{t("sharedStakeholders")}</div>
           </div>
         </div>
 
@@ -114,11 +116,11 @@ export function MotionRoleEcosystem() {
             ? "bg-emerald-50 text-emerald-800 border-emerald-200 shadow-xs"
             : "bg-stone-100 text-stone-600 border-stone-200"
         }`}>
-          {hoveredRole === "farmer" && "• Farmer logs daily appetite & milk yield"}
-          {hoveredRole === "agent" && "• Pashusakhi uploads triage vitals via offline queue"}
-          {hoveredRole === "vet" && "• Veterinarian reviews clinical evidence & prescribes care"}
-          {hoveredRole === "authority" && "• Authority tracks village cluster & outbreak trends"}
-          {!hoveredRole && "Hover or tap any role to explore the workflow"}
+          {hoveredRole === "farmer" && t("pillFarmer")}
+          {hoveredRole === "agent" && t("pillAgent")}
+          {hoveredRole === "vet" && t("pillVet")}
+          {hoveredRole === "authority" && t("pillAuthority")}
+          {!hoveredRole && t("hoverPrompt")}
         </div>
       </div>
 
@@ -147,15 +149,15 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-blue-800 transition-colors">
-                    3. Veterinarian
+                    {t("role3Title")}
                   </h3>
-                  <span className="text-[11px] text-blue-700 font-semibold">Clinical Decision Authority</span>
+                  <span className="text-[11px] text-blue-700 font-semibold">{t("role3Sub")}</span>
                 </div>
               </div>
               <ChevronRight className={`h-4 w-4 text-stone-400 transition-transform ${hoveredRole === "vet" ? "translate-x-1 text-blue-700" : ""}`} />
             </div>
             <p className="text-stone-600 text-xs leading-relaxed">
-              Reviews prioritized clinical cases, evaluates AI differential matrices, orders lab tests, and delivers confirmed diagnoses.
+              {t("role3Desc")}
             </p>
           </div>
         </Link>
@@ -183,15 +185,15 @@ export function MotionRoleEcosystem() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#191F1C] text-base group-hover:text-purple-800 transition-colors">
-                    4. District Officer
+                    {t("role4Title")}
                   </h3>
-                  <span className="text-[11px] text-purple-700 font-semibold">Surveillance & Containment</span>
+                  <span className="text-[11px] text-purple-700 font-semibold">{t("role4Sub")}</span>
                 </div>
               </div>
               <ChevronRight className={`h-4 w-4 text-stone-400 transition-transform ${hoveredRole === "authority" ? "translate-x-1 text-purple-700" : ""}`} />
             </div>
             <p className="text-stone-600 text-xs leading-relaxed">
-              Monitors district-wide disease heatmaps, identifies outbreak surges, oversees quarantine protocols, and deploys emergency teams.
+              {t("role4Desc")}
             </p>
           </div>
         </Link>

@@ -23,6 +23,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export default async function AnimalDetailPage({
   params,
@@ -30,6 +31,8 @@ export default async function AnimalDetailPage({
   params: Promise<{ animalId: string }>;
 }) {
   const { animalId } = await params;
+  const t = await getTranslations("farmer");
+  const tCommon = await getTranslations("common");
 
   let animalDossier;
   try {
@@ -60,7 +63,7 @@ export default async function AnimalDetailPage({
           <Link href="/farmer">
             <Button variant="outline" size="sm" className="h-8 text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl gap-1.5 min-h-[36px]">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to Register</span>
+              <span>{t("backToRegister")}</span>
             </Button>
           </Link>
           <div>
@@ -73,7 +76,7 @@ export default async function AnimalDetailPage({
               </Badge>
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
-              Longitudinal Livestock Health & Surveillance Passport
+              {t("passportTitle")}
             </p>
           </div>
         </div>
@@ -82,19 +85,19 @@ export default async function AnimalDetailPage({
           <Link href={`/farmer/iot?animalId=${animal.id}`}>
             <Button variant="outline" size="sm" className="text-xs gap-1.5 border-emerald-300 text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl min-h-[36px] font-semibold">
               <Cpu className="h-4 w-4 text-emerald-700" />
-              <span>IoT Vitals</span>
+              <span>{t("iotVitals")}</span>
             </Button>
           </Link>
           <Link href={`/farmer/request-help?animalId=${animal.id}`}>
             <Button variant="outline" size="sm" className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-xl min-h-[36px]">
               <UserCheck className="h-4 w-4 text-amber-700" />
-              <span>Request Agent</span>
+              <span>{t("requestAgent")}</span>
             </Button>
           </Link>
           <Link href={`/farmer/report?animalId=${animal.id}`}>
             <Button size="sm" className="text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[36px] shadow-sm">
               <PlusCircle className="h-4 w-4" />
-              <span>Report Health Concern</span>
+              <span>{t("reportHealthConcern")}</span>
             </Button>
           </Link>
         </div>
@@ -119,14 +122,14 @@ export default async function AnimalDetailPage({
           </div>
           <CardContent className="p-5 space-y-3.5 text-xs">
             <div className="border-b border-[#E5E0D8] pb-3">
-              <span className="text-[10px] font-bold uppercase text-stone-500 tracking-wider">Animal Profile</span>
+              <span className="text-[10px] font-bold uppercase text-stone-500 tracking-wider">{t("animalProfile")}</span>
               <h3 className="text-lg font-bold text-[#191F1C] mt-0.5">{animal.species}</h3>
               <p className="text-stone-600">Breed: {animal.breed || "Standard Indigenous"}</p>
             </div>
 
             <div className="space-y-2 text-stone-700">
               <div className="flex justify-between">
-                <span className="text-stone-500">Age:</span>
+                <span className="text-stone-500">{tCommon("age")}:</span>
                 <span className="font-semibold text-stone-900">{animal.ageMonths ? `${animal.ageMonths} Months` : "Recorded"}</span>
               </div>
               <div className="flex justify-between">
@@ -134,11 +137,11 @@ export default async function AnimalDetailPage({
                 <span className="font-mono text-stone-800">{animal.iotDeviceId || "None"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">Farm Location:</span>
+                <span className="text-stone-500">{t("farmLocation")}:</span>
                 <span className="font-medium text-stone-900">{animal.farm.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">Village:</span>
+                <span className="text-stone-500">{tCommon("village")}:</span>
                 <span className="font-medium text-stone-900">{animal.farm.villageName}, {animal.farm.districtName}</span>
               </div>
               <div className="flex justify-between">
@@ -157,7 +160,7 @@ export default async function AnimalDetailPage({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                    Current Health Status
+                    {t("currentHealthStatus")}
                   </span>
                   <RiskBadge level={activeRiskLevel} />
                 </div>
@@ -189,7 +192,7 @@ export default async function AnimalDetailPage({
                   </span>
                 </div>
                 <Badge className="bg-amber-200 text-amber-950 border-amber-300 text-[10px]">
-                  Doctor Visit Due
+                  {t("doctorVisitDue")}
                 </Badge>
               </div>
             )}
@@ -200,7 +203,7 @@ export default async function AnimalDetailPage({
             <CardHeader className="border-b border-[#E5E0D8] pb-3">
               <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-emerald-700" />
-                <span>Latest Veterinary Assessment & Prescription</span>
+                <span>{t("latestAssessment")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 text-xs space-y-3">
@@ -208,7 +211,7 @@ export default async function AnimalDetailPage({
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF8F3] p-3 rounded-2xl border border-[#E5E0D8]">
                     <div>
-                      <span className="text-[10px] text-stone-500 block">Doctor Diagnosis</span>
+                      <span className="text-[10px] text-stone-500 block">{t("doctorDiagnosis")}</span>
                       <strong className="text-sm font-bold text-emerald-950">{latestReport.diagnosis}</strong>
                     </div>
                     <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs font-bold self-start sm:self-center">
@@ -240,8 +243,8 @@ export default async function AnimalDetailPage({
               ) : (
                 <div className="p-6 text-center text-stone-500 space-y-1">
                   <ShieldCheck className="h-7 w-7 text-stone-400 mx-auto" />
-                  <p className="font-semibold text-stone-700">No Veterinary Reports Logged Yet</p>
-                  <p className="text-[11px]">When a licensed veterinarian reviews health episodes for this animal, clinical assessments will appear here.</p>
+                  <p className="font-semibold text-stone-700">{t("noVetReportsYet")}</p>
+                  <p className="text-[11px]">{t("noVetReportsDesc")}</p>
                 </div>
               )}
             </CardContent>
@@ -261,7 +264,7 @@ export default async function AnimalDetailPage({
                 <span>Complete Health & Treatment Timeline ({timeline.length} Events)</span>
               </CardTitle>
               <p className="text-xs text-stone-500">
-                Permanent chronological medical ledger: Health sessions, clinical reviews, vaccinations, treatments, and laboratory events.
+                {t("permanentLedgerDesc")}
               </p>
             </div>
           </div>
@@ -270,7 +273,7 @@ export default async function AnimalDetailPage({
         <CardContent className="pt-6">
           {timeline.length === 0 ? (
             <div className="p-8 text-center text-stone-500 text-xs">
-              No historical health events recorded for this animal.
+              {t("noHistoricalEvents")}
             </div>
           ) : (
             <div className="relative border-l-2 border-emerald-200 ml-4 space-y-6 pb-2">
@@ -325,7 +328,7 @@ export default async function AnimalDetailPage({
                       <div className="pt-1.5 flex justify-end">
                         <Link href={`/farmer/cases/${event.details.caseId}`}>
                           <span className="text-[11px] font-semibold text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer">
-                            <span>View Case & Report</span>
+                            <span>{t("viewCaseReport")}</span>
                             <ChevronRight className="h-3 w-3" />
                           </span>
                         </Link>
@@ -351,7 +354,7 @@ export default async function AnimalDetailPage({
           </CardHeader>
           <CardContent className="pt-4 text-xs">
             {allVaccinations.length === 0 ? (
-              <p className="text-stone-500 italic p-3">No immunization records logged.</p>
+              <p className="text-stone-500 italic p-3">{t("noImmunizationRecords")}</p>
             ) : (
               <div className="space-y-2">
                 {allVaccinations.map((vac) => (
@@ -378,7 +381,7 @@ export default async function AnimalDetailPage({
           </CardHeader>
           <CardContent className="pt-4 text-xs">
             {allTreatments.length === 0 ? (
-              <p className="text-stone-500 italic p-3">No clinical treatment records logged.</p>
+              <p className="text-stone-500 italic p-3">{t("noTreatmentRecords")}</p>
             ) : (
               <div className="space-y-2">
                 {allTreatments.map((t) => (

@@ -1,39 +1,42 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Stethoscope, Sparkles, CheckCircle2, ArrowRight, Eye, Camera, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export function MotionWorkflowTimeline() {
+  const t = useTranslations("landing.timeline");
+  const tLanding = useTranslations("landing");
   const [activeStep, setActiveStep] = useState<number>(3); // Default highlighting Step 3: Vet Decision
 
   const steps = [
     {
       step: 1,
-      title: "1. Field Observation",
-      actor: "Pashusakhi / Farmer",
+      title: tLanding("step1Title"),
+      actor: tLanding("step1Actor"),
       tagColor: "bg-amber-50 text-amber-800 border-amber-200",
       icon: Camera,
     },
     {
       step: 2,
-      title: "2. AI Decision Support",
-      actor: "Assistive Differential Matrix",
+      title: tLanding("step2Title"),
+      actor: tLanding("step2Actor"),
       tagColor: "bg-purple-50 text-purple-800 border-purple-200",
       icon: Sparkles,
     },
     {
       step: 3,
-      title: "3. Veterinary Assessment",
-      actor: "Clinical Authority (Decides)",
+      title: tLanding("step3Title"),
+      actor: tLanding("step3Actor"),
       tagColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
       icon: Stethoscope,
     },
     {
       step: 4,
-      title: "4. Lab & Follow-up",
-      actor: "Field Verification",
+      title: tLanding("step4Title"),
+      actor: tLanding("step4Actor"),
       tagColor: "bg-blue-50 text-blue-800 border-blue-200",
       icon: CheckCircle2,
     },
@@ -80,9 +83,9 @@ export function MotionWorkflowTimeline() {
             <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
               <div>
                 <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                  Step 1 • Field Evidence Intake
+                  {t("step1Badge")}
                 </span>
-                <h3 className="text-lg font-bold text-[#191F1C] mt-1.5">Doorstep Triage & Lesion Capture</h3>
+                <h3 className="text-lg font-bold text-[#191F1C] mt-1.5">{t("step1Title")}</h3>
               </div>
               <Badge variant="outline" className="text-stone-600 font-mono text-xs">TAG: MH-12-8492</Badge>
             </div>
@@ -90,12 +93,12 @@ export function MotionWorkflowTimeline() {
               <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-[#E5E0D8]">
                 <div className="font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5 text-amber-700" />
-                  <span>Reported Symptoms</span>
+                  <span>{t("symptomsTitle")}</span>
                 </div>
                 <ul className="text-stone-600 space-y-1 list-disc list-inside">
-                  <li>Nodular skin eruptions (3 days)</li>
-                  <li>Elevated body temp: 104.2°F</li>
-                  <li>Reduced feed intake (-40%)</li>
+                  <li>{t("symptom1")}</li>
+                  <li>{t("symptom2")}</li>
+                  <li>{t("symptom3")}</li>
                 </ul>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-[#E5E0D8]">

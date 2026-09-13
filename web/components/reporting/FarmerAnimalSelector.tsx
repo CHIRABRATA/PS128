@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Cpu, Loader2, AlertCircle, Plus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface FarmerAnimalSelectorProps {
   selectedAnimal: PrintableAnimalOption | null;
@@ -16,6 +17,8 @@ interface FarmerAnimalSelectorProps {
 }
 
 export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveAnimal, onNewReport }: FarmerAnimalSelectorProps) {
+  const t = useTranslations("farmer");
+  const tCommon = useTranslations("common");
   const [animals, setAnimals] = useState<PrintableAnimalOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,22 +54,22 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
   const registrationForm = showRegister ? (
     <div className="mx-auto max-w-md space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-left">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-bold text-emerald-950">Register a new animal</h4>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setShowRegister(false)} className="h-7 px-2 text-xs text-stone-600">Cancel</Button>
+        <h4 className="text-xs font-bold text-emerald-950">{t("registerNewAnimal")}</h4>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setShowRegister(false)} className="h-7 px-2 text-xs text-stone-600">{tCommon("cancel")}</Button>
       </div>
       <label className="text-xs font-semibold text-stone-700">New ear tag number *</label>
-      <Input value={tag} onChange={(event) => setTag(event.target.value)} placeholder="e.g. COW-002" className="text-xs" />
+      <Input value={tag} onChange={(event) => setTag(event.target.value)} placeholder={t("cowPlaceholder")} className="text-xs" />
       <label className="text-xs font-semibold text-stone-700">Animal type *</label>
       <select value={species} onChange={(event) => setSpecies(event.target.value as typeof species)} className="w-full rounded-xl border border-[#D9D3C7] bg-white p-2.5 text-xs">
-        <option value="COW">Cow</option>
-        <option value="BUFFALO">Buffalo</option>
-        <option value="GOAT">Goat</option>
-        <option value="SHEEP">Sheep</option>
-        <option value="PET">Pet</option>
-        <option value="OTHER">Other</option>
+        <option value="COW">{t("cow")}</option>
+        <option value="BUFFALO">{t("buffalo")}</option>
+        <option value="GOAT">{t("goat")}</option>
+        <option value="SHEEP">{t("sheep")}</option>
+        <option value="PET">{t("pet")}</option>
+        <option value="OTHER">{t("otherSpecies")}</option>
       </select>
       <label className="text-xs font-semibold text-stone-700">Breed (optional)</label>
-      <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder="e.g. Gir" className="text-xs" />
+      <Input value={breed} onChange={(event) => setBreed(event.target.value)} placeholder={t("breedPlaceholder")} className="text-xs" />
       
       <div className="pt-1">
         <LocationSearch
@@ -106,7 +109,7 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
     return (
       <div className="p-8 flex flex-col items-center justify-center gap-3 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
         <Loader2 className="h-6 w-6 animate-spin text-emerald-700" />
-        <span className="text-xs text-stone-600">Loading registered animals...</span>
+        <span className="text-xs text-stone-600">{t("loadingAnimals")}</span>
       </div>
     );
   }
@@ -124,12 +127,12 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
     return (
       <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/70 space-y-4">
         <div className="text-center space-y-2">
-          <p className="text-xs text-amber-900 font-bold">No registered animals were found for your farm.</p>
-            <p className="text-[11px] text-stone-600">Register an animal ear tag here to start a report.</p>
+          <p className="text-xs text-amber-900 font-bold">{t("noAnimalsFarm")}</p>
+            <p className="text-[11px] text-stone-600">{t("registerTagToStart")}</p>
         </div>
         {!showRegister ? (
               <Button type="button" onClick={() => setShowRegister(true)} className="mx-auto flex gap-2 bg-emerald-700 text-xs text-white hover:bg-emerald-800">
-            <Plus className="h-3.5 w-3.5" /> Register an animal
+            <Plus className="h-3.5 w-3.5" /> {t("registerAnimalBtn")}
           </Button>
         ) : registrationForm}
       </div>
@@ -155,10 +158,10 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
             }}
             className="h-7 gap-1 px-2 text-[11px]"
           >
-            <Plus className="h-3 w-3" /> New report
+            <Plus className="h-3 w-3" /> {t("newReport")}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => setShowRegister((current) => !current)} className="h-7 gap-1 px-2 text-[11px]">
-            <Plus className="h-3 w-3" /> Register new animal
+            <Plus className="h-3 w-3" /> {t("registerNewAnimal")}
           </Button>
         </div>
       </div>
@@ -204,7 +207,7 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
                     }}
                     className="h-7 gap-1 border-red-200 px-2 text-[10px] text-red-700 hover:bg-red-50"
                   >
-                    <X className="h-3 w-3" /> Remove tag
+                    <X className="h-3 w-3" /> {t("removeTag")}
                   </Button>
                 )}
               </div>
@@ -214,10 +217,10 @@ export function FarmerAnimalSelector({ selectedAnimal, onSelectAnimal, onRemoveA
                 {animal.iotDeviceId ? (
                   <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[9px] gap-1 px-1.5 py-0.5">
                     <Cpu className="h-2.5 w-2.5" />
-                    <span>IoT Linked</span>
+                    <span>{t("iotLinked")}</span>
                   </Badge>
                 ) : (
-                  <span className="text-stone-400">No IoT</span>
+                  <span className="text-stone-400">{t("noIot")}</span>
                 )}
               </div>
             </div>

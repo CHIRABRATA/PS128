@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function VetError({
   error,
@@ -12,6 +13,8 @@ export default function VetError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("vet");
+
   useEffect(() => {
     console.error("[Veterinarian Portal Error]:", error);
   }, [error]);
@@ -24,10 +27,10 @@ export default function VetError({
 
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-[#191F1C] tracking-tight">
-          Clinical Portal Error
+          {t("clinicalPortalError")}
         </h2>
         <p className="text-xs text-stone-600 leading-relaxed">
-          Unable to retrieve clinical cases or update veterinary records. Please refresh your triage session.
+          {t("portalErrorDesc")}
         </p>
         {error.message && (
           <p className="text-[11px] text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100 font-mono">
@@ -42,7 +45,7 @@ export default function VetError({
           className="w-full sm:flex-1 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[42px] gap-2 cursor-pointer shadow-sm"
         >
           <RefreshCw className="h-4 w-4" />
-          <span>Reload Triage</span>
+          <span>{t("reloadTriage")}</span>
         </Button>
 
         <Link href="/" className="w-full sm:flex-1">
@@ -51,7 +54,7 @@ export default function VetError({
             className="w-full text-xs border-[#D9D3C7] text-stone-700 hover:bg-white rounded-xl min-h-[42px] gap-2 cursor-pointer"
           >
             <Home className="h-4 w-4" />
-            <span>Home</span>
+            <span>{t("home")}</span>
           </Button>
         </Link>
       </div>

@@ -4,6 +4,7 @@ import { AlertTriangle, HeartPulse, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UnifiedAnalysisResponse } from "@/lib/types/livestock";
+import { useTranslations } from "next-intl";
 
 interface LivestockAnalysisResultProps {
   result: UnifiedAnalysisResponse;
@@ -16,6 +17,7 @@ const riskStyles = {
 } as const;
 
 export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps) {
+  const t = useTranslations("ai");
   const riskLevel = result.overall_risk_level;
   const modelWarning =
     result.disease_prediction.confidence <= 0 ||
@@ -28,7 +30,7 @@ export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps
         <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-[#191F1C]">
             <HeartPulse className="h-5 w-5 text-emerald-700" />
-            Health Analysis
+            {t("healthAnalysis")}
           </CardTitle>
           <Badge className={riskStyles[riskLevel]}>
             {riskLevel} · {Math.round(result.overall_risk_score)}/100
@@ -42,7 +44,7 @@ export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps
             />
           </div>
           <div className="flex items-center justify-between text-xs text-stone-600">
-            <span>Suspected condition</span>
+            <span>{t("suspectedCondition")}</span>
             <strong className="text-stone-900">{result.disease_prediction.suspected_condition}</strong>
           </div>
         </CardContent>
@@ -51,7 +53,7 @@ export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps
       {modelWarning && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <span>Disease model results are currently unavailable. This is not a confirmed diagnosis.</span>
+          <span>{t("modelUnavailable")}</span>
         </div>
       )}
 
@@ -60,7 +62,7 @@ export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm text-[#191F1C]">
               <ShieldAlert className="h-4 w-4 text-amber-700" />
-              Sensor alerts
+              {t("sensorAlerts")}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
@@ -75,7 +77,7 @@ export function LivestockAnalysisResult({ result }: LivestockAnalysisResultProps
 
       <Card className="border-emerald-200 bg-emerald-50/60 shadow-xs">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-emerald-950">Farmer advisory</CardTitle>
+          <CardTitle className="text-sm text-emerald-950">{t("farmerAdvisory")}</CardTitle>
         </CardHeader>
         <CardContent className="whitespace-pre-wrap text-sm leading-relaxed text-emerald-950">
           {result.farmer_advisory.advisory}

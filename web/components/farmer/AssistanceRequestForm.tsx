@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createAssistanceRequestAction, CreateAssistanceRequestResult } from "@/lib/actions/assistance";
+import { useTranslations } from "next-intl";
 import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,8 @@ export function AssistanceRequestForm({
   preSelectedAnimalId,
 }: AssistanceRequestFormProps) {
   const router = useRouter();
+  const t = useTranslations("farmer");
+  const tCommon = useTranslations("common");
 
   const resolveInitialFarmId = () => {
     if (preSelectedAnimalId) {
@@ -134,11 +137,11 @@ export function AssistanceRequestForm({
             <CheckCircle2 className="h-9 w-9" />
           </div>
           <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs px-3 py-1 font-semibold">
-            Assistance Request Submitted
+            {t("assistanceSubmitted")}
           </Badge>
-          <h2 className="text-2xl font-bold text-[#191F1C]">Field Assistance Dispatched</h2>
+          <h2 className="text-2xl font-bold text-[#191F1C]">{t("fieldAssistanceDispatched")}</h2>
           <p className="text-xs text-stone-600 max-w-sm">
-            Your request for on-site livestock assistance has been received.
+            {t("assistanceReceivedDesc")}
           </p>
         </div>
 
@@ -154,19 +157,19 @@ export function AssistanceRequestForm({
           <div className="space-y-1 border-b border-[#E5E0D8] pb-2.5">
             <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
               <MapPin className="h-3 w-3 text-emerald-700" />
-              <span>Visit Location</span>
+              <span>{t("visitLocation")}</span>
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
               <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
-                <span className="text-stone-500 block text-[10px]">Village:</span>
+                <span className="text-stone-500 block text-[10px]">{tCommon("village")}:</span>
                 <strong className="text-stone-900">{location?.villageName || selectedFarm?.villageName || "-"}</strong>
               </div>
               <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
-                <span className="text-stone-500 block text-[10px]">Block:</span>
+                <span className="text-stone-500 block text-[10px]">{tCommon("block")}:</span>
                 <strong className="text-stone-900">{location?.blockName || "-"}</strong>
               </div>
               <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
-                <span className="text-stone-500 block text-[10px]">District:</span>
+                <span className="text-stone-500 block text-[10px]">{tCommon("district")}:</span>
                 <strong className="text-stone-900">{location?.districtName || "-"}</strong>
               </div>
             </div>
@@ -176,14 +179,14 @@ export function AssistanceRequestForm({
           <div className="space-y-1.5 border-b border-[#E5E0D8] pb-2.5">
             <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
               <UserCheck className="h-3 w-3 text-amber-700" />
-              <span>Assigned Field Agent (Pashusakhi)</span>
+              <span>{t("assignedAgent")}</span>
             </span>
             {agent ? (
               <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-sm text-emerald-950 block">{agent.name}</span>
                   <span className="text-[11px] text-emerald-800">
-                    Assigned at: <strong className="uppercase">{assignmentLevel || "District"}</strong> level
+                    Assigned at: <strong className="uppercase">{assignmentLevel || "District"}</strong> {t("level") || "level"}
                   </span>
                   {agent.phone && (
                     <span className="block text-[10px] text-stone-500 mt-0.5">Contact: {agent.phone}</span>
@@ -196,13 +199,13 @@ export function AssistanceRequestForm({
             ) : (
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-amber-950">Waiting for a field agent</span>
+                  <span className="font-bold text-xs text-amber-950">{t("waitingForAgent")}</span>
                   <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px]">
                     Queued
                   </Badge>
                 </div>
                 <p className="text-[11px] text-amber-900">
-                  Your request is queued in the local field agent pool and will be accepted shortly.
+                  {t("queuedDesc")}
                 </p>
               </div>
             )}
@@ -212,7 +215,7 @@ export function AssistanceRequestForm({
           <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
             <span className="font-bold block">Lifecycle Notice:</span>
             <p className="text-stone-700">
-              No health case has been created yet. A formal Case will be generated after the field agent completes the on-site visit and submits the examination report.
+              {t("noCaseYetDesc")}
             </p>
           </div>
         </div>
@@ -224,7 +227,7 @@ export function AssistanceRequestForm({
             onClick={handleResetForm}
             className="flex-1 text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl min-h-[44px]"
           >
-            Submit Another Request
+            {t("submitAnother")}
           </Button>
           <Button
             type="button"
@@ -234,7 +237,7 @@ export function AssistanceRequestForm({
             }}
             className="flex-1 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl min-h-[44px] gap-1.5"
           >
-            <span>View in Dashboard</span>
+            <span>{t("viewInDashboard")}</span>
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
@@ -250,14 +253,14 @@ export function AssistanceRequestForm({
             <UserCheck className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-[#191F1C]">Field Agent Assistance Form</h3>
+            <h3 className="text-base font-bold text-[#191F1C]">{t("fieldAgentForm")}</h3>
             <p className="text-xs text-stone-500">
-              Request a Pashusakhi / Field Agent visit for on-site physical examination, ear-tagging, or vitals inspection.
+              {t("requestVisitDesc")}
             </p>
           </div>
         </div>
         <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] font-bold">
-          Doorstep Service
+          {t("doorstepService")}
         </Badge>
       </div>
 
@@ -275,14 +278,14 @@ export function AssistanceRequestForm({
             <Label className="text-xs font-bold text-stone-800 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Select Farm / Shed Location *</span>
+                <span>{t("farmLocation")} *</span>
               </span>
               <button
                 type="button"
                 onClick={() => setShowLocationSearch(!showLocationSearch)}
                 className="text-[11px] font-medium text-emerald-700 hover:underline cursor-pointer"
               >
-                {showLocationSearch ? "Use standard farm" : "Search / GPS"}
+                {showLocationSearch ? t("standardFarm") || "Use standard farm" : t("searchGps")}
               </button>
             </Label>
             {farms.length > 0 ? (
@@ -294,7 +297,7 @@ export function AssistanceRequestForm({
                 className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
               >
                 {farms.length > 1 && (
-                  <option value="">Select a farm / shed location...</option>
+                  <option value="">{t("selectFarmLocation")}</option>
                 )}
                 {farms.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -306,16 +309,16 @@ export function AssistanceRequestForm({
               <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
                   <AlertCircle className="h-4 w-4 text-amber-700 shrink-0" />
-                  <span>No registered farms found.</span>
+                  <span>{t("noFarmsFound")}</span>
                 </div>
                 <p className="text-[11px] text-amber-800">
-                  Please use <strong>Search / GPS</strong> above or register your farm under{" "}
+                  {t("pleaseUse")} <strong>{t("searchGps")}</strong> above or register your farm under{" "}
                   <Link href="/farmer/profile" className="underline font-medium hover:text-amber-950">
-                    My Profile
+                    {t("myProfileLink")}
                   </Link>{" "}
                   /{" "}
                   <Link href="/farmer/report" className="underline font-medium hover:text-amber-950">
-                    Report Health Concern
+                    {t("reportHealthConcern")}
                   </Link>
                   .
                 </p>
@@ -327,7 +330,7 @@ export function AssistanceRequestForm({
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-amber-700" />
-              <span>Specific Animal (Optional)</span>
+              <span>{t("specificAnimalOptional")}</span>
             </Label>
             <select
               id="animal-select"
@@ -336,7 +339,7 @@ export function AssistanceRequestForm({
               disabled={farms.length === 0}
               className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px] disabled:bg-stone-50 disabled:text-stone-400"
             >
-              <option value="">General Herd / Multiple Animals</option>
+              <option value="">{t("generalHerd")}</option>
               {farmAnimals.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.tag} ({a.species})
@@ -364,13 +367,13 @@ export function AssistanceRequestForm({
       {/* Reason for Request */}
       <div className="space-y-1.5">
         <Label className="text-xs font-bold text-stone-800">
-          Reason for Assistance Request *
+          {t("reasonForHelp")} *
         </Label>
         <Input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           required
-          placeholder="e.g. Animal unable to stand, sudden fever and mouth blisters, need help taking lesion photos"
+          placeholder={t("reasonPlaceholder")}
           className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl min-h-[44px]"
         />
       </div>
@@ -380,7 +383,7 @@ export function AssistanceRequestForm({
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-emerald-700" />
-            <span>Preferred Date (Optional)</span>
+            <span>{t("preferredTime")}</span>
           </Label>
           <Input
             type="date"
@@ -392,12 +395,12 @@ export function AssistanceRequestForm({
 
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone-800">
-            Additional Directions or Notes
+            {t("additionalNotes")}
           </Label>
           <Input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Farm located 500m behind village primary school"
+            placeholder={t("directionsPlaceholder")}
             className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl"
           />
         </div>
@@ -406,7 +409,7 @@ export function AssistanceRequestForm({
       <div className="p-4 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] text-xs text-stone-600 space-y-1">
         <div className="font-bold text-stone-800">Workflow Note:</div>
         <p>
-          Submitting this form creates a <strong>Field Assistance Request</strong>. The assigned agent will visit your farm, record physical observations, and submit the official health report.
+          {t("submittingCreates")} <strong>{t("fieldAssistanceRequest")}</strong>. The assigned agent will visit your farm, record physical observations, and submit the official health report.
         </p>
       </div>
 
@@ -418,7 +421,7 @@ export function AssistanceRequestForm({
           disabled={submitting}
           className="text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl min-h-[40px]"
         >
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           type="submit"
@@ -428,11 +431,11 @@ export function AssistanceRequestForm({
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Submitting Request...</span>
+              <span>{t("submittingRequest")}</span>
             </>
           ) : (
             <>
-              <span>Dispatch Field Agent</span>
+              <span>{t("dispatchAgent")}</span>
               <ArrowRight className="h-4 w-4" />
             </>
           )}

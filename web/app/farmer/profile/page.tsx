@@ -6,6 +6,7 @@ import { FarmerProfileView } from "@/components/farmer/FarmerProfileView";
 import { TelegramConnectCard } from "@/components/telegram/TelegramConnectCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export const metadata = {
   title: "My Profile — Farmer Portal | Maitri",
@@ -13,6 +14,7 @@ export const metadata = {
 };
 
 export default async function FarmerProfilePage() {
+  const t = await getTranslations("farmer");
   await requireFarmer();
 
   const [profile, districts] = await Promise.all([
@@ -27,13 +29,13 @@ export default async function FarmerProfilePage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-wide">
             <User className="h-3.5 w-3.5" />
-            <span>FARMER ACCOUNT & TERRITORY</span>
+            <span>{t("farmerAccountTerritory")}</span>
           </div>
           <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight mt-1">
-            My Farmer Profile
+            {t("myFarmerProfile")}
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            Manage your personal contact details, preferred language, and registered location jurisdiction.
+            {t("farmerProfileLead")}
           </p>
         </div>
 
@@ -44,7 +46,7 @@ export default async function FarmerProfilePage() {
             className="gap-1.5 text-xs border-[#D9D3C7] text-stone-700 hover:bg-white rounded-xl min-h-[38px] shadow-2xs hover-lift-sm"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Farmer Portal</span>
+            <span>{t("farmerPortal")}</span>
           </Button>
         </Link>
       </div>

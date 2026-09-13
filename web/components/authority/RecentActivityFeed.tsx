@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { RecentActivityItem } from "@/lib/authority/metrics";
 import { Activity, ClipboardList, Footprints, FileText, BellRing, ChevronRight } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface RecentActivityFeedProps {
   activities: RecentActivityItem[];
 }
 
 export function RecentActivityFeed({ activities }: RecentActivityFeedProps) {
+  const t = useTranslations("authority");
   const getActivityIcon = (type: RecentActivityItem["type"]) => {
     switch (type) {
       case "CASE":
@@ -35,14 +37,14 @@ export function RecentActivityFeed({ activities }: RecentActivityFeedProps) {
           <div>
             <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
               <Activity className="h-5 w-5 text-emerald-700" />
-              <span>Recent Surveillance Activity Stream</span>
+              <span>{t("recentActivityStream")}</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              Live chronological feed of new health intakes, field agent inspections, veterinary reports, and alerts
+              {t("activityStreamDesc")}
             </CardDescription>
           </div>
           <Badge className="bg-stone-100 text-stone-700 border-stone-200 text-xs">
-            Live Stream ({activities.length})
+            {t("liveStreamCount", { count: activities.length })}
           </Badge>
         </div>
       </CardHeader>
@@ -50,7 +52,7 @@ export function RecentActivityFeed({ activities }: RecentActivityFeedProps) {
       <CardContent className="p-4 sm:p-5">
         {activities.length === 0 ? (
           <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-            No recent surveillance activity logged in this district scope yet.
+            {t("noActivityLogged")}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

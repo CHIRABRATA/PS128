@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Village {
   id: string;
@@ -62,6 +63,7 @@ type ModalType =
   | null;
 
 export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
+  const t = useTranslations("admin");
   const [districts, setDistricts] = useState<District[]>(initialDistricts);
   const [expandedDistricts, setExpandedDistricts] = useState<Record<string, boolean>>({});
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({});
@@ -252,7 +254,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
         <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-              Districts
+              {t("districtsCount")}
             </span>
             <div className="text-2xl font-black font-mono text-stone-900 mt-1">
               {totalDistricts}
@@ -266,7 +268,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
         <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-              Blocks / Tehsils
+              {t("blocksCount")}
             </span>
             <div className="text-2xl font-black font-mono text-stone-900 mt-1">
               {totalBlocks}
@@ -280,7 +282,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
         <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-              Villages
+              {t("villagesCount")}
             </span>
             <div className="text-2xl font-black font-mono text-stone-900 mt-1">
               {totalVillages}
@@ -302,10 +304,10 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
               </div>
               <div>
                 <CardTitle className="text-sm font-bold text-[#191F1C]">
-                  Administrative Geography Tree
+                  {t("adminGeoTree")}
                 </CardTitle>
                 <CardDescription className="text-xs text-stone-500">
-                  Strict 3-tier hierarchy: District $\to$ Block $\to$ Village
+                  {t("strictHierarchy")}
                 </CardDescription>
               </div>
             </div>
@@ -319,7 +321,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                 className="h-8 text-xs rounded-xl border-[#D9D3C7] gap-1.5"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isPending ? "animate-spin" : ""}`} />
-                <span>Refresh</span>
+                <span>{t("refresh")}</span>
               </Button>
               <Button
                 size="sm"
@@ -327,7 +329,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                 className="h-8 text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-white gap-1.5"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>Add District</span>
+                <span>{t("addDistrict")}</span>
               </Button>
             </div>
           </div>
@@ -337,9 +339,9 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
           {districts.length === 0 ? (
             <div className="text-center py-12 text-stone-500 bg-[#FAF8F3]/50 rounded-2xl border border-[#E5E0D8]">
               <MapPin className="h-8 w-8 mx-auto text-stone-300 mb-2" />
-              <span className="block font-medium">No districts configured yet.</span>
+              <span className="block font-medium">{t("noDistrictsConfigured")}</span>
               <span className="text-[11px] text-stone-400">
-                Click &quot;Add District&quot; to initialize master geography data.
+                {t("clickAddDistrict")}
               </span>
             </div>
           ) : (
@@ -366,7 +368,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                       <Building2 className="h-4 w-4 text-purple-700 shrink-0" />
                       <span className="font-bold text-sm text-stone-900">{district.name}</span>
                       <Badge variant="outline" className="text-[10px] font-mono border-purple-200 text-purple-900 bg-purple-50">
-                        {district.blocks.length} Blocks
+                        {t("blocksCountBadge", { count: district.blocks.length })}
                       </Badge>
                     </div>
 
@@ -383,7 +385,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                         className="h-7 px-2 text-xs rounded-lg text-purple-800 hover:bg-purple-100 gap-1"
                       >
                         <Plus className="h-3 w-3" />
-                        <span className="hidden sm:inline">Add Block</span>
+                        <span className="hidden sm:inline">{t("addBlock")}</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -406,7 +408,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                     <div className="p-3 sm:p-4 pl-6 sm:pl-8 space-y-2.5 bg-stone-50/50 border-t border-[#E5E0D8]">
                       {district.blocks.length === 0 ? (
                         <div className="text-xs text-stone-400 italic py-2">
-                          No blocks in this district. Click &quot;Add Block&quot; to add one.
+                          {t("noBlocksInDistrict")}
                         </div>
                       ) : (
                         district.blocks.map((block) => {
@@ -437,7 +439,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                                     variant="outline"
                                     className="text-[9px] font-mono border-blue-200 text-blue-900 bg-blue-50"
                                   >
-                                    {block.villages.length} Villages
+                                    {t("villagesCountBadge", { count: block.villages.length })}
                                   </Badge>
                                 </div>
 
@@ -456,7 +458,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                                     className="h-6 px-1.5 text-[11px] rounded-lg text-blue-700 hover:bg-blue-50 gap-1"
                                   >
                                     <Plus className="h-2.5 w-2.5" />
-                                    <span className="hidden sm:inline">Add Village</span>
+                                    <span className="hidden sm:inline">{t("addVillage")}</span>
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -480,7 +482,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                                 <div className="p-2 sm:p-3 pl-6 sm:pl-8 space-y-1.5 bg-stone-50/80 border-t border-stone-100">
                                   {block.villages.length === 0 ? (
                                     <div className="text-[11px] text-stone-400 italic py-1">
-                                      No villages registered in this block yet.
+                                      {t("noVillagesInBlock")}
                                     </div>
                                   ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -549,7 +551,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                     {activeModal === "EDIT_VILLAGE" && `Edit Village: ${modalTarget.villageName}`}
                   </h3>
                   <p className="text-[11px] text-stone-500">
-                    Administrative master data mutation with audit trail
+                    {t("mutationAuditDesc")}
                   </p>
                 </div>
               </div>
@@ -581,7 +583,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
               {(activeModal === "ADD_BLOCK" || activeModal === "EDIT_BLOCK") && (
                 <div>
                   <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    Parent District <span className="text-rose-500">*</span>
+                    {t("parentDistrict")} <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formParentId}
@@ -602,7 +604,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
               {(activeModal === "ADD_VILLAGE" || activeModal === "EDIT_VILLAGE") && (
                 <div>
                   <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    Parent Block <span className="text-rose-500">*</span>
+                    {t("parentBlock")} <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formParentId}
@@ -627,7 +629,7 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
                   Name <span className="text-rose-500">*</span>
                 </label>
                 <Input
-                  placeholder="e.g. Mayurbhanj, Betnoti, Nuagaon"
+                  placeholder={t("placeholderMayurbhanj")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   required
@@ -638,16 +640,16 @@ export function GeographyManager({ initialDistricts }: GeographyManagerProps) {
               {/* Audit Reason */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Administrative Reason / Reference Note
+                  {t("adminReasonLabel")}
                 </label>
                 <Input
-                  placeholder="e.g. Official government notification #2026-A"
+                  placeholder={t("placeholderGovNotif")}
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
                   className="text-xs h-9 rounded-xl border-[#D9D3C7]"
                 />
                 <span className="text-[10px] text-stone-400 mt-0.5 block">
-                  This justification will be permanently stamped in the append-only Audit Log.
+                  {t("adminReasonDesc")}
                 </span>
               </div>
 

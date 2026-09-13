@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { VetAction, CaseStatus } from "@prisma/client";
+import { useTranslations } from "next-intl";
 import {
   saveVetFeedbackAction,
   confirmCaseAction,
@@ -47,6 +48,7 @@ export function VetFeedbackForm({
   updatedAtIso,
   suggestedAction,
 }: VetFeedbackFormProps) {
+  const t = useTranslations("vet");
   const [diagnosis, setDiagnosis] = useState<string>(initialDiagnosis || "");
   const [action, setAction] = useState<VetAction>(initialAction || suggestedAction || "MONITOR");
   const [followUpDate, setFollowUpDate] = useState<string>(
@@ -190,15 +192,15 @@ export function VetFeedbackForm({
           </div>
           <div>
             <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-wider">
-              Veterinary Clinical Assessment
+              {t("assessmentHeader")}
             </h3>
             <p className="text-xs text-emerald-800">
-              Official licensed veterinary medical evaluation and clinical disposition.
+              {t("officialLicensedEval")}
             </p>
           </div>
         </div>
         <Badge className="px-3 py-1 text-xs font-semibold rounded-full border border-emerald-300 bg-emerald-100 text-emerald-900 shadow-none">
-          Doctor&apos;s Entry
+          {t("doctorsEntry")}
         </Badge>
       </div>
 
@@ -206,7 +208,7 @@ export function VetFeedbackForm({
       <div className="bg-white p-3.5 rounded-2xl border border-emerald-200/80 text-xs text-emerald-950 flex items-start gap-2.5 shadow-2xs">
         <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed">
-          <strong className="font-semibold text-emerald-900">Clinical Authority:</strong> AI findings provide decision support. The licensed veterinary entry recorded below serves as the legally binding clinical diagnosis and prescription.
+          <strong className="font-semibold text-emerald-900">Clinical Authority:</strong> {t("aiLegalDisclaimer")}
         </p>
       </div>
 
@@ -282,7 +284,7 @@ export function VetFeedbackForm({
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-emerald-700" />
-              <span>3. Follow-up Date</span>
+              <span>{t("followUpDateStep")}</span>
             </Label>
             <Input
               type="date"
@@ -296,7 +298,7 @@ export function VetFeedbackForm({
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
-              <span>Diagnostic Lab Name</span>
+              <span>{t("diagnosticLabNameStep")}</span>
             </Label>
             <Input
               value={labName}
@@ -311,7 +313,7 @@ export function VetFeedbackForm({
         {/* 4. Veterinary Notes */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
-            4. Clinical Notes &amp; Quarantine Guidelines
+            {t("clinicalNotesStep")}
           </Label>
           <Textarea
             value={notes}
@@ -336,7 +338,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-stone-200 bg-white text-stone-800 hover:bg-stone-50 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            <span>Save Feedback</span>
+            <span>{t("saveFeedbackBtn")}</span>
           </Button>
 
           <Button
@@ -348,7 +350,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
-            <span>Refer to Lab</span>
+            <span>{t("referToLabBtn")}</span>
           </Button>
 
           <Button
@@ -360,7 +362,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 border-stone-200 bg-white text-stone-700 hover:bg-stone-50 min-h-[38px] rounded-xl px-4 font-semibold shadow-2xs cursor-pointer"
           >
             <XCircle className="h-3.5 w-3.5 text-stone-500" />
-            <span>Close / Harmless</span>
+            <span>{t("closeHarmlessBtn")}</span>
           </Button>
 
           <Button
@@ -371,7 +373,7 @@ export function VetFeedbackForm({
             className="text-xs gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs min-h-[38px] rounded-xl px-4 cursor-pointer"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            <span>Confirm Disease</span>
+            <span>{t("confirmDiseaseBtn")}</span>
           </Button>
         </div>
       )}

@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, ChevronRight, ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function FarmerTalkAnimalSelectorPage() {
   const farmer = await requireFarmer();
@@ -15,6 +16,7 @@ export default async function FarmerTalkAnimalSelectorPage() {
     ? localeCookie
     : farmer.preferredLanguage) as Locale;
   const dict = getDictionary(locale);
+  const t = await getTranslations("farmer");
 
   // Fetch all animals owned by farmer across their farms
   const animals = await prisma.animal.findMany({
@@ -47,7 +49,7 @@ export default async function FarmerTalkAnimalSelectorPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">{dict.farmerTalk.title}</h1>
             <Badge className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200">
-              Livestock Health Talk
+              {t("livestockHealthTalk")}
             </Badge>
           </div>
           <p className="text-stone-600 text-xs mt-1">
@@ -58,7 +60,7 @@ export default async function FarmerTalkAnimalSelectorPage() {
         <Link href="/farmer">
           <Button variant="outline" size="sm" className="text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 gap-1.5 rounded-xl">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Farmer Portal</span>
+            <span>{t("backToFarmerPortal")}</span>
           </Button>
         </Link>
       </div>
@@ -66,9 +68,9 @@ export default async function FarmerTalkAnimalSelectorPage() {
       {animals.length === 0 ? (
         <Card className="border-[#E5E0D8] bg-white p-8 text-center rounded-3xl shadow-xs">
           <MessageSquare className="w-12 h-12 text-stone-400 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-stone-900">No registered animals found</h3>
+          <h3 className="text-lg font-bold text-stone-900">{t("noRegisteredAnimalsFound")}</h3>
           <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-            No livestock are currently registered under your account. Please contact your local field agent or veterinary dispensary for ear-tag registration.
+            {t("noAnimalsTalkDesc")}
           </p>
         </Card>
       ) : (
@@ -112,13 +114,13 @@ export default async function FarmerTalkAnimalSelectorPage() {
                     {recentCase ? (
                       <span>Last Record: <strong className="text-stone-800">{recentCase.status}</strong></span>
                     ) : (
-                      <span>Routine Care</span>
+                      <span>{t("routineCare")}</span>
                     )}
                   </div>
 
                   <Link href={`/farmer/talk/${animal.id}`}>
                     <Button size="sm" className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm font-semibold rounded-xl">
-                      <span>Start Health Talk</span>
+                      <span>{t("startHealthTalk")}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Button>
                   </Link>

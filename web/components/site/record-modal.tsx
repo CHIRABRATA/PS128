@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export interface RecordModalData {
   name: string;
@@ -35,6 +36,8 @@ export function RecordModal({
   data: RecordModalData;
   children: ReactNode;
 }) {
+  const t = useTranslations("landing");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
@@ -122,16 +125,16 @@ export function RecordModal({
 
             <div className="space-y-5 px-6 py-5 text-sm text-[#3A3D30]">
               <div className="flex items-center justify-between border-b border-[#C9BFA0]/70 pb-3">
-                <span className="text-[#5C5645]">Current status</span>
+                <span className="text-[#5C5645]">{t("recordModalStatus")}</span>
                 <span className="font-medium text-[#22291F]">{data.status}</span>
               </div>
               <div className="flex items-center justify-between border-b border-[#C9BFA0]/70 pb-3">
-                <span className="text-[#5C5645]">Next action</span>
+                <span className="text-[#5C5645]">{t("recordModalNext")}</span>
                 <span className="font-medium text-[#22291F]">{data.nextAction}</span>
               </div>
 
               <div>
-                <p className="mb-2 text-xs text-[#8A8265]">Recent history</p>
+                <p className="mb-2 text-xs text-[#8A8265]">{t("recordModalHistory")}</p>
                 <ul className="space-y-2">
                   {data.history.map((entry) => (
                     <li key={`${data.tagId}-${entry.date}-${entry.note}`} className="flex gap-3 text-xs">

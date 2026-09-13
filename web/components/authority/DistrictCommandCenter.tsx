@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DistrictCommandCenterProps {
   initialData: DistrictCommandCenterData;
@@ -35,6 +36,7 @@ export function DistrictCommandCenter({
   initialData,
   pendingApprovalsCount,
 }: DistrictCommandCenterProps) {
+  const t = useTranslations("authority");
   const [data, setData] = useState<DistrictCommandCenterData>(initialData);
   const [timeRange, setTimeRange] = useState<"today" | "7d" | "30d" | "90d" | "custom" | "all">(
     (initialData.activeFilters.timeRange as "today" | "7d" | "30d" | "90d" | "custom" | "all") || "30d"
@@ -99,11 +101,11 @@ export function DistrictCommandCenter({
               {data.districtName} • District Command Center
             </h1>
             <Badge className="bg-purple-100 text-purple-950 border-purple-300 text-xs font-semibold px-2.5 py-0.5">
-              Epidemiological Cockpit
+              {t("epidemiologicalCockpit")}
             </Badge>
           </div>
           <p className="text-stone-600 text-xs sm:text-sm mt-1">
-            Data-driven livestock health surveillance, clinical triage verification, and field personnel coverage.
+            {t("epidemiologicalCockpitDesc")}
           </p>
         </div>
 
@@ -134,9 +136,9 @@ export function DistrictCommandCenter({
               <AlertTriangle className="h-5 w-5 text-red-700" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-red-950">Unable to load district data.</h3>
+              <h3 className="font-bold text-sm text-red-950">{t("unableToLoad")}</h3>
               <p className="text-xs text-red-800 mt-0.5">
-                The database query could not be completed. Zero mock data is presented.
+                {t("databaseQueryFailed")}
               </p>
             </div>
           </div>
@@ -146,7 +148,7 @@ export function DistrictCommandCenter({
             className="bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs gap-1.5 shrink-0"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            <span>Retry Query</span>
+            <span>{t("retryQuery")}</span>
           </Button>
         </div>
       )}
@@ -160,7 +162,7 @@ export function DistrictCommandCenter({
             {isPending && (
               <span className="flex items-center gap-1.5 text-[11px] font-normal text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse border border-emerald-200">
                 <RotateCcw className="h-3 w-3 animate-spin" />
-                Querying database...
+                {t("queryingDatabase")}
               </span>
             )}
           </div>
@@ -173,7 +175,7 @@ export function DistrictCommandCenter({
             className="h-7 px-2.5 text-xs text-stone-600 hover:text-stone-900 rounded-xl gap-1"
           >
             <RotateCcw className="h-3 w-3" />
-            <span>Reset Filters</span>
+            <span>{t("resetFilters")}</span>
           </Button>
         </div>
 
@@ -291,7 +293,7 @@ export function DistrictCommandCenter({
               onClick={() => handleApplyFilters("custom", blockId, villageId, customStart, customEnd)}
               className="h-8 px-4 text-xs bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl"
             >
-              Apply Custom Range
+              {t("applyCustomRange")}
             </Button>
           </div>
         )}

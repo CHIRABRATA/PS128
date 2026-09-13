@@ -19,6 +19,7 @@ import {
   Syringe,
   BellRing,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface AuthorityReportsClientProps {
   districtName: string;
@@ -27,6 +28,7 @@ interface AuthorityReportsClientProps {
 export function AuthorityReportsClient({
   districtName,
 }: AuthorityReportsClientProps) {
+  const t = useTranslations("authority");
   // Date range defaults: Last 30 days
   const today = new Date();
   const thirtyDaysAgo = new Date();
@@ -185,14 +187,14 @@ export function AuthorityReportsClient({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-[#191F1C] tracking-tight">
-              District data exports and official reports
+              {t("districtDataExports")}
             </span>
             <Badge className="bg-purple-100 text-purple-900 border-purple-200 text-xs font-semibold">
-              Data Exports &amp; Reports
+              {t("dataExportsReports")}
             </Badge>
           </div>
           <p className="text-xs text-stone-500">
-            Generate and export official epidemiological records, vaccination logs, and disease outbreak alerts.
+            {t("generateExportOfficial")}
           </p>
         </div>
 
@@ -234,7 +236,7 @@ export function AuthorityReportsClient({
                 {successInfo.format} Export Generated Successfully!
               </span>
               <span className="text-stone-600">
-                Downloaded file <strong className="font-mono">{successInfo.filename}</strong> ({successInfo.recordCount} records).
+                {t("downloadedFile")} <strong className="font-mono">{successInfo.filename}</strong> ({successInfo.recordCount} records).
               </span>
             </div>
           </div>
@@ -249,10 +251,10 @@ export function AuthorityReportsClient({
         <CardHeader className="bg-[#FAF8F3] border-b border-[#E5E0D8] pb-4">
           <CardTitle className="text-base text-[#191F1C] font-bold flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-emerald-800" />
-            <span>Report Parameters &amp; Export Config</span>
+            <span>{t("reportParamsExportConfig")}</span>
           </CardTitle>
           <CardDescription className="text-xs text-stone-500">
-            Configure report type, date range boundaries, and output format.
+            {t("configReportTypeDates")}
           </CardDescription>
         </CardHeader>
 
@@ -321,7 +323,7 @@ export function AuthorityReportsClient({
                   onClick={() => applyPreset("7d")}
                   className="h-6 text-[10px] px-2 rounded-lg border-[#D9D3C7]"
                 >
-                  Last 7 Days
+                  {t("last7Days")}
                 </Button>
                 <Button
                   type="button"
@@ -330,7 +332,7 @@ export function AuthorityReportsClient({
                   onClick={() => applyPreset("30d")}
                   className="h-6 text-[10px] px-2 rounded-lg border-[#D9D3C7]"
                 >
-                  Last 30 Days
+                  {t("last30Days")}
                 </Button>
                 <Button
                   type="button"
@@ -339,7 +341,7 @@ export function AuthorityReportsClient({
                   onClick={() => applyPreset("month")}
                   className="h-6 text-[10px] px-2 rounded-lg border-[#D9D3C7]"
                 >
-                  This Month
+                  {t("thisMonth")}
                 </Button>
                 <Button
                   type="button"
@@ -348,7 +350,7 @@ export function AuthorityReportsClient({
                   onClick={() => applyPreset("ytd")}
                   className="h-6 text-[10px] px-2 rounded-lg border-[#D9D3C7]"
                 >
-                  Year to Date
+                  {t("yearToDate")}
                 </Button>
               </div>
             </div>
@@ -356,7 +358,7 @@ export function AuthorityReportsClient({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="start-date" className="text-xs text-stone-600 font-medium">
-                  Start date
+                  {t("startDate")}
                 </Label>
                 <div className="relative">
                   <Input
@@ -371,7 +373,7 @@ export function AuthorityReportsClient({
 
               <div className="space-y-1.5">
                 <Label htmlFor="end-date" className="text-xs text-stone-600 font-medium">
-                  End date
+                  {t("endDate")}
                 </Label>
                 <div className="relative">
                   <Input
@@ -402,12 +404,12 @@ export function AuthorityReportsClient({
                 {loadingFormat === "CSV" ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Generating CSV...</span>
+                    <span>{t("generatingCsv")}</span>
                   </>
                 ) : (
                   <>
                     <FileSpreadsheet className="h-4 w-4" />
-                    <span>Download CSV (.csv)</span>
+                    <span>{t("downloadCsv")}</span>
                   </>
                 )}
               </Button>
@@ -421,19 +423,19 @@ export function AuthorityReportsClient({
                 {loadingFormat === "PDF" ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Generating PDF...</span>
+                    <span>{t("generatingPdf")}</span>
                   </>
                 ) : (
                   <>
                     <FileText className="h-4 w-4" />
-                    <span>Download PDF (.pdf)</span>
+                    <span>{t("downloadPdf")}</span>
                   </>
                 )}
               </Button>
             </div>
 
             <p className="text-[11px] text-stone-500 pt-1">
-              • All exports are strictly scoped to the <strong>{districtName}</strong> jurisdiction and logged to the official authority audit trail.
+              • {t("exportsScopedAudit", { districtName })}
             </p>
           </div>
         </CardContent>

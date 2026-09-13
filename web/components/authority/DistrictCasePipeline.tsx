@@ -5,12 +5,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DistrictPipelineStage } from "@/lib/authority/metrics";
 import { Clock, Eye, TestTube, CheckCircle2, ShieldCheck, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DistrictCasePipelineProps {
   pipeline: DistrictPipelineStage[];
 }
 
 export function DistrictCasePipeline({ pipeline }: DistrictCasePipelineProps) {
+  const t = useTranslations("authority");
   const totalCases = pipeline.reduce((sum, p) => sum + p.count, 0);
 
   const getStageIcon = (status: string) => {
@@ -36,7 +38,7 @@ export function DistrictCasePipeline({ pipeline }: DistrictCasePipelineProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
-              <span>District Clinical Case Pipeline</span>
+              <span>{t("districtCasePipeline")}</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
               Live case triage stages across the authorized jurisdiction • {totalCases} total cases tracked
@@ -89,7 +91,7 @@ export function DistrictCasePipeline({ pipeline }: DistrictCasePipelineProps) {
                   {stage.count}
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-stone-500 mt-0.5">
-                  <span>Share of total</span>
+                  <span>{t("shareOfTotal")}</span>
                   <span className="font-semibold text-stone-700 font-mono">{stage.percentage}%</span>
                 </div>
               </div>

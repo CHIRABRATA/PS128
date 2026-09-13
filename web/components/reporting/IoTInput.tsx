@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
+import { useTranslations } from "next-intl";
 import {
   getAnimalIoTMonitoringDataAction,
   ingestIoTTelemetryAction,
@@ -97,6 +98,7 @@ export function IoTInput({
   onChangeIotReadingId,
 }: IoTInputProps) {
   const { dictionary } = useLocale();
+  const t = useTranslations("reporting");
   const iotCopy = dictionary.iot || {};
 
   // Connection and Device Detection State
@@ -409,7 +411,7 @@ export function IoTInput({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 font-bold text-emerald-900">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>Physical ESP32 Online & Transmitting Telemetry</span>
+              <span>{t("physicalEsp32Online")}</span>
             </div>
             <p className="text-[11px] text-emerald-800/90 pl-6">
               Device <span className="font-mono font-semibold">{resolvedDeviceId || `ESP32-${animalTag}`}</span> is active. Live biometric sensor telemetry auto-filled below.
@@ -484,7 +486,7 @@ export function IoTInput({
               )}
             </div>
             <p className="text-[11px] text-stone-500 pl-6">
-              Use virtual IoT simulation to generate realistic livestock biometric readings through the backend engine.
+              {t("virtualIotDesc")}
             </p>
           </div>
 
@@ -531,7 +533,7 @@ export function IoTInput({
                 disabled={isSimulating}
                 onClick={() => setShowPresetDropdown(!showPresetDropdown)}
                 className="h-8 px-2 bg-purple-800 hover:bg-purple-900 text-white rounded-r-xl border-l border-purple-600 flex items-center justify-center cursor-pointer transition-colors"
-                title="Select Simulation Preset Scenario"
+                title={t("selectPresetTitle")}
               >
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
@@ -540,7 +542,7 @@ export function IoTInput({
               {showPresetDropdown && (
                 <div className="absolute right-0 top-10 z-20 w-64 p-2 bg-white rounded-2xl shadow-xl border border-stone-200 text-xs space-y-1 animate-in fade-in zoom-in-95">
                   <div className="px-2 py-1 text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                    Select Biometric Preset
+                    {t("selectBiometricPreset")}
                   </div>
                   {(["NORMAL", "WARNING", "CRITICAL"] as SimulationPreset[]).map((presetKey) => (
                     <button

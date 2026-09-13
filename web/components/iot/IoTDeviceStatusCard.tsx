@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Cpu, Wifi, WifiOff, PlayCircle, StopCircle, Radio, Clock } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface IoTDeviceStatusCardProps {
   device: {
@@ -29,6 +30,7 @@ export function IoTDeviceStatusCard({
   isPending,
   onToggleSimulation,
 }: IoTDeviceStatusCardProps) {
+  const t = useTranslations("iot");
   const isSimulationActive = connectionState === "SIMULATION_ACTIVE";
   const isRealOnline = connectionState === "REAL_ONLINE";
   const isRealOffline = connectionState === "REAL_OFFLINE";
@@ -51,14 +53,14 @@ export function IoTDeviceStatusCard({
                   data-testid="simulated-esp32-badge"
                   className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] px-2 py-0.5 tracking-wider uppercase"
                 >
-                  SIMULATED ESP32
+                  {t("simulatedEsp32")}
                 </Badge>
               ) : (
                 <Badge
                   data-testid="real-esp32-badge"
                   className="bg-blue-100 text-blue-900 border border-blue-300 font-mono text-[10px] px-2 py-0.5 tracking-wider uppercase"
                 >
-                  REAL ESP32
+                  {t("realEsp32")}
                 </Badge>
               )}
             </div>
@@ -76,7 +78,7 @@ export function IoTDeviceStatusCard({
               className="bg-emerald-100 text-emerald-900 border-emerald-300 gap-1.5 py-1 px-3"
             >
               <Wifi className="h-3.5 w-3.5 text-emerald-700 animate-pulse" />
-              <span className="font-semibold text-xs">REAL ESP32 ONLINE</span>
+              <span className="font-semibold text-xs">{t("realEsp32Online")}</span>
             </Badge>
           )}
 
@@ -86,7 +88,7 @@ export function IoTDeviceStatusCard({
               className="bg-stone-100 text-stone-700 border-stone-300 gap-1.5 py-1 px-3"
             >
               <WifiOff className="h-3.5 w-3.5 text-stone-500" />
-              <span className="font-semibold text-xs">ESP32 Offline</span>
+              <span className="font-semibold text-xs">{t("realDeviceOffline")}</span>
             </Badge>
           )}
 
@@ -96,7 +98,7 @@ export function IoTDeviceStatusCard({
               className="bg-emerald-600 text-white border-emerald-700 gap-1.5 py-1 px-3 shadow-2xs"
             >
               <Radio className="h-3.5 w-3.5 animate-pulse" />
-              <span className="font-semibold text-xs">Simulation Active</span>
+              <span className="font-semibold text-xs">{t("simulationActive")}</span>
             </Badge>
           )}
 
@@ -106,7 +108,7 @@ export function IoTDeviceStatusCard({
               className="bg-stone-100 text-stone-600 border-stone-200 gap-1.5 py-1 px-3"
             >
               <WifiOff className="h-3.5 w-3.5 text-stone-400" />
-              <span className="font-semibold text-xs">No Device Configured</span>
+              <span className="font-semibold text-xs">{t("noDeviceConfigured")}</span>
             </Badge>
           )}
         </div>
@@ -116,7 +118,7 @@ export function IoTDeviceStatusCard({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 text-stone-600">
           <Clock className="h-3.5 w-3.5 text-stone-400" />
-          <span>Last Seen:</span>
+          <span>{t("lastSeen")}:</span>
           <span className="font-mono font-medium text-stone-900">
             {device?.lastSeenAt ? formatDateTime(device.lastSeenAt) : "Never"}
           </span>
@@ -134,7 +136,7 @@ export function IoTDeviceStatusCard({
               className="h-8 text-xs border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 rounded-xl gap-1.5 shadow-2xs"
             >
               <StopCircle className="h-3.5 w-3.5 text-amber-700" />
-              <span>Stop Simulation</span>
+              <span>{t("stopSimulation")}</span>
             </Button>
           ) : (
             <Button
@@ -146,7 +148,7 @@ export function IoTDeviceStatusCard({
               className="h-8 text-xs border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 rounded-xl gap-1.5 shadow-2xs font-semibold"
             >
               <PlayCircle className="h-3.5 w-3.5 text-emerald-700" />
-              <span>Simulate ESP32</span>
+              <span>{t("simulateEsp32")}</span>
             </Button>
           )}
         </div>

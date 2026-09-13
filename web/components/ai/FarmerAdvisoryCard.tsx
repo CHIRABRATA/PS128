@@ -3,6 +3,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface FarmerAdvisoryCardProps {
   advisory?: {
@@ -15,6 +16,7 @@ interface FarmerAdvisoryCardProps {
 }
 
 export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
+  const t = useTranslations("ai");
   if (!advisory) return null;
 
   return (
@@ -23,14 +25,14 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-emerald-700" />
           <span className="text-xs font-bold text-[#191F1C] uppercase tracking-wider">
-            Livestock owner advisory
+            {t("livestockAdvisory")}
           </span>
         </div>
         <Badge
           variant="outline"
           className="text-[10px] uppercase font-bold border-amber-300 text-amber-900 bg-amber-50"
         >
-          {advisory.vet_consultation_urgency} URGENCY
+          {t("urgencyBadge", { urgency: advisory.vet_consultation_urgency })}
         </Badge>
       </div>
 
@@ -38,7 +40,7 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
       {advisory.immediate_actions && advisory.immediate_actions.length > 0 && (
         <div className="space-y-1.5">
           <span className="text-[11px] font-semibold text-stone-700 uppercase tracking-wider">
-            Immediate steps
+            {t("immediateSteps")}
           </span>
           <ul className="space-y-1 pl-1">
             {advisory.immediate_actions.map((act, idx) => (
@@ -57,10 +59,10 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-amber-950">
-              Isolate this animal from the herd now
+              {t("isolatePrompt")}
             </p>
             <p className="text-[11px] text-amber-800 mt-0.5">
-              Recommended isolation period: <strong>{advisory.quarantine_days || 14} days</strong>. Keep feed and water containers separate.
+              {t("isolateDesc", { days: advisory.quarantine_days || 14 })}
             </p>
           </div>
         </div>
@@ -70,7 +72,7 @@ export function FarmerAdvisoryCard({ advisory }: FarmerAdvisoryCardProps) {
       {advisory.home_remedies_safe && advisory.home_remedies_safe.length > 0 && (
         <div className="space-y-1 pt-1">
           <span className="text-[11px] font-semibold text-stone-600 uppercase tracking-wider">
-            Safe supportive care
+            {t("safeSupportiveCare")}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {advisory.home_remedies_safe.map((rem, idx) => (

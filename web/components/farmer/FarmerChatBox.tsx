@@ -9,6 +9,7 @@ import { AnimalContextPacket } from "@/lib/ai/farmer-talk";
 import { MessageSquare, Send, AlertTriangle, ShieldCheck, RefreshCw, Stethoscope, Mic, MicOff } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
+import { useTranslations } from "next-intl";
 
 export interface ChatMessageItem {
   id: string;
@@ -52,6 +53,8 @@ function generateSubmissionId(): string {
 }
 
 export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: FarmerChatBoxProps) {
+  const t = useTranslations("farmer");
+  const tCommon = useTranslations("common");
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [inputMessage, setInputMessage] = useState<string>("");
@@ -306,10 +309,10 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
               <MessageSquare className="w-8 h-8 text-emerald-700" />
             </div>
             <p className="text-sm font-bold text-stone-900">
-              Start a health conversation for animal <span className="text-emerald-800 font-mono">#{initialContext.animalIdentity.tag}</span>
+              {t("startChatPrompt")} <span className="text-emerald-800 font-mono">#{initialContext.animalIdentity.tag}</span>
             </p>
             <p className="text-xs text-stone-500 max-w-sm">
-              Ask about past examinations, vaccinations, possible symptoms, or feed and care.
+              {t("chatDesc")}
             </p>
           </div>
         ) : (
@@ -335,7 +338,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
                     <div className="mt-2 pt-2 border-t border-red-200 flex items-center justify-between gap-3 text-xs">
                       <span className="text-red-700 text-[11px] flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3 text-red-600" />
-                        Message failed
+                        {t("messageFailed")}
                       </span>
                       <button
                         onClick={() => handleSend(msg.content, msg.id)}
@@ -343,7 +346,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
                         className="text-[11px] font-bold text-red-800 bg-red-100 hover:bg-red-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition cursor-pointer"
                       >
                         <RefreshCw className={`w-2.5 h-2.5 ${sending ? "animate-spin" : ""}`} />
-                        <span>Retry</span>
+                        <span>{tCommon("retry")}</span>
                       </button>
                     </div>
                   )}
@@ -373,7 +376,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
             onClick={() => setError(null)}
             className="text-xs font-semibold hover:underline cursor-pointer"
           >
-            Dismiss
+            {t("dismiss")}
           </button>
         </div>
       )}
@@ -394,7 +397,7 @@ export function FarmerChatBox({ animalId, initialContext, dictionary, locale }: 
             }}
             className="text-xs font-semibold hover:underline cursor-pointer ml-2 text-amber-800"
           >
-            Dismiss
+            {t("dismiss")}
           </button>
         </div>
       )}

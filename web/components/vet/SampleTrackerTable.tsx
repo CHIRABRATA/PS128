@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface SampleItem {
   id: string;
@@ -38,6 +39,7 @@ interface SampleTrackerTableProps {
 }
 
 export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
+  const t = useTranslations("vet");
   const [activeSample, setActiveSample] = useState<SampleItem | null>(null);
   const [newStatus, setNewStatus] = useState<SampleStatus>("SENT");
   const [labName, setLabName] = useState<string>("");
@@ -84,13 +86,13 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
   const getStatusBadge = (status: SampleStatus) => {
     switch (status) {
       case "COLLECTED":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">Sample Collected</Badge>;
+        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">{t("sampleCollected")}</Badge>;
       case "SENT":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">Sent to Lab</Badge>;
+        return <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">{t("sentToLab")}</Badge>;
       case "RESULT_PENDING":
-        return <Badge variant="outline" className="bg-stone-100 text-stone-700 border-stone-200">Result Pending</Badge>;
+        return <Badge variant="outline" className="bg-stone-100 text-stone-700 border-stone-200">{t("resultPending")}</Badge>;
       case "RESULT_RECEIVED":
-        return <Badge variant="success" className="bg-emerald-50 text-emerald-800 border-emerald-200">Result Received</Badge>;
+        return <Badge variant="success" className="bg-emerald-50 text-emerald-800 border-emerald-200">{t("resultReceived")}</Badge>;
     }
   };
 
@@ -100,10 +102,8 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
         <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mx-auto">
           <FlaskConical className="h-6 w-6" />
         </div>
-        <p className="text-sm font-semibold text-[#191F1C]">No lab samples registered</p>
-        <p className="text-xs text-stone-500 max-w-sm mx-auto">
-          Samples referred to diagnostic laboratories during case examination will appear here.
-        </p>
+        <p className="text-sm font-semibold text-[#191F1C]">{t("noLabSamplesRegistered")}</p>
+        <p className="text-xs text-stone-500 max-w-sm mx-auto">{t("samplesReferredDesc")}</p>
       </div>
     );
   }
@@ -138,7 +138,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
               onClick={() => openUpdateModal(sample)}
               className="w-full text-xs gap-1.5 border-[#D9D3C7] text-stone-700 hover:bg-[#FAF8F3] min-h-[36px]"
             >
-              Update Sample Status
+              {t("updateSampleStatusModal")}
             </Button>
           </div>
         ))}
@@ -149,13 +149,13 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
         <table className="w-full text-xs text-left text-stone-700">
           <thead className="bg-[#FAF8F3] text-stone-600 font-semibold uppercase tracking-wider border-b border-[#E5E0D8]">
             <tr>
-              <th className="p-3">Case Number</th>
-              <th className="p-3">Animal (Tag)</th>
-              <th className="p-3">Laboratory Name</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Collection Date</th>
-              <th className="p-3">Lab Finding</th>
-              <th className="p-3 text-right">Action</th>
+              <th className="p-3">{t("caseNumberCol")}</th>
+              <th className="p-3">{t("animalHeader")}</th>
+              <th className="p-3">{t("labNameCol")}</th>
+              <th className="p-3">{t("statusHeader")}</th>
+              <th className="p-3">{t("collectionDateCol")}</th>
+              <th className="p-3">{t("labFindingCol")}</th>
+              <th className="p-3 text-right">{t("actionHeader")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E0D8]">
@@ -175,7 +175,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
                     onClick={() => openUpdateModal(sample)}
                     className="text-xs h-7 border-[#D9D3C7] text-stone-700 hover:bg-[#FAF8F3]"
                   >
-                    Update
+                    {t("update")}
                   </Button>
                 </td>
               </tr>
@@ -191,7 +191,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
             <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-3">
               <h4 className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
                 <FlaskConical className="h-4 w-4 text-amber-600" />
-                <span>Update Lab Sample Status — #{activeSample.case.caseNumber}</span>
+                <span>{t("updateSampleStatusModal")} — #{activeSample.case.caseNumber}</span>
               </h4>
               <Button type="button" variant="ghost" size="sm" onClick={() => setActiveSample(null)} className="h-7 w-7 p-0 text-stone-500 cursor-pointer rounded-xl">✕</Button>
             </div>
@@ -199,16 +199,16 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
             {/* Progressive 4-stage visual timeline */}
             <div className="grid grid-cols-4 gap-1 p-2 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] text-[10px] text-center font-medium">
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "COLLECTED" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                1. Collected
+                {t("statusStep1")}
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "SENT" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                2. Sent to Lab
+                {t("statusStep2")}
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "RESULT_PENDING" ? "bg-amber-100 text-amber-900 font-bold" : "text-stone-500"}`}>
-                3. Pending
+                {t("statusStep3")}
               </div>
               <div className={`p-1.5 rounded-xl transition-all ${newStatus === "RESULT_RECEIVED" ? "bg-emerald-100 text-emerald-900 font-bold" : "text-stone-500"}`}>
-                4. Received
+                {t("statusStep4")}
               </div>
             </div>
 
@@ -246,7 +246,7 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
 
               {newStatus === "RESULT_RECEIVED" && (
                 <div>
-                  <label className="text-stone-700 font-semibold mb-1 block">Diagnostic Result & Summary</label>
+                  <label className="text-stone-700 font-semibold mb-1 block">{t("diagnosticResultSummary")}</label>
                   <Textarea
                     value={resultSummary}
                     onChange={(e) => setResultSummary(e.target.value)}
@@ -260,11 +260,11 @@ export function SampleTrackerTable({ samples }: SampleTrackerTableProps) {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E0D8]">
               <Button type="button" variant="outline" size="sm" onClick={() => setActiveSample(null)} disabled={submitting} className="text-xs border-[#D9D3C7] text-stone-700">
-                Cancel
+                {t("cancel")}
               </Button>
               <Button type="button" size="sm" onClick={handleUpdateSample} disabled={submitting} className="text-xs bg-[#047857] hover:bg-[#065f46] text-white font-semibold gap-1.5 min-h-[36px]">
                 {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                <span>Save Sample Record</span>
+                <span>{t("saveSampleRecord")}</span>
               </Button>
             </div>
           </div>

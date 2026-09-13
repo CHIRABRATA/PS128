@@ -6,6 +6,7 @@ import { VetProfileView } from "@/components/vet/VetProfileView";
 import { TelegramConnectCard } from "@/components/telegram/TelegramConnectCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Stethoscope } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export const metadata = {
   title: "My Profile — Veterinary Portal | Maitri",
@@ -14,6 +15,7 @@ export const metadata = {
 
 export default async function VetProfilePage() {
   await requireVeterinarian();
+  const t = await getTranslations("vet");
 
   const [profile, districts] = await Promise.all([
     getVetProfileAction(),
@@ -27,13 +29,13 @@ export default async function VetProfilePage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-wide">
             <Stethoscope className="h-3.5 w-3.5" />
-            <span>VETERINARY CLINICAL ACCOUNT & SERVICE AREA</span>
+            <span>{t("vetAccountServiceArea")}</span>
           </div>
           <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight mt-1">
-            My Profile
+            {t("vetMyProfile")}
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            Manage your personal contact information, preferred language, and clinical service territory.
+            {t("vetProfileLead")}
           </p>
         </div>
 
@@ -44,7 +46,7 @@ export default async function VetProfilePage() {
             className="gap-1.5 text-xs border-[#D9D3C7] text-stone-700 hover:bg-white rounded-xl min-h-[38px] shadow-2xs hover-lift-sm"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Triage Queue</span>
+            <span>{t("triageQueue")}</span>
           </Button>
         </Link>
       </div>

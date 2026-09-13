@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ChartDataPoint } from "@/lib/authority/metrics";
 import {
@@ -29,11 +30,13 @@ interface AuthorityVisualChartsProps {
 }
 
 // Clean Empty State Component
-function ChartEmptyState({ message = "No activity recorded during this period." }: { message?: string }) {
+function ChartEmptyState({ message }: { message?: string }) {
+  const t = useTranslations("authority");
+  const msg = message || t("noActivityPeriod");
   return (
     <div className="h-48 w-full flex flex-col items-center justify-center text-center p-4 bg-[#FAF8F3]/50 rounded-2xl border border-dashed border-[#E5E0D8] space-y-1">
-      <p className="text-xs font-semibold text-stone-600">{message}</p>
-      <p className="text-[11px] text-stone-400">Records will appear as health activity is recorded in this jurisdiction.</p>
+      <p className="text-xs font-semibold text-stone-600">{msg}</p>
+      <p className="text-[11px] text-stone-400">{t("recordsWillAppear")}</p>
     </div>
   );
 }
@@ -107,9 +110,10 @@ function HorizontalRankedBarVisualizer({ data, emptyMsg = "No activity recorded 
 
 // 3. Pure Responsive SVG Line/Area Temporal Chart
 function TemporalLineVisualizer({ data }: { data: ChartDataPoint[] }) {
+  const t = useTranslations("authority");
   const total = data.reduce((sum, d) => sum + d.value, 0);
   if (total === 0 || data.length === 0) {
-    return <ChartEmptyState message="No activity recorded during this period." />;
+    return <ChartEmptyState message={t("noActivityPeriod")} />;
   }
 
   // Single-day snapshot view (e.g. for "Today")
@@ -122,10 +126,10 @@ function TemporalLineVisualizer({ data }: { data: ChartDataPoint[] }) {
           <span className="text-xs font-bold text-stone-700">{singlePoint.label}</span>
         </div>
         <div className="text-3xl font-extrabold text-emerald-800 font-mono">
-          {singlePoint.value} {singlePoint.value === 1 ? "case" : "cases"}
+          {singlePoint.value} {singlePoint.value === 1 ? t("caseSingular") : t("casesPlural")}
         </div>
         <span className="text-[11px] text-stone-500 font-mono">
-          Actual database activity recorded today
+          {t("actualToday")}
         </span>
       </div>
     );
@@ -195,8 +199,9 @@ function TemporalLineVisualizer({ data }: { data: ChartDataPoint[] }) {
 }
 
 // 4. Comparison Workload Bar Visualizer
-function WorkloadComparisonVisualizer({ data, emptyMsg = "No personnel assigned in this district." }: { data: ChartDataPoint[]; emptyMsg?: string }) {
-  if (data.length === 0) return <ChartEmptyState message={emptyMsg} />;
+function WorkloadComparisonVisualizer({ data, emptyMsg }: { data: ChartDataPoint[]; emptyMsg?: string }) {
+  const t = useTranslations("authority");
+  if (data.length === 0) return <ChartEmptyState message={emptyMsg || t("noPersonnelFound")} />;
 
   return (
     <div className="space-y-3">
@@ -205,9 +210,9 @@ function WorkloadComparisonVisualizer({ data, emptyMsg = "No personnel assigned 
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-stone-800">{item.label}</span>
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="text-amber-800 font-semibold font-mono">Active: {item.value}</span>
+              <span className="text-amber-800 font-semibold font-mono">{t("activeLabel")} {item.value}</span>
               {item.secondaryValue !== undefined && (
-                <span className="text-stone-500 font-mono">Total: {item.secondaryValue}</span>
+                <span className="text-stone-500 font-mono">{t("totalLabel")} {item.secondaryValue}</span>
               )}
             </div>
           </div>
@@ -227,13 +232,14 @@ function WorkloadComparisonVisualizer({ data, emptyMsg = "No personnel assigned 
 }
 
 export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
+  const t = useTranslations("authority");
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
         <div>
-          <h2 className="text-lg font-bold text-[#191F1C] tracking-tight">Public-Health Surveillance Analytics</h2>
+          <h2 className="text-lg font-bold text-[#191F1C] tracking-tight">{t("surveillanceAnalytics")}</h2>
           <p className="text-xs text-stone-500">
-            Real-time multi-dimensional epidemiological charts calculated exclusively from database records
+            {t("surveillanceAnalyticsDesc")}
           </p>
         </div>
       </div>
@@ -245,9 +251,9 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <PieChartIcon className="h-4 w-4 text-emerald-700" />
-              <span>Cases by Clinical Status</span>
+              <span>{t("casesByClinicalStatus")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Triage and diagnosis status breakdown</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("casesByClinicalStatusDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <DonutVisualizer data={charts.casesByStatus} />
@@ -259,9 +265,9 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span>Cases by Severity / AI Risk</span>
+              <span>{t("casesBySeverityRisk")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Risk classification levels</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("casesBySeverityRiskDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <DonutVisualizer data={charts.casesByRisk} />
@@ -273,9 +279,9 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-emerald-700" />
-              <span>Cases Over Time (Temporal Trend)</span>
+              <span>{t("casesOverTime")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Intake volume across time window</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("casesOverTimeDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <TemporalLineVisualizer data={charts.casesOverTime} />
@@ -287,14 +293,14 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <MapPin className="h-4 w-4 text-emerald-700" />
-              <span>Top Village Hotspots</span>
+              <span>{t("topVillageHotspots")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Case volume by village clusters</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("topVillageHotspotsDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <HorizontalRankedBarVisualizer
               data={charts.casesByVillage}
-              emptyMsg="No case hotspots recorded during this period."
+              emptyMsg={t("noHotspotsPeriod")}
             />
           </CardContent>
         </Card>
@@ -304,14 +310,14 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <Stethoscope className="h-4 w-4 text-purple-700" />
-              <span>Veterinarian Caseload Workload</span>
+              <span>{t("vetCaseloadWorkload")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Assigned active cases per clinician</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("vetCaseloadWorkloadDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <WorkloadComparisonVisualizer
               data={charts.vetWorkload}
-              emptyMsg="No veterinarians assigned in this district."
+              emptyMsg={t("noVetsAssigned")}
             />
           </CardContent>
         </Card>
@@ -321,14 +327,14 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-blue-700" />
-              <span>Field Agent Request Volume</span>
+              <span>{t("fieldAgentRequestVolume")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Assistance requests and visits</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("fieldAgentRequestVolumeDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <WorkloadComparisonVisualizer
               data={charts.agentWorkload}
-              emptyMsg="No field agents assigned in this district."
+              emptyMsg={t("noAgentsAssigned")}
             />
           </CardContent>
         </Card>
@@ -338,9 +344,9 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <PawPrint className="h-4 w-4 text-amber-700" />
-              <span>Animal Species Distribution</span>
+              <span>{t("animalSpeciesDistribution")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Affected livestock by animal type</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("animalSpeciesDistributionDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <DonutVisualizer data={charts.speciesDistribution} />
@@ -352,14 +358,14 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-rose-600" />
-              <span>Outbreak Alerts by Disease</span>
+              <span>{t("outbreakAlertsByDisease")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Disease advisory cluster triggers</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("outbreakAlertsByDiseaseDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <HorizontalRankedBarVisualizer
               data={charts.alertsBySeverity}
-              emptyMsg="No active or historical outbreak alerts."
+              emptyMsg={t("noAlertsHistorical")}
             />
           </CardContent>
         </Card>
@@ -369,9 +375,9 @@ export function AuthorityVisualCharts({ charts }: AuthorityVisualChartsProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
               <ClipboardList className="h-4 w-4 text-teal-700" />
-              <span>Assistance Request Status</span>
+              <span>{t("assistanceRequestStatus")}</span>
             </CardTitle>
-            <CardDescription className="text-[11px] text-stone-500">Field response workflow pipeline</CardDescription>
+            <CardDescription className="text-[11px] text-stone-500">{t("assistanceRequestStatusDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <DonutVisualizer data={charts.assistanceRequestStatus} />

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useUser } from "@clerk/nextjs";
 import { getQueuedReports, getAllQueuedReports, OfflineQueueRecord } from "@/lib/offline/db";
 import { triggerQueueSync, retryManualQueueItem, checkServerReachability } from "@/lib/offline/sync";
 import { RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle, Clock, ShieldAlert } from "lucide-react";
 
 export function SyncStatusBadge() {
+  const t = useTranslations("common");
   const { user } = useUser();
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isReachable, setIsReachable] = useState<boolean>(true);
@@ -146,17 +148,17 @@ export function SyncStatusBadge() {
           {!isOnline || !isReachable ? (
             <>
               <WifiOff className="w-3.5 h-3.5 text-red-600" />
-              <span>Offline</span>
+              <span>{t("offline")}</span>
             </>
           ) : syncing ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-              <span>Syncing…</span>
+              <span>{t("syncing")}</span>
             </>
           ) : (
             <>
               <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Online</span>
+              <span>{t("online")}</span>
             </>
           )}
 
@@ -181,7 +183,7 @@ export function SyncStatusBadge() {
             <div className="p-4 bg-[#FAF8F3] border-b border-[#E5E0D8] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-emerald-700" />
-                <h3 className="font-editorial text-base font-semibold text-[#20271F]">Offline report queue</h3>
+                <h3 className="font-editorial text-base font-semibold text-[#20271F]">{t("offlineQueue")}</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -196,7 +198,7 @@ export function SyncStatusBadge() {
               <div className="p-3 bg-amber-50 border-b border-amber-200 flex items-start gap-2 text-xs text-amber-900">
                 <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold">Reports belonging to another account</p>
+                  <p className="font-bold">{t("otherAccountReports")}</p>
                   <p className="text-[11px] text-amber-800 mt-0.5">
                     {otherUserCount} report{otherUserCount === 1 ? " is" : "s are"} linked to another account. Sign in with that account to sync them safely.
                   </p>
@@ -207,7 +209,7 @@ export function SyncStatusBadge() {
             <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-[#FAF8F3]/50">
               {queuedItems.length === 0 ? (
                 <div className="text-center py-8 text-stone-500 text-xs">
-                  There are no pending offline reports.
+                  {t("noPendingReports")}
                 </div>
               ) : (
                 queuedItems.map((item) => (
@@ -219,33 +221,33 @@ export function SyncStatusBadge() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-[#191F1C]">Record: {item.submissionId.substring(0, 12)}...</span>
-                          {item.photoBlob && <span className="text-[10px] text-emerald-700 font-medium">📷 Photo attached</span>}
+                          {item.photoBlob && <span className="text-[10px] text-emerald-700 font-medium">📷 {t("photoAttached")}</span>}
                         </div>
                         <p className="text-stone-600 text-[11px] mt-0.5">
-                          Symptoms: {item.symptoms.slice(0, 2).join(", ")}
+                          {t("symptoms")}: {item.symptoms.slice(0, 2).join(", ")}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         {item.status === "SYNCED" ? (
                           <span className="flex items-center gap-1 text-emerald-700 text-[10px] font-semibold">
-                            <CheckCircle className="w-3.5 h-3.5" /> Synced
+                            <CheckCircle className="w-3.5 h-3.5" /> {t("synced")}
                           </span>
                         ) : item.status === "SYNCING" ? (
                           <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Syncing
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t("syncing")}
                           </span>
                         ) : item.status === "NEEDS_MANUAL_RETRY" ? (
                           <span className="flex items-center gap-1 text-red-700 text-[10px] font-semibold">
-                            <AlertTriangle className="w-3.5 h-3.5" /> Retry needed
+                            <AlertTriangle className="w-3.5 h-3.5" /> {t("retryNeeded")}
                           </span>
                         ) : item.status === "FAILED_AUTHORIZATION" ? (
                           <span className="flex items-center gap-1 text-red-700 text-[10px] font-semibold">
-                            <AlertTriangle className="w-3.5 h-3.5" /> Auth Failed
+                            <AlertTriangle className="w-3.5 h-3.5" /> {t("authFailed")}
                           </span>
                         ) : (
                           <span className="flex items-center gap-1 text-amber-700 text-[10px] font-semibold">
-                            <Clock className="w-3.5 h-3.5" /> Saved locally
+                            <Clock className="w-3.5 h-3.5" /> {t("savedLocally")}
                           </span>
                         )}
                       </div>
@@ -265,7 +267,7 @@ export function SyncStatusBadge() {
                           className="px-2.5 py-1 text-[11px] font-semibold bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                         >
                           <RefreshCw className={`w-3 h-3 ${retryingId === item.id ? "animate-spin" : ""}`} />
-                          <span>Retry</span>
+                          <span>{t("retry")}</span>
                         </button>
                       </div>
                     )}
@@ -284,7 +286,7 @@ export function SyncStatusBadge() {
                 className="py-2 px-3.5 bg-[#047857] hover:bg-[#065f46] text-white rounded-xl text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1.5 min-h-[36px] shadow-xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-                <span>Sync now</span>
+                <span>{t("syncNow")}</span>
               </button>
             </div>
           </div>

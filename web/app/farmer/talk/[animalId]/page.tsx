@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardDescription, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Send, Loader2, Bot, User, AlertTriangle, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AnimalContextPacket } from "@/lib/ai/farmer-talk";
 
 interface Message {
@@ -21,6 +22,7 @@ interface PageProps {
 
 export default function FarmerTalkPage({ params }: PageProps) {
   const { animalId } = use(params);
+  const t = useTranslations("farmer");
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +141,7 @@ export default function FarmerTalkPage({ params }: PageProps) {
               Maitri AI Assistant — {animalId}
             </h1>
             <p className="text-[11px] text-stone-500">
-              Informational support based on verified animal medical records
+              {t("informationalSupport")}
             </p>
           </div>
         </div>
@@ -165,7 +167,7 @@ export default function FarmerTalkPage({ params }: PageProps) {
         <CardHeader className="bg-[#FAF8F3] border-b border-[#E5E0D8] py-3 px-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold text-stone-700">
             <ShieldCheck className="h-4 w-4 text-emerald-700" />
-            <span>Clinical Guardrails Active</span>
+            <span>{t("clinicalGuardrailsActive")}</span>
           </div>
           <CardDescription className="text-[11px] text-stone-500">
             {animalContextPacket.recentCases.length} Health Record(s) Linked
@@ -228,7 +230,7 @@ export default function FarmerTalkPage({ params }: PageProps) {
           {isLoading && (
             <div className="flex items-center gap-2 text-xs text-stone-500 bg-[#FAF8F3] p-3 rounded-2xl w-fit border border-[#E5E0D8]">
               <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
-              <span>Checking health context & generating advice...</span>
+              <span>{t("checkingHealthContext")}</span>
             </div>
           )}
         </CardContent>

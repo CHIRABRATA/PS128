@@ -5,17 +5,19 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { UserCheck, Clock, MapPin } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export default async function AuthorityApprovalsPage() {
   await requireDistrictAuthority();
   const pendingApprovals = await listPendingApprovals();
+  const t = await getTranslations("authority");
 
   return (
     <div className="space-y-6 text-[#191F1C]">
       <div>
-        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">Credential & Role Approvals | Jurisdiction Verification</h1>
+        <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight">{t("credentialApprovalsHeader")}</h1>
         <p className="text-stone-500 text-xs mt-1">
-          Verification and jurisdiction approval for Pashu Sakhis, Field Agents, and Veterinarians.
+          {t("surveillanceAnalytics")}
         </p>
       </div>
 
@@ -24,17 +26,17 @@ export default async function AuthorityApprovalsPage() {
           <div>
             <CardTitle className="text-base text-[#191F1C] flex items-center gap-2 font-bold">
               <UserCheck className="h-5 w-5 text-amber-600" />
-              <span>Pending Credential Approvals ({pendingApprovals.length})</span>
+              <span>{t("approvals")} ({pendingApprovals.length})</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              Review credential registrations and approve or reject authority access.
+              {t("credentialApprovalsHeader")}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
           {pendingApprovals.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-              No pending credential approvals in this district at this time.
+              {t("noAlertsFound")}
             </div>
           ) : (
             <div className="space-y-3">
@@ -51,10 +53,10 @@ export default async function AuthorityApprovalsPage() {
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-stone-600">
-                      <span>Phone: <strong className="text-[#191F1C]">{user.phone}</strong></span>
+                      <span>{t("phone")}: <strong className="text-[#191F1C]">{user.phone}</strong></span>
                       <span className="flex items-center gap-1 text-emerald-800 font-medium">
                         <MapPin className="h-3 w-3" />
-                        {user.district?.name || "Assigned District"}
+                        {user.district?.name || t("authorizedJurisdiction")}
                         {user.block && ` • ${user.block.name}`}
                       </span>
                       <span className="flex items-center gap-1 text-stone-500 font-mono">

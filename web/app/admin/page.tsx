@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 
 import { formatDateTime } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminDashboardPage() {
   await requireAdmin();
+  const t = await getTranslations("admin");
   const data = await getAdminDashboardMetricsAction();
 
   const roleOrder = ["ADMIN", "DISTRICT_AUTHORITY", "VETERINARIAN", "FIELD_AGENT", "FARMER"] as const;
@@ -42,13 +44,13 @@ export default async function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E0D8] pb-4">
         <div>
           <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide font-mono">
-            ADMINISTRATION COCKPIT • SYSTEM GOVERNANCE
+            {t("adminCockpit")}
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191F1C] tracking-tight mt-1">
-            Maitri Platform Overview
+            {t("platformOverview")}
           </h1>
           <p className="text-stone-500 text-xs sm:text-sm mt-0.5">
-            Real-time role distribution, operational district gaps, pending approvals, and immutable audit logs.
+            {t("platformOverviewDesc")}
           </p>
         </div>
 
@@ -56,13 +58,13 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/audit-log">
             <Button variant="outline" size="sm" className="rounded-xl border-[#D9D3C7] text-xs gap-1.5 min-h-[36px]">
               <ScrollText className="h-3.5 w-3.5 text-blue-600" />
-              <span>Full Audit Ledger</span>
+              <span>{t("fullAuditLedger")}</span>
             </Button>
           </Link>
           <Link href="/admin/geography">
             <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs gap-1.5 min-h-[36px]">
               <MapPin className="h-3.5 w-3.5" />
-              <span>Manage Geography</span>
+              <span>{t("manageGeography")}</span>
             </Button>
           </Link>
         </div>
@@ -73,7 +75,7 @@ export default async function AdminDashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
             <Users className="h-4 w-4 text-emerald-700" />
-            <span>User Distribution by Role & Status ({grandTotalUsers} Total)</span>
+            <span>{t("userDistributionTitle", { count: grandTotalUsers })}</span>
           </h2>
         </div>
 
@@ -102,18 +104,18 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="text-2xl font-black font-mono text-stone-900 mt-2">
                   {r.active}
-                  <span className="text-xs font-normal text-stone-500 ml-1">active</span>
+                  <span className="text-xs font-normal text-stone-500 ml-1">{t("activeStatus")}</span>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-[#F0EBE1] flex items-center justify-between text-[11px] text-stone-600 font-mono">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  <span>{r.pending} pending</span>
+                  <span>{r.pending} {t("pendingStatus")}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                  <span>{r.rejected} rejected</span>
+                  <span>{r.rejected} {t("rejectedStatus")}</span>
                 </span>
               </div>
             </div>
@@ -133,15 +135,15 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-sm font-bold text-[#191F1C]">
-                    District Operational Gaps ({data.districtsWithZeroAuthorities.length})
+                    {t("districtGapsTitle", { count: data.districtsWithZeroAuthorities.length })}
                   </CardTitle>
                   <CardDescription className="text-xs text-stone-500">
-                    Districts with ZERO active District Authorities
+                    {t("zeroAuthoritiesDesc")}
                   </CardDescription>
                 </div>
               </div>
               <Badge className="bg-amber-50 text-amber-900 border-amber-300 text-[10px]">
-                Operational Warning
+                {t("operationalWarning")}
               </Badge>
             </div>
           </CardHeader>
@@ -150,8 +152,8 @@ export default async function AdminDashboardPage() {
             {data.districtsWithZeroAuthorities.length === 0 ? (
               <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8] flex flex-col items-center justify-center gap-1">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                <span className="font-semibold text-stone-700">All districts have active authority coverage.</span>
-                <span className="text-[11px] text-stone-400">No coverage gaps detected.</span>
+                <span className="font-semibold text-stone-700">{t("allDistrictsCovered")}</span>
+                <span className="text-[11px] text-stone-400">{t("noGapsDetected")}</span>
               </div>
             ) : (
               <div className="space-y-2.5 max-h-72 overflow-y-auto">
@@ -166,12 +168,12 @@ export default async function AdminDashboardPage() {
                         <span>{gap.districtName}</span>
                       </div>
                       <span className="text-[11px] text-stone-500">
-                        {gap.totalVets} Vets • {gap.totalAgents} Agents • {gap.totalFarmers} Farmers
+                        {t("personnelSummary", { vets: gap.totalVets, agents: gap.totalAgents, farmers: gap.totalFarmers })}
                       </span>
                     </div>
 
                     <Badge className="bg-rose-100 text-rose-900 border-rose-300 font-mono text-[10px]">
-                      0 Authorities
+                      {t("zeroAuthoritiesBadge")}
                     </Badge>
                   </div>
                 ))}
@@ -190,15 +192,15 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-sm font-bold text-[#191F1C]">
-                    Overdue Approvals (&gt;48 Hours: {data.pendingApprovalsOverdue.length})
+                    {t("overdueApprovalsTitle", { count: data.pendingApprovalsOverdue.length })}
                   </CardTitle>
                   <CardDescription className="text-xs text-stone-500">
-                    Registrations awaiting credential review for over 2 days
+                    {t("overdueApprovalsDesc")}
                   </CardDescription>
                 </div>
               </div>
               <Badge className="bg-rose-50 text-rose-900 border-rose-300 text-[10px]">
-                {data.totalPendingApprovals} Total Pending
+                {t("totalPendingBadge", { count: data.totalPendingApprovals })}
               </Badge>
             </div>
           </CardHeader>
@@ -207,8 +209,8 @@ export default async function AdminDashboardPage() {
             {data.pendingApprovalsOverdue.length === 0 ? (
               <div className="p-6 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8] flex flex-col items-center justify-center gap-1">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                <span className="font-semibold text-stone-700">No overdue credential approvals.</span>
-                <span className="text-[11px] text-stone-400">All pending approvals are under 48 hours old.</span>
+                <span className="font-semibold text-stone-700">{t("noOverdueApprovals")}</span>
+                <span className="text-[11px] text-stone-400">{t("allApprovalsUnder48")}</span>
               </div>
             ) : (
               <div className="space-y-2.5 max-h-72 overflow-y-auto">
@@ -225,7 +227,7 @@ export default async function AdminDashboardPage() {
                         </Badge>
                       </div>
                       <div className="text-[11px] text-stone-500 flex items-center gap-2 mt-0.5">
-                        <span>{item.districtName || "Unassigned District"}</span>
+                        <span>{item.districtName || t("unassignedDistrict")}</span>
                         <span>•</span>
                         <span>{item.phone}</span>
                       </div>
@@ -233,7 +235,7 @@ export default async function AdminDashboardPage() {
 
                     <div className="flex items-center gap-1.5 text-rose-700 font-mono font-bold text-[11px] shrink-0">
                       <Clock className="h-3.5 w-3.5" />
-                      <span>{item.hoursPending}h overdue</span>
+                      <span>{t("hoursOverdue", { hours: item.hoursPending })}</span>
                     </div>
                   </div>
                 ))}
@@ -253,17 +255,17 @@ export default async function AdminDashboardPage() {
               </div>
               <div>
                 <CardTitle className="text-sm font-bold text-[#191F1C]">
-                  Recent Audit Activity (Latest 10 Events)
+                  {t("recentAuditActivity")}
                 </CardTitle>
                 <CardDescription className="text-xs text-stone-500">
-                  Immutable administrative ledger events
+                  {t("immutableLedgerEvents")}
                 </CardDescription>
               </div>
             </div>
 
             <Link href="/admin/audit-log">
               <Button variant="ghost" size="sm" className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-50 gap-1 rounded-xl">
-                <span>View Full Log</span>
+                <span>{t("viewFullLog")}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -273,7 +275,7 @@ export default async function AdminDashboardPage() {
         <CardContent className="p-0">
           {data.recentAuditLogs.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3]/50">
-              No audit log activity recorded yet.
+              {t("noAuditRecords")}
             </div>
           ) : (
             <div className="divide-y divide-[#F0EBE1] text-xs">

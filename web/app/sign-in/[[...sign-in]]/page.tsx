@@ -1,8 +1,10 @@
 import { SignIn } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Badge } from "@/components/ui/badge";
+import { getTranslations } from "next-intl/server";
 
 export default async function SignInPage() {
+  const t = await getTranslations("auth");
   const { userId } = await auth();
 
   if (userId) {
@@ -19,13 +21,13 @@ export default async function SignInPage() {
             <span className="text-xl tracking-tight font-serif font-black">M</span>
           </div>
           <Badge variant="outline" className="border-emerald-300 text-emerald-800 bg-emerald-50 text-[11px] px-3 py-0.5">
-            Maitri Livestock Health
+            {t("maitriLivestockHealth")}
           </Badge>
           <h1 className="text-2xl font-bold tracking-tight text-[#191F1C]">
-            Welcome back to Maitri
+            {t("welcomeBack")}
           </h1>
           <p className="text-xs text-stone-600 max-w-xs">
-            Sign in to access your livestock health records, farm surveillance, and clinical portal.
+            {t("signInDesc")}
           </p>
         </div>
 

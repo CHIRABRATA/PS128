@@ -10,29 +10,40 @@ import { DistrictMapLayersData } from "@/lib/authority/metrics";
 import { MapLayerVisibility } from "./SurveillanceHeatmapInternal";
 import { MapMarkerData } from "./mapUtils";
 import {
-  MapPin,
-  Search,
-  RotateCcw,
-  X,
   Layers,
-  Crosshair,
+  MapPin,
   AlertTriangle,
+  RotateCcw,
+  ShieldAlert,
+  Search,
+  Crosshair,
+  X,
+  Stethoscope,
+  Users,
+  Eye,
   Home,
   ClipboardList,
-  Stethoscope,
-  ShieldAlert,
   Footprints,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
-const DynamicHeatmap = dynamic(() => import("./SurveillanceHeatmapInternal"), {
-  ssr: false,
-  loading: () => (
+function HeatmapLoading() {
+  const t = useTranslations("authority");
+  return (
     <div className="h-[520px] sm:h-[620px] w-full rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] flex flex-col items-center justify-center text-xs text-stone-600 gap-3">
       <div className="h-7 w-7 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-      <span className="font-semibold">Loading Database GIS Visualizer...</span>
+      <span className="font-semibold">{t("loadingGis")}</span>
     </div>
-  ),
-});
+  );
+}
+
+const DynamicHeatmap = dynamic(
+  () => import("./SurveillanceHeatmapInternal"),
+  {
+    ssr: false,
+    loading: () => <HeatmapLoading />,
+  }
+);
 
 interface SurveillanceHeatmapProps {
   mapLayers?: DistrictMapLayersData;
@@ -47,6 +58,7 @@ export function SurveillanceHeatmap({
   districtName = "District Authority Scope",
   onRefreshMap,
 }: SurveillanceHeatmapProps) {
+  const t = useTranslations("authority");
   const resolvedMapLayers: DistrictMapLayersData = mapLayers || {
     heatmapPoints: (markers || []).map((m) => ({
       lat: m.lat,
@@ -174,14 +186,14 @@ export function SurveillanceHeatmap({
             <div className="flex items-center gap-2">
               <CardTitle className="text-base flex items-center gap-2 text-[#191F1C] font-bold">
                 <MapPin className="h-4 w-4 text-emerald-700" />
-                <span>Geographic Health & Surveillance GIS Map</span>
+                <span>{t("gisMapTitle")}</span>
               </CardTitle>
               <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px]">
                 {districtName}
               </Badge>
             </div>
             <CardDescription className="text-xs text-stone-500 mt-0.5">
-              100% database-backed spatial surveillance • {totalPoints} mapped geographic records
+              {t("gisSubTitle", { count: totalPoints })}
             </CardDescription>
           </div>
 
@@ -197,10 +209,10 @@ export function SurveillanceHeatmap({
                   ? "bg-blue-50 border-blue-300 text-blue-800 font-semibold"
                   : "bg-white text-stone-700 hover:text-stone-900"
               }`}
-              title="Obtain current browser GPS position and pin to map"
+              title={t("gpsTitle")}
             >
               <Crosshair className={`h-3.5 w-3.5 ${isLocating ? "animate-spin text-blue-600" : "text-stone-600"}`} />
-              <span>{isLocating ? "Locating GPS..." : userGps ? "GPS Pinned" : "Use My Location"}</span>
+              <span>{isLocating ? t("locatingGps") : userGps ? t("gpsPinned") : t("useMyLocation")}</span>
             </Button>
 
             <Button
@@ -217,7 +229,7 @@ export function SurveillanceHeatmap({
               className="h-8 px-3 text-xs rounded-xl border-[#D9D3C7] text-stone-700 hover:text-stone-900 bg-white gap-1.5"
             >
               <RotateCcw className="h-3.5 w-3.5 text-stone-500" />
-              <span>Reset Map</span>
+              <span>{t("resetMap")}</span>
             </Button>
           </div>
         </div>
@@ -236,7 +248,7 @@ export function SurveillanceHeatmap({
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
             <Input
               type="text"
-              placeholder="Search farm, case, village, agent..."
+              placeholder={t("searchGisPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-[#FAF8F3] border-[#D9D3C7] rounded-xl focus:border-emerald-700"
@@ -255,7 +267,7 @@ export function SurveillanceHeatmap({
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 mr-1">
               <Layers className="h-3.5 w-3.5" />
-              <span>Layers:</span>
+              <span>{t("layers")}</span>
             </span>
 
             <button
@@ -267,7 +279,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <span>Heatmap ({resolvedMapLayers.heatmapPoints.length})</span>
+              <span>{t("layerHeatmap")} ({resolvedMapLayers.heatmapPoints.length})</span>
             </button>
 
             <button
@@ -279,7 +291,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <Home className="h-3 w-3 text-emerald-700" />
-              <span>Farms ({totalFarms})</span>
+              <span>{t("layerFarms")} ({totalFarms})</span>
             </button>
 
             <button
@@ -291,7 +303,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <ClipboardList className="h-3 w-3 text-red-700" />
-              <span>Cases ({totalCases})</span>
+              <span>{t("layerCases")} ({totalCases})</span>
             </button>
 
             <button
@@ -303,7 +315,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <Stethoscope className="h-3 w-3 text-purple-700" />
-              <span>Vets ({totalVets})</span>
+              <span>{t("layerVets")} ({totalVets})</span>
             </button>
 
             <button
@@ -315,7 +327,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <ShieldAlert className="h-3 w-3 text-blue-700" />
-              <span>Agents ({totalAgents})</span>
+              <span>{t("layerAgents")} ({totalAgents})</span>
             </button>
 
             <button
@@ -327,7 +339,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <Footprints className="h-3 w-3 text-teal-700" />
-              <span>Visits ({totalVisits})</span>
+              <span>{t("layerVisits")} ({totalVisits})</span>
             </button>
 
             <button
@@ -339,7 +351,7 @@ export function SurveillanceHeatmap({
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-rose-600" />
-              <span>Alerts ({totalAlerts})</span>
+              <span>{t("layerAlerts")} ({totalAlerts})</span>
             </button>
           </div>
         </div>
@@ -352,10 +364,9 @@ export function SurveillanceHeatmap({
               <MapPin className="h-6 w-6" />
             </div>
             <div className="max-w-md space-y-1">
-              <h3 className="font-bold text-stone-800 text-sm">No Geographic Health Data Available</h3>
+              <h3 className="font-bold text-stone-800 text-sm">{t("noGeoData")}</h3>
               <p className="text-xs text-stone-500">
-                There are currently no farms, active health cases, or outbreak alerts with registered coordinates in{" "}
-                {districtName}.
+                {t("noGeoDataDesc", { districtName })}
               </p>
             </div>
           </div>
@@ -368,7 +379,7 @@ export function SurveillanceHeatmap({
               userGpsLocation={userGps}
               focusCoord={focusCoord}
               searchQuery={searchQuery}
-              onSelectEntity={(type, data) => setSelectedEntity({ type, data: data as Record<string, unknown> })}
+              onSelectEntity={(type: string, data: unknown) => setSelectedEntity({ type, data: data as Record<string, unknown> })}
             />
 
             {/* Selected Location / Entity Inspector Drawer */}
@@ -411,7 +422,7 @@ export function SurveillanceHeatmap({
                     onClick={() => setSelectedEntity(null)}
                     className="w-full text-xs rounded-xl border-[#D9D3C7]"
                   >
-                    Close Inspector
+                    {t("closeInspector")}
                   </Button>
                 </div>
               </div>

@@ -13,6 +13,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   toggleDeviceSimulationModeAction,
   ingestIoTTelemetryAction,
@@ -69,6 +70,7 @@ export function IoTMonitoringView({
   selectedAnimalId,
   initialData,
 }: IoTMonitoringViewProps) {
+  const t = useTranslations("iot");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -200,7 +202,7 @@ export function IoTMonitoringView({
                 className="h-8 text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl gap-1.5 min-h-[36px]"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Dashboard</span>
+                <span>{t("dashboardTab")}</span>
               </Button>
             </Link>
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">
@@ -209,10 +211,10 @@ export function IoTMonitoringView({
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191F1C] tracking-tight">
-            IoT Health Monitoring
+            {t("title")}
           </h1>
           <p className="text-stone-600 text-xs sm:text-sm mt-1">
-            Real-time thermal surveillance and activity index ingested via authoritative backend endpoint.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -220,7 +222,7 @@ export function IoTMonitoringView({
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="space-y-1">
             <label htmlFor="animal-selector" className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider block">
-              Select Animal
+              {t("selectAnimal")}
             </label>
             <div className="relative">
               <select

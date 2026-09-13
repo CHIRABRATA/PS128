@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { VillageAnalysisRow } from "@/lib/authority/metrics";
 import { Building2, Search, MapPin } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface VillageAnalysisTableProps {
   villages: VillageAnalysisRow[];
 }
 
 export function VillageAnalysisTable({ villages }: VillageAnalysisTableProps) {
+  const t = useTranslations("authority");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = villages.filter((v) => {
@@ -27,10 +29,10 @@ export function VillageAnalysisTable({ villages }: VillageAnalysisTableProps) {
           <div>
             <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
               <Building2 className="h-5 w-5 text-emerald-700" />
-              <span>Village & Sub-District Cluster Analysis</span>
+              <span>{t("villageAnalysisTitle")}</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-500">
-              Live breakdown of livestock populations, registered farms, active disease cases, and alert status
+              {t("villageMatrixDesc")}
             </CardDescription>
           </div>
 
@@ -38,7 +40,7 @@ export function VillageAnalysisTable({ villages }: VillageAnalysisTableProps) {
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
             <Input
               type="text"
-              placeholder="Filter village or block..."
+              placeholder={t("filterVillageBlock")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-[#FAF8F3] border-[#D9D3C7] rounded-xl"
@@ -52,22 +54,22 @@ export function VillageAnalysisTable({ villages }: VillageAnalysisTableProps) {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-stone-600 font-semibold">
-                <th className="py-3 px-4">Village Name</th>
-                <th className="py-3 px-3">Block / Taluka</th>
-                <th className="py-3 px-3 text-center">Farmers</th>
-                <th className="py-3 px-3 text-center">Farms</th>
-                <th className="py-3 px-3 text-center">Animals</th>
-                <th className="py-3 px-3 text-center">Total Cases</th>
-                <th className="py-3 px-3 text-center text-amber-800">Active Cases</th>
-                <th className="py-3 px-3 text-center">Outbreak Alerts</th>
-                <th className="py-3 px-4 text-center">Risk Level</th>
+                <th className="py-3 px-4">{t("villageName")}</th>
+                <th className="py-3 px-3">{t("blockTaluka")}</th>
+                <th className="py-3 px-3 text-center">{t("farmers")}</th>
+                <th className="py-3 px-3 text-center">{t("farms")}</th>
+                <th className="py-3 px-3 text-center">{t("monitoredLivestock")}</th>
+                <th className="py-3 px-3 text-center">{t("totalCasesHeader")}</th>
+                <th className="py-3 px-3 text-center text-amber-800">{t("activeCases")}</th>
+                <th className="py-3 px-3 text-center">{t("alerts")}</th>
+                <th className="py-3 px-4 text-center">{t("riskLevel")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E0D8]">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-stone-500 bg-stone-50/50">
-                    No villages found matching this query in the authorized jurisdiction.
+                    {t("noVillagesMatchQuery")}
                   </td>
                 </tr>
               ) : (

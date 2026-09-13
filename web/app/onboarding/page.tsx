@@ -13,6 +13,7 @@ import { getDistricts, getBlocks, getVillages } from "@/lib/actions/geo";
 import { LocationSearch, SelectedLocationData } from "@/components/geo/LocationSearch";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { Locale } from "@/lib/i18n";
+import { useTranslations } from "next-intl";
 
 interface GeoItem {
   id: string;
@@ -20,6 +21,7 @@ interface GeoItem {
 }
 
 export default function OnboardingPage() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const { locale } = useLocale();
 
@@ -164,13 +166,13 @@ export default function OnboardingPage() {
       <div className="max-w-3xl w-full flex flex-col gap-6">
         <div className="text-center flex flex-col items-center gap-2">
           <Badge variant="outline" className="border-emerald-300 text-emerald-800 bg-emerald-50 text-xs px-3 py-1">
-            Maitri Account Setup
+            {t("onboardingSetup")}
           </Badge>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#191F1C] tracking-tight">
-            Select Your Role
+            {t("selectRole")}
           </h1>
           <p className="text-stone-600 text-xs md:text-sm max-w-md">
-            Choose your professional role and operating jurisdiction on the animal health surveillance platform.
+            {t("onboardingDesc")}
           </p>
         </div>
 
@@ -235,9 +237,9 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit}>
           <Card className="border-[#E5E0D8] bg-white rounded-3xl shadow-xs overflow-hidden">
             <CardHeader className="bg-[#FAF8F3] border-b border-[#E5E0D8]">
-              <CardTitle className="text-base text-[#191F1C] font-bold">Profile & Jurisdiction</CardTitle>
+              <CardTitle className="text-base text-[#191F1C] font-bold">{t("profileJurisdiction")}</CardTitle>
               <CardDescription className="text-xs text-stone-500">
-                This links your account to local farms, villages, and district administrative authorities.
+                {t("profileJurisdictionDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
@@ -247,7 +249,7 @@ export default function OnboardingPage() {
                   <Input
                     id="name"
                     required
-                    placeholder="e.g. Ramesh Patil or Dr. Anjali Kulkarni"
+                    placeholder={t("fullNamePlaceholder")}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="bg-[#FAF8F3] border-[#D9D3C7] text-xs text-[#191F1C]"
@@ -267,7 +269,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="language" className="text-xs text-stone-700 font-medium">Preferred Interface Language</Label>
+                <Label htmlFor="language" className="text-xs text-stone-700 font-medium">{t("preferredLang")}</Label>
                 <select
                   id="language"
                   value="en"
@@ -281,7 +283,7 @@ export default function OnboardingPage() {
               {/* Geographic Hierarchy & Location Search */}
               <div className="border-t border-[#E5E0D8] pt-4 space-y-4">
                 <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Assigned Jurisdiction & Location
+                  {t("assignedJurisdiction")}
                 </h4>
 
                 <div className="space-y-4">
@@ -304,7 +306,7 @@ export default function OnboardingPage() {
                         onChange={(e) => handleDistrictChange(e.target.value)}
                         className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[44px]"
                       >
-                        <option value="">Select district...</option>
+                        <option value="">{t("selectDistrict")}</option>
                         {districts.map((d) => (
                           <option key={d.id} value={d.id}>
                             {d.name}
@@ -316,7 +318,7 @@ export default function OnboardingPage() {
                     {/* Block Select */}
                     {(selectedRole === "FIELD_AGENT" || selectedRole === "VETERINARIAN") && (
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="block" className="text-xs text-stone-700">Block / Taluka</Label>
+                        <Label htmlFor="block" className="text-xs text-stone-700">{t("block")}</Label>
                         <select
                           id="block"
                           disabled={!selectedDistrict}
@@ -324,7 +326,7 @@ export default function OnboardingPage() {
                           onChange={(e) => handleBlockChange(e.target.value)}
                           className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none disabled:opacity-50 min-h-[44px]"
                         >
-                          <option value="">Select block...</option>
+                          <option value="">{t("selectBlock")}</option>
                           {blocks.map((b) => (
                             <option key={b.id} value={b.id}>
                               {b.name}
@@ -337,7 +339,7 @@ export default function OnboardingPage() {
                     {/* Village Select */}
                     {selectedRole === "FIELD_AGENT" && (
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="village" className="text-xs text-stone-700">Village</Label>
+                        <Label htmlFor="village" className="text-xs text-stone-700">{t("village")}</Label>
                         <select
                           id="village"
                           disabled={!selectedBlock}
@@ -345,7 +347,7 @@ export default function OnboardingPage() {
                           onChange={(e) => setSelectedVillage(e.target.value)}
                           className="bg-[#FAF8F3] border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none disabled:opacity-50 min-h-[44px]"
                         >
-                          <option value="">Select village...</option>
+                          <option value="">{t("selectVillage")}</option>
                           {villages.map((v) => (
                             <option key={v.id} value={v.id}>
                               {v.name}
@@ -368,11 +370,11 @@ export default function OnboardingPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving registration...</span>
+                    <span>{t("savingReg")}</span>
                   </>
                 ) : (
                   <>
-                    <span>Complete Registration</span>
+                    <span>{t("completeReg")}</span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

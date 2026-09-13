@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface AuditLogItem {
   id: string;
@@ -48,6 +49,7 @@ interface AuditLogViewerProps {
 }
 
 export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
+  const t = useTranslations("admin");
   const [items, setItems] = useState<AuditLogItem[]>(initialData.items);
   const [totalCount, setTotalCount] = useState<number>(initialData.totalCount);
   const [page, setPage] = useState<number>(initialData.page);
@@ -125,16 +127,16 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
               </div>
               <div>
                 <CardTitle className="text-sm font-bold text-[#191F1C]">
-                  Audit Filter & Search Ledger
+                  {t("auditFilterSearch")}
                 </CardTitle>
                 <CardDescription className="text-xs text-stone-500">
-                  Search by action code, actor/target ID, or date range
+                  {t("auditFilterSearchDesc")}
                 </CardDescription>
               </div>
             </div>
 
             <Badge variant="outline" className="font-mono text-xs bg-white">
-              {totalCount} Total Events
+              {t("totalEvents", { count: totalCount })}
             </Badge>
           </div>
         </CardHeader>
@@ -145,46 +147,46 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
               {/* Action Filter */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Action Name / Code
+                  {t("actionNameCode")}
                 </label>
                 <Input
-                  placeholder="e.g. DISTRICT_CREATED"
+                  placeholder={t("placeholderDistrictCreated")}
                   value={filterAction}
                   onChange={(e) => setFilterAction(e.target.value)}
                   className="text-xs h-9 rounded-xl border-[#D9D3C7]"
                 />
               </div>
 
-              {/* Actor User ID */}
+              {/* {t("actorUserId")} */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Actor User ID
+                  {t("actorUserId")}
                 </label>
                 <Input
-                  placeholder="Actor user ID"
+                  placeholder={t("actorUserId")}
                   value={filterActorId}
                   onChange={(e) => setFilterActorId(e.target.value)}
                   className="text-xs h-9 rounded-xl border-[#D9D3C7] font-mono"
                 />
               </div>
 
-              {/* Target User ID */}
+              {/* {t("targetUserId")} */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Target User ID
+                  {t("targetUserId")}
                 </label>
                 <Input
-                  placeholder="Target user ID"
+                  placeholder={t("targetUserId")}
                   value={filterTargetId}
                   onChange={(e) => setFilterTargetId(e.target.value)}
                   className="text-xs h-9 rounded-xl border-[#D9D3C7] font-mono"
                 />
               </div>
 
-              {/* Date From */}
+              {/* {t("dateFrom")} */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Date From
+                  {t("dateFrom")}
                 </label>
                 <Input
                   type="date"
@@ -194,10 +196,10 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
                 />
               </div>
 
-              {/* Date To */}
+              {/* {t("dateTo")} */}
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Date To
+                  {t("dateTo")}
                 </label>
                 <Input
                   type="date"
@@ -218,7 +220,7 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
                 className="text-xs rounded-xl border-[#D9D3C7] gap-1.5 h-9"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset</span>
+                <span>{t("reset")}</span>
               </Button>
               <Button
                 type="submit"
@@ -240,12 +242,12 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-stone-600 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Action</th>
-                <th className="py-3 px-4">Actor</th>
-                <th className="py-3 px-4">Target</th>
-                <th className="py-3 px-4">Reason</th>
-                <th className="py-3 px-4 text-right">Details</th>
+                <th className="py-3 px-4">{t("timestamp")}</th>
+                <th className="py-3 px-4">{t("action")}</th>
+                <th className="py-3 px-4">{t("actor")}</th>
+                <th className="py-3 px-4">{t("target")}</th>
+                <th className="py-3 px-4">{t("reason")}</th>
+                <th className="py-3 px-4 text-right">{t("details")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0EBE1]">
@@ -253,9 +255,9 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-stone-500 bg-[#FAF8F3]/50">
                     <ScrollText className="h-8 w-8 mx-auto text-stone-300 mb-2" />
-                    <span className="block font-medium">No audit events found</span>
+                    <span className="block font-medium">{t("noAuditRecordsFound")}</span>
                     <span className="text-[11px] text-stone-400">
-                      Try adjusting the filters above to find specific events.
+                      {t("tryAdjustingFilters")}
                     </span>
                   </td>
                 </tr>
@@ -365,12 +367,12 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Previous Value */}
+                                {/* {t("previous")} Value */}
                                 <div className="rounded-2xl border border-rose-200 bg-white p-3.5 shadow-2xs">
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
                                       <span className="h-2 w-2 rounded-full bg-rose-500" />
-                                      Previous State (Before)
+                                      {t("previous")} State (Before)
                                     </span>
                                   </div>
                                   <pre className="p-3 bg-stone-900 text-rose-300 rounded-xl text-[11px] font-mono overflow-x-auto max-h-60 leading-relaxed">
@@ -410,7 +412,7 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
         {/* Pagination Controls */}
         <div className="p-4 bg-[#FAF8F3] border-t border-[#E5E0D8] flex items-center justify-between text-xs text-stone-600">
           <div>
-            Showing Page <strong className="text-stone-900 font-mono">{page}</strong> of{" "}
+            {t("showingPage")} <strong className="text-stone-900 font-mono">{page}</strong> of{" "}
             <strong className="text-stone-900 font-mono">{totalPages}</strong> ({totalCount} items)
           </div>
 
@@ -423,7 +425,7 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
               className="h-8 text-xs rounded-xl border-[#D9D3C7] gap-1"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
-              <span>Previous</span>
+              <span>{t("previous")}</span>
             </Button>
             <Button
               variant="outline"
@@ -432,7 +434,7 @@ export function AuditLogViewer({ initialData }: AuditLogViewerProps) {
               disabled={page >= totalPages || isPending}
               className="h-8 text-xs rounded-xl border-[#D9D3C7] gap-1"
             >
-              <span>Next</span>
+              <span>{t("next")}</span>
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

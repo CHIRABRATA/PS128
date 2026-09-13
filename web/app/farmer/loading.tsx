@@ -1,7 +1,9 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-export default function FarmerLoading() {
+export default async function FarmerLoading() {
+  const t = await getTranslations("common");
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-6xl mx-auto w-full gap-6 animate-pulse text-[#191F1C]">
       {/* Header Skeleton */}
@@ -43,7 +45,7 @@ export default function FarmerLoading() {
 
         <div className="p-6 bg-white border border-[#E5E0D8] rounded-3xl space-y-4 shadow-xs flex flex-col items-center justify-center min-h-[300px]">
           <Loader2 className="w-8 h-8 text-emerald-700 animate-spin opacity-50" />
-          <span className="text-xs text-stone-500 font-medium">Loading farmer portal data...</span>
+          <span className="text-xs text-stone-500 font-medium">{t("loading")}...</span>
         </div>
       </div>
     </div>

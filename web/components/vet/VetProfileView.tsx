@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
   User,
   Phone,
@@ -57,6 +58,7 @@ export function VetProfileView({
   initialProfile,
   districts,
 }: VetProfileViewProps) {
+  const t = useTranslations("vet");
   const router = useRouter();
   const [profile, setProfile] = useState<VetProfileData>(initialProfile);
   const [isEditing, setIsEditing] = useState(false);
@@ -358,7 +360,7 @@ export function VetProfileView({
               <div className="flex items-center justify-between text-stone-600">
                 <span className="flex items-center gap-1.5 text-[11px]">
                   <Calendar className="h-3.5 w-3.5 text-stone-400" />
-                  Registered
+                  {t("registered")}
                 </span>
                 <span className="font-medium text-stone-900">
                   {formatDate(profile.createdAt)}
@@ -373,7 +375,7 @@ export function VetProfileView({
                 className="w-full gap-2 text-xs border-emerald-300 text-emerald-900 bg-emerald-50/50 hover:bg-emerald-100 rounded-xl min-h-[38px] shadow-2xs font-semibold"
               >
                 <Edit3 className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Edit Profile</span>
+                <span>{t("editProfile")}</span>
               </Button>
             )}
           </div>
@@ -382,26 +384,26 @@ export function VetProfileView({
           <div className="p-5 rounded-3xl border border-[#E5E0D8] bg-white shadow-xs space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-wider">
               <Award className="h-4 w-4" />
-              <span>Clinical Record Metrics</span>
+              <span>{t("clinicalRecordMetrics")}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center pt-1">
               <div className="p-2.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                <span className="text-[10px] text-stone-500 font-medium block">Active Queue</span>
+                <span className="text-[10px] text-stone-500 font-medium block">{t("activeQueueMetric")}</span>
                 <span className="text-lg font-bold text-emerald-900">
                   {profile.assignedActiveCasesCount}
                 </span>
               </div>
 
               <div className="p-2.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                <span className="text-[10px] text-stone-500 font-medium block">Reports</span>
+                <span className="text-[10px] text-stone-500 font-medium block">{t("reportsMetric")}</span>
                 <span className="text-lg font-bold text-stone-900">
                   {profile.authoredReportsCount}
                 </span>
               </div>
 
               <div className="p-2.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                <span className="text-[10px] text-stone-500 font-medium block">Reviewed</span>
+                <span className="text-[10px] text-stone-500 font-medium block">{t("reviewedMetric")}</span>
                 <span className="text-lg font-bold text-stone-900">
                   {profile.reviewedCasesCount}
                 </span>
@@ -427,7 +429,7 @@ export function VetProfileView({
 
               {isEditing && (
                 <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px] font-semibold">
-                  Editing Mode
+                  {t("editingMode")}
                 </Badge>
               )}
             </div>
@@ -436,11 +438,11 @@ export function VetProfileView({
               /* EDIT FORM */
               <form onSubmit={handleSave} className="space-y-5 text-xs">
                 <div className="space-y-4">
-                  {/* Personal Information Section */}
+                  {/* {t("personalInfo")} Section */}
                   <div className="space-y-3">
                     <h4 className="font-bold text-stone-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                       <User className="h-3.5 w-3.5 text-emerald-700" />
-                      <span>1. Personal & Contact Details</span>
+                      <span>{t("personalContactDetailsStep")}</span>
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -487,13 +489,13 @@ export function VetProfileView({
                           className="bg-stone-50 border-[#E5E0D8] text-xs text-stone-500 rounded-xl cursor-not-allowed"
                         />
                         <p className="text-[10px] text-stone-400">
-                          Email address is derived securely from your authentication session.
+                          {t("emailAuthDisclaimer")}
                         </p>
                       </div>
 
                       <div className="space-y-1.5">
                         <Label htmlFor="vet-language" className="text-xs font-semibold text-stone-700">
-                          Preferred Communication Language
+                          {t("preferredLanguageHeader")}
                         </Label>
                         <select
                           id="vet-language"
@@ -504,7 +506,10 @@ export function VetProfileView({
                           disabled={submitting}
                           className="w-full bg-white border border-[#D9D3C7] text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-700"
                         >
-                          <option value="en">English</option>
+                          <option value="en">{t("english")}</option>
+                          <option value="mr">मराठी (Marathi)</option>
+                          <option value="hi">हिन्दी (Hindi)</option>
+                          <option value="bn">বাংলা (Bengali)</option>
                         </select>
                       </div>
                     </div>
@@ -525,10 +530,10 @@ export function VetProfileView({
                   <div className="space-y-3 pt-3 border-t border-[#E5E0D8]">
                     <h4 className="font-bold text-stone-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-emerald-700" />
-                      <span>2. Service Location Jurisdiction</span>
+                      <span>{t("serviceLocationJurisdictionStep")}</span>
                     </h4>
                     <p className="text-[11px] text-stone-500">
-                      Selecting your service district, block, and village determines your case assignment eligibility in the automated routing hierarchy.
+                      {t("serviceJurisdictionDisclaimer")}
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -544,7 +549,7 @@ export function VetProfileView({
                           disabled={submitting}
                           className="w-full bg-white border border-[#D9D3C7] text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-700"
                         >
-                          <option value="">-- Select District --</option>
+                          <option value="">-- {t("selectDistrict")} --</option>
                           {districts.map((d) => (
                             <option key={d.id} value={d.id}>
                               {d.name}
@@ -556,7 +561,7 @@ export function VetProfileView({
                       {/* Block Selector */}
                       <div className="space-y-1.5">
                         <Label htmlFor="vet-block" className="text-xs font-semibold text-stone-700 flex items-center justify-between">
-                          <span>Block / Taluka</span>
+                          <span>{t("blockTaluka")}</span>
                           {loadingBlocks && <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />}
                         </Label>
                         <select
@@ -578,7 +583,7 @@ export function VetProfileView({
                       {/* Village Selector */}
                       <div className="space-y-1.5">
                         <Label htmlFor="vet-village" className="text-xs font-semibold text-stone-700 flex items-center justify-between">
-                          <span>Village / Locality</span>
+                          <span>{t("villageLocality")}</span>
                           {loadingVillages && <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />}
                         </Label>
                         <select
@@ -610,7 +615,7 @@ export function VetProfileView({
                     className="text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl min-h-[38px] px-4"
                   >
                     <X className="h-3.5 w-3.5 mr-1.5" />
-                    <span>Cancel</span>
+                    <span>{t("cancel")}</span>
                   </Button>
 
                   <Button
@@ -621,12 +626,12 @@ export function VetProfileView({
                     {submitting ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                        <span>Saving...</span>
+                        <span>{t("saving")}</span>
                       </>
                     ) : (
                       <>
                         <Save className="h-3.5 w-3.5 mr-1.5" />
-                        <span>Save Changes</span>
+                        <span>{t("saveChanges")}</span>
                       </>
                     )}
                   </Button>
@@ -635,26 +640,26 @@ export function VetProfileView({
             ) : (
               /* READONLY VIEW */
               <div className="space-y-6 text-xs">
-                {/* Personal Information */}
+                {/* {t("personalInfo")} */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-stone-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5 text-emerald-700" />
-                    <span>Personal Information</span>
+                    <span>{t("personalInfo")}</span>
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Full Name</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("fullName")}</span>
                       <span className="text-sm font-bold text-stone-900 mt-0.5 block">{profile.name}</span>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Primary Phone</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("primaryPhone")}</span>
                       <span className="text-sm font-bold text-stone-900 mt-0.5 block">{profile.phone}</span>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Email Address</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("emailAddress")}</span>
                       <span className="text-xs font-semibold text-stone-800 mt-0.5 block">
                         {profile.email || "No email linked"}
                       </span>
@@ -673,19 +678,19 @@ export function VetProfileView({
                 <div className="space-y-3 pt-3 border-t border-[#E5E0D8]">
                   <h4 className="font-bold text-stone-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                     <Stethoscope className="h-3.5 w-3.5 text-emerald-700" />
-                    <span>Professional Information & Authorization</span>
+                    <span>{t("profInfoAuth")}</span>
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Clinical Role</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("clinicalRole")}</span>
                       <span className="text-xs font-bold text-emerald-900 mt-0.5 block">
                         Veterinary Medical Officer ({profile.role})
                       </span>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Account Verification Status</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("accountVerificationStatus")}</span>
                       <span className="text-xs font-bold text-emerald-900 mt-0.5 block">
                         {profile.status} (Authorized Clinician)
                       </span>
@@ -697,26 +702,26 @@ export function VetProfileView({
                 <div className="space-y-3 pt-3 border-t border-[#E5E0D8]">
                   <h4 className="font-bold text-stone-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-emerald-700" />
-                    <span>Registered Service Jurisdiction</span>
+                    <span>{t("registeredServiceJurisdiction")}</span>
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">District</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("district")}</span>
                       <strong className="text-stone-900 text-xs mt-0.5 block">
                         {profile.districtName || "Unassigned District"}
                       </strong>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Block / Taluka</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("blockTaluka")}</span>
                       <strong className="text-stone-900 text-xs mt-0.5 block">
                         {profile.blockName || "All District Blocks"}
                       </strong>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8]">
-                      <span className="text-[10px] text-stone-500 font-medium block">Village / Locality</span>
+                      <span className="text-[10px] text-stone-500 font-medium block">{t("villageLocality")}</span>
                       <strong className="text-stone-900 text-xs mt-0.5 block">
                         {profile.villageName || "Block-wide Scope"}
                       </strong>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Image as ImageIcon, AlertCircle, Loader2, Maximize2, X, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface CasePhotoViewerProps {
   caseId?: string;
@@ -19,6 +20,7 @@ export function CasePhotoViewer({
   className = "",
   aspectRatio = "auto",
 }: CasePhotoViewerProps) {
+  const t = useTranslations("common.photo");
   const [src, setSrc] = useState<string | null>(photoUrl || null);
   const [loading, setLoading] = useState<boolean>(Boolean(caseId));
   const [error, setError] = useState<string | null>(null);
@@ -82,9 +84,9 @@ export function CasePhotoViewer({
         <div className="h-10 w-10 rounded-xl bg-white border border-[#E5E0D8] flex items-center justify-center text-stone-400 shadow-2xs">
           <ImageIcon className="h-5 w-5" />
         </div>
-        <p className="text-xs font-semibold text-stone-700">No Clinical Photograph Attached</p>
+        <p className="text-xs font-semibold text-stone-700">{t("noPhoto")}</p>
         <p className="text-[11px] text-stone-500 max-w-xs">
-          No field lesion or inspection photo was uploaded with this case intake.
+          {t("noPhotoDesc")}
         </p>
       </div>
     );
@@ -99,7 +101,7 @@ export function CasePhotoViewer({
         <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
           <AlertCircle className="h-5 w-5" />
         </div>
-        <p className="text-xs font-semibold text-amber-900">Photograph Preview Unavailable</p>
+        <p className="text-xs font-semibold text-amber-900">{t("previewUnavailable")}</p>
         <p className="text-[11px] text-amber-800/80 max-w-xs">{error}</p>
       </div>
     );
@@ -136,7 +138,7 @@ export function CasePhotoViewer({
             {/* Privacy Badge */}
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700 text-[10px] font-semibold text-emerald-400 shadow-md">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Protected Clinical Media</span>
+              <span>{t("protectedMedia")}</span>
             </div>
 
             {/* Lightbox Trigger Button */}
@@ -146,7 +148,7 @@ export function CasePhotoViewer({
               variant="outline"
               onClick={() => setLightboxOpen(true)}
               className="absolute top-3 right-3 h-8 w-8 p-0 rounded-full bg-white/90 border-[#D9D3C7] text-stone-700 hover:text-stone-900 hover:bg-stone-100 shadow-md backdrop-blur-sm cursor-pointer"
-              title="Expand photograph to full screen"
+              title={t("expand")}
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </Button>

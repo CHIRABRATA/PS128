@@ -12,6 +12,7 @@ import {
   Radio,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface IoTReadingData {
   id: string;
@@ -33,6 +34,7 @@ export function IoTSensorDashboard({
   latestReading,
   readings,
 }: IoTSensorDashboardProps) {
+  const t = useTranslations("iot");
   const [hoveredTempIdx, setHoveredTempIdx] = useState<number | null>(null);
   const [hoveredActIdx, setHoveredActIdx] = useState<number | null>(null);
 
@@ -99,7 +101,7 @@ export function IoTSensorDashboard({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-              Core Temperature
+              {t("temperature")}
             </span>
             <div className="h-8 w-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
               <Thermometer className="h-4 w-4" />
@@ -138,7 +140,7 @@ export function IoTSensorDashboard({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-              Activity Index
+              {t("activity")}
             </span>
             <div className="h-8 w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
               <ActivityIcon className="h-4 w-4" />
@@ -177,7 +179,7 @@ export function IoTSensorDashboard({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-              Sensor Observation
+              {t("sensorObservation")}
             </span>
             <div className="h-8 w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
               <AlertTriangle className="h-4 w-4" />
@@ -225,7 +227,7 @@ export function IoTSensorDashboard({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-              Data Source
+              {t("source")}
             </span>
             <div className="h-8 w-8 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-600">
               <Radio className="h-4 w-4" />
@@ -250,13 +252,13 @@ export function IoTSensorDashboard({
                 </Badge>
               )
             ) : (
-              <span className="text-xs text-stone-400">No source active</span>
+              <span className="text-xs text-stone-400">{t("noSourceActive")}</span>
             )}
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
             <Clock className="h-3 w-3 text-stone-400" />
-            <span>Updated:</span>
+            <span>{t("updated")}</span>
             <span className="font-mono font-medium text-stone-800">
               {latestReading ? formatDateTime(latestReading.recordedAt) : "Never"}
             </span>
@@ -273,7 +275,7 @@ export function IoTSensorDashboard({
               <div>
                 <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
                   <Thermometer className="h-4 w-4 text-rose-600" />
-                  <span>Core Temperature Trend (°C)</span>
+                  <span>{t("coreTempTrend")}</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-stone-500 mt-0.5">
                   Hyperthermia threshold at 39.5°C | Hypothermia threshold at 37.5°C
@@ -289,7 +291,7 @@ export function IoTSensorDashboard({
             {chronologicalReadings.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-center bg-[#FAF8F3]/50 rounded-2xl border border-dashed border-[#E5E0D8] p-4">
                 <Thermometer className="h-6 w-6 text-stone-300 mb-1" />
-                <p className="text-xs font-semibold text-stone-600">No IoT Telemetry Recorded Yet</p>
+                <p className="text-xs font-semibold text-stone-600">{t("noData")}</p>
                 <p className="text-[11px] text-stone-400">
                   Transmit a reading from the simulator or physical ESP32 to populate trend.
                 </p>
@@ -413,7 +415,7 @@ export function IoTSensorDashboard({
               <div>
                 <CardTitle className="text-sm font-bold text-[#191F1C] flex items-center gap-2">
                   <ActivityIcon className="h-4 w-4 text-emerald-600" />
-                  <span>Activity Index Trend (0 - 100)</span>
+                  <span>{t("activityTrend")}</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-stone-500 mt-0.5">
                   Lethargy alert threshold at &lt; 30 movement score
@@ -429,7 +431,7 @@ export function IoTSensorDashboard({
             {chronologicalReadings.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-center bg-[#FAF8F3]/50 rounded-2xl border border-dashed border-[#E5E0D8] p-4">
                 <ActivityIcon className="h-6 w-6 text-stone-300 mb-1" />
-                <p className="text-xs font-semibold text-stone-600">No IoT Telemetry Recorded Yet</p>
+                <p className="text-xs font-semibold text-stone-600">{t("noData")}</p>
                 <p className="text-[11px] text-stone-400">
                   Transmit a reading from the simulator or physical ESP32 to populate trend.
                 </p>

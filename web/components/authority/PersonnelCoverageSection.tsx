@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function PersonnelCoverageSection({
   veterinarians,
   fieldAgents,
 }: PersonnelCoverageSectionProps) {
+  const t = useTranslations("authority");
   const [activeTab, setActiveTab] = useState<"VETS" | "AGENTS">("VETS");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVet, setSelectedVet] = useState<VetCoverageItem | null>(null);
@@ -54,10 +56,10 @@ export function PersonnelCoverageSection({
             <div>
               <CardTitle className="text-base font-bold text-[#191F1C] flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-emerald-700" />
-                <span>Personnel Responsibility & District Coverage</span>
+                <span>{t("personnelCoverageTitle")}</span>
               </CardTitle>
               <CardDescription className="text-xs text-stone-500">
-                100% database-derived caseloads, distinct farmers/animals under care, and field responsibility
+                {t("personnelCoverageDesc")}
               </CardDescription>
             </div>
 
@@ -75,7 +77,7 @@ export function PersonnelCoverageSection({
                 }`}
               >
                 <Stethoscope className="h-3.5 w-3.5 text-purple-700" />
-                <span>Veterinarians ({veterinarians.length})</span>
+                <span>{t("veterinariansCount", { count: veterinarians.length })}</span>
               </button>
 
               <button
@@ -90,7 +92,7 @@ export function PersonnelCoverageSection({
                 }`}
               >
                 <User className="h-3.5 w-3.5 text-blue-700" />
-                <span>Field Agents ({fieldAgents.length})</span>
+                <span>{t("fieldAgentsCount", { count: fieldAgents.length })}</span>
               </button>
             </div>
           </div>
@@ -100,7 +102,7 @@ export function PersonnelCoverageSection({
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
             <Input
               type="text"
-              placeholder={`Search ${activeTab === "VETS" ? "veterinarian" : "field agent"} by name or area...`}
+              placeholder={activeTab === "VETS" ? t("searchVetPlaceholder") : t("searchAgentPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-[#FAF8F3] border-[#D9D3C7] rounded-xl"
@@ -115,25 +117,25 @@ export function PersonnelCoverageSection({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-stone-600 font-semibold">
-                    <th className="py-3 px-4">Veterinarian</th>
-                    <th className="py-3 px-3">Service Area</th>
-                    <th className="py-3 px-2 text-center">Assigned</th>
-                    <th className="py-3 px-2 text-center text-amber-700">Active</th>
-                    <th className="py-3 px-2 text-center">Pending</th>
-                    <th className="py-3 px-2 text-center">Exam</th>
-                    <th className="py-3 px-2 text-center">Lab Ref</th>
-                    <th className="py-3 px-2 text-center">Follow-ups</th>
-                    <th className="py-3 px-2 text-center font-bold text-emerald-800">Farmers</th>
-                    <th className="py-3 px-2 text-center font-bold text-emerald-800">Animals</th>
-                    <th className="py-3 px-3 text-center">Workload</th>
-                    <th className="py-3 px-4 text-right">Drill-Down</th>
+                    <th className="py-3 px-4">{t("veterinarian")}</th>
+                    <th className="py-3 px-3">{t("serviceArea")}</th>
+                    <th className="py-3 px-2 text-center">{t("assignedCasesHeader")}</th>
+                    <th className="py-3 px-2 text-center text-amber-700">{t("activeHeader")}</th>
+                    <th className="py-3 px-2 text-center">{t("pendingHeader")}</th>
+                    <th className="py-3 px-2 text-center">{t("examHeader")}</th>
+                    <th className="py-3 px-2 text-center">{t("labRefHeader")}</th>
+                    <th className="py-3 px-2 text-center">{t("followUpsHeader")}</th>
+                    <th className="py-3 px-2 text-center font-bold text-emerald-800">{t("farmersHeader")}</th>
+                    <th className="py-3 px-2 text-center font-bold text-emerald-800">{t("animalsHeader")}</th>
+                    <th className="py-3 px-3 text-center">{t("workloadHeader")}</th>
+                    <th className="py-3 px-4 text-right">{t("drillDownHeader")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E0D8]">
                   {filteredVets.length === 0 ? (
                     <tr>
                       <td colSpan={12} className="py-8 text-center text-stone-500 bg-stone-50/50">
-                        No veterinarians found for this query or jurisdiction.
+                        {t("noVetsFound")}
                       </td>
                     </tr>
                   ) : (
@@ -176,7 +178,7 @@ export function PersonnelCoverageSection({
                                 : "bg-emerald-100 text-emerald-900 border-emerald-200"
                             }`}
                           >
-                            Score: {vet.workloadScore}
+                            {t("scorePrefix")} {vet.workloadScore}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
@@ -186,7 +188,7 @@ export function PersonnelCoverageSection({
                             onClick={() => setSelectedVet(vet)}
                             className="h-7 px-2.5 text-xs text-purple-800 hover:text-purple-900 hover:bg-purple-100 rounded-xl gap-1"
                           >
-                            <span>Inspect</span>
+                            <span>{t("inspectBtn")}</span>
                             <ChevronRight className="h-3 w-3" />
                           </Button>
                         </td>
@@ -202,24 +204,24 @@ export function PersonnelCoverageSection({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-stone-600 font-semibold">
-                    <th className="py-3 px-4">Field Agent</th>
-                    <th className="py-3 px-3">Service Area</th>
-                    <th className="py-3 px-2 text-center text-amber-700">Pending</th>
-                    <th className="py-3 px-2 text-center text-blue-700">Accepted</th>
-                    <th className="py-3 px-2 text-center">Scheduled</th>
-                    <th className="py-3 px-2 text-center text-emerald-700">Completed</th>
-                    <th className="py-3 px-2 text-center font-bold text-emerald-800">Farmers Assisted</th>
-                    <th className="py-3 px-2 text-center font-bold text-emerald-800">Animals Visited</th>
-                    <th className="py-3 px-2 text-center font-bold text-purple-800">Open Requests</th>
-                    <th className="py-3 px-3 text-center">Workload</th>
-                    <th className="py-3 px-4 text-right">Drill-Down</th>
+                    <th className="py-3 px-4">{t("fieldAgent")}</th>
+                    <th className="py-3 px-3">{t("serviceArea")}</th>
+                    <th className="py-3 px-2 text-center text-amber-700">{t("pendingHeader")}</th>
+                    <th className="py-3 px-2 text-center text-blue-700">{t("completedHeader")}</th>
+                    <th className="py-3 px-2 text-center">{t("scheduledHeader")}</th>
+                    <th className="py-3 px-2 text-center text-emerald-700">{t("completedHeader")}</th>
+                    <th className="py-3 px-2 text-center font-bold text-emerald-800">{t("farmersAssistedHeader")}</th>
+                    <th className="py-3 px-2 text-center font-bold text-emerald-800">{t("animalsVisitedHeader")}</th>
+                    <th className="py-3 px-2 text-center font-bold text-purple-800">{t("openRequestsHeader")}</th>
+                    <th className="py-3 px-3 text-center">{t("workloadHeader")}</th>
+                    <th className="py-3 px-4 text-right">{t("drillDownHeader")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E0D8]">
                   {filteredAgents.length === 0 ? (
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-stone-500 bg-stone-50/50">
-                        No field agents found for this query or jurisdiction.
+                        {t("noAgentsFound")}
                       </td>
                     </tr>
                   ) : (
@@ -265,7 +267,7 @@ export function PersonnelCoverageSection({
                                 : "bg-emerald-100 text-emerald-900 border-emerald-200"
                             }`}
                           >
-                            Score: {agent.workloadScore}
+                            {t("scorePrefix")} {agent.workloadScore}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
@@ -275,7 +277,7 @@ export function PersonnelCoverageSection({
                             onClick={() => setSelectedAgent(agent)}
                             className="h-7 px-2.5 text-xs text-blue-800 hover:text-blue-900 hover:bg-blue-100 rounded-xl gap-1"
                           >
-                            <span>Inspect</span>
+                            <span>{t("inspectBtn")}</span>
                             <ChevronRight className="h-3 w-3" />
                           </Button>
                         </td>
@@ -298,7 +300,7 @@ export function PersonnelCoverageSection({
               <div>
                 <div className="flex items-center gap-2">
                   <Stethoscope className="h-5 w-5 text-purple-700" />
-                  <h3 className="text-base font-bold text-[#191F1C]">Dr. {selectedVet.name} • Clinical Caseload</h3>
+                  <h3 className="text-base font-bold text-[#191F1C]">Dr. {selectedVet.name} • {t("clinicalCaseload")}</h3>
                   <Badge className="bg-purple-100 text-purple-900 border-purple-200 text-xs">
                     {selectedVet.serviceArea}
                   </Badge>
@@ -306,7 +308,7 @@ export function PersonnelCoverageSection({
                 <p className="text-xs text-stone-500 mt-1">
                   Phone: <span className="font-semibold text-stone-800">{selectedVet.phone}</span> •{" "}
                   <span className="text-emerald-800 font-bold">{selectedVet.farmersUnderCare} Farmers</span> &{" "}
-                  <span className="text-emerald-800 font-bold">{selectedVet.animalsUnderCare} Animals</span> currently under active care.
+                  <span className="text-emerald-800 font-bold">{selectedVet.animalsUnderCare} Animals</span> {t("currentlyUnderCare")}
                 </p>
               </div>
               <button
@@ -320,12 +322,12 @@ export function PersonnelCoverageSection({
             {/* Modal Body: Assigned Cases List */}
             <div className="p-5 overflow-y-auto space-y-3 flex-1">
               <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                Assigned Health Cases ({selectedVet.assignedCasesList.length})
+                {t("assignedHealthCases", { count: selectedVet.assignedCasesList.length })}
               </h4>
 
               {selectedVet.assignedCasesList.length === 0 ? (
                 <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-                  No health cases currently assigned to this veterinarian.
+                  {t("noCasesAssignedVet")}
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -336,7 +338,7 @@ export function PersonnelCoverageSection({
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-[#191F1C]">Case #{c.caseNumber}</span>
+                          <span className="font-bold text-sm text-[#191F1C]">{t("caseNumPrefix", { num: c.caseNumber })}</span>
                           <Badge
                             className={`text-[10px] ${
                               c.riskLevel === "CRITICAL"
@@ -359,19 +361,19 @@ export function PersonnelCoverageSection({
                         </p>
                         {c.diagnosis && (
                           <p className="text-xs text-emerald-900 bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200">
-                            Diagnosis: <strong>{c.diagnosis}</strong>
+                            {t("diagnosisLabel")} <strong>{c.diagnosis}</strong>
                           </p>
                         )}
                         {c.followUpDate && (
                           <p className="text-[11px] text-rose-700 flex items-center gap-1 font-mono">
                             <Calendar className="h-3 w-3" />
-                            <span>Follow-up: {formatDate(c.followUpDate, true)} {c.followUpCompleted ? "(Completed)" : "(Pending)"}</span>
+                            <span>{t("followUpLabel")} {formatDate(c.followUpDate, true)} {c.followUpCompleted ? t("completedBadge") : t("pendingBadge")}</span>
                           </p>
                         )}
                       </div>
 
                       <div className="text-[11px] text-stone-500 font-mono shrink-0">
-                        Reported: {formatDate(c.reportedAt, true)}
+                        {t("reportedLabel")} {formatDate(c.reportedAt, true)}
                       </div>
                     </div>
                   ))}
@@ -382,7 +384,7 @@ export function PersonnelCoverageSection({
             {/* Modal Footer */}
             <div className="p-4 border-t border-[#E5E0D8] bg-[#FAF8F3] flex justify-end">
               <Button size="sm" onClick={() => setSelectedVet(null)} className="rounded-xl px-4 text-xs">
-                Close
+                {t("closeBtn")}
               </Button>
             </div>
           </div>
@@ -398,7 +400,7 @@ export function PersonnelCoverageSection({
               <div>
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-blue-700" />
-                  <h3 className="text-base font-bold text-[#191F1C]">{selectedAgent.name} (Field Agent) • Assignments</h3>
+                  <h3 className="text-base font-bold text-[#191F1C]">{selectedAgent.name} ({t("fieldAgent")}) • {t("assignmentsTitle")}</h3>
                   <Badge className="bg-blue-100 text-blue-900 border-blue-200 text-xs">
                     {selectedAgent.serviceArea}
                   </Badge>
@@ -420,12 +422,12 @@ export function PersonnelCoverageSection({
             {/* Modal Body: Active Assistance Requests */}
             <div className="p-5 overflow-y-auto space-y-3 flex-1">
               <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                Assigned Assistance Requests & Field Visits ({selectedAgent.activeRequestsList.length})
+                {t("assignedRequestsVisits", { count: selectedAgent.activeRequestsList.length })}
               </h4>
 
               {selectedAgent.activeRequestsList.length === 0 ? (
                 <div className="p-8 text-center text-xs text-stone-500 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
-                  No assistance requests currently assigned to this field agent.
+                  {t("noRequestsAssignedAgent")}
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -442,7 +444,7 @@ export function PersonnelCoverageSection({
                           </Badge>
                           {r.caseNumber && (
                             <Badge className="text-[10px] bg-purple-50 text-purple-800 border-purple-200">
-                              Case #{r.caseNumber}
+                              {t("caseNumPrefix", { num: r.caseNumber })}
                             </Badge>
                           )}
                         </div>
@@ -453,19 +455,19 @@ export function PersonnelCoverageSection({
                         </p>
                         {r.visitObservations && (
                           <p className="text-xs text-stone-700 bg-stone-100 p-1.5 rounded-lg border border-stone-200">
-                            Visit Report: <em>{r.visitObservations}</em>
+                            {t("visitReportLabel")} <em>{r.visitObservations}</em>
                           </p>
                         )}
                         {r.scheduledAt && (
                           <p className="text-[11px] text-blue-700 flex items-center gap-1 font-mono">
                             <Calendar className="h-3 w-3" />
-                            <span>Scheduled: {formatDateTime(r.scheduledAt, true)}</span>
+                            <span>{t("scheduledLabel")} {formatDateTime(r.scheduledAt, true)}</span>
                           </p>
                         )}
                       </div>
 
                       <div className="text-[11px] text-stone-500 font-mono shrink-0">
-                        Requested: {formatDate(r.requestedAt, true)}
+                        {t("requestedLabel")} {formatDate(r.requestedAt, true)}
                       </div>
                     </div>
                   ))}
@@ -476,7 +478,7 @@ export function PersonnelCoverageSection({
             {/* Modal Footer */}
             <div className="p-4 border-t border-[#E5E0D8] bg-[#FAF8F3] flex justify-end">
               <Button size="sm" onClick={() => setSelectedAgent(null)} className="rounded-xl px-4 text-xs">
-                Close
+                {t("closeBtn")}
               </Button>
             </div>
           </div>

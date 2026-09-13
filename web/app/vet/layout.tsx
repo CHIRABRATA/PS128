@@ -4,9 +4,11 @@ import Image from "next/image";
 import { requireVeterinarian } from "@/lib/auth/permissions";
 import { UserButton } from "@clerk/nextjs";
 import { Activity, ClipboardList, FlaskConical, Calendar, User } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function VetLayout({ children }: { children: React.ReactNode }) {
   const vetUser = await requireVeterinarian();
+  const t = await getTranslations("vet");
 
   return (
     <div className="min-h-screen bg-[#F3EFE5] text-[#20271F] flex flex-col font-sans">
@@ -19,10 +21,10 @@ export default async function VetLayout({ children }: { children: React.ReactNod
             </div>
             <div>
               <span className="font-editorial font-semibold text-lg tracking-tight text-[#20271F] flex items-center gap-2">
-                Maitri Clinical <span className="text-[#274C36] font-mono font-semibold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D]">Veterinary clinic</span>
+                Maitri {t("clinical")} <span className="text-[#274C36] font-mono font-semibold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#E1E6D6] border border-[#AEBB9D]">{t("clinic")}</span>
               </span>
               <p className="text-[11px] text-stone-500 hidden sm:block">
-                Clinical Health Triage & Outbreak Surveillance Desk
+                {t("clinicalDeskSubtitle")}
               </p>
             </div>
           </div>
@@ -31,7 +33,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
             <div className="text-right hidden md:block">
               <p className="text-xs font-semibold text-[#191F1C]">{vetUser.name}</p>
               <p className="text-[10px] text-emerald-800 font-mono">
-                {vetUser.districtId ? `District Scope: ${vetUser.districtId}` : "District Veterinary Scope"}
+                {vetUser.districtId ? `${t("scope")}: ${vetUser.districtId}` : t("scope")}
               </p>
             </div>
             <UserButton />
@@ -46,7 +48,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold text-stone-700 hover:text-[#274C36] hover:bg-[#E1E6D6] transition-colors whitespace-nowrap"
             >
               <Activity className="h-4 w-4 text-emerald-700" />
-              <span>Triage Queue</span>
+              <span>{t("triageQueue")}</span>
             </Link>
 
             <Link
@@ -54,7 +56,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <ClipboardList className="h-4 w-4 text-stone-500" />
-              <span>All Cases</span>
+              <span>{t("allCases")}</span>
             </Link>
 
             <Link
@@ -62,15 +64,15 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <FlaskConical className="h-4 w-4 text-amber-600" />
-              <span>Lab Samples</span>
+              <span>{t("labSamples")}</span>
             </Link>
 
             <Link
-              href="/vet/schedule"
+              href="/vet/follow-ups"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <Calendar className="h-4 w-4 text-purple-600" />
-              <span>Visits & Schedule</span>
+              <span>{t("visitsSchedule")}</span>
             </Link>
 
             <Link
@@ -78,7 +80,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-emerald-800 hover:bg-emerald-50 transition-colors whitespace-nowrap"
             >
               <User className="h-4 w-4 text-emerald-700" />
-              <span>Profile</span>
+              <span>{t("vetProfile")}</span>
             </Link>
           </div>
         </div>

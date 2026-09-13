@@ -21,6 +21,7 @@ import {
   Sliders,
   Radio,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export type SimulationScenario = "NORMAL" | "WARNING" | "CRITICAL" | "CUSTOM";
 
@@ -61,6 +62,7 @@ export function MockESP32Simulator({
   animalTag,
   onSendTelemetry,
 }: MockESP32SimulatorProps) {
+  const t = useTranslations("iot");
   const [scenario, setScenario] = useState<SimulationScenario>("NORMAL");
   const [customTemp, setCustomTemp] = useState<string>("38.5");
   const [customActivity, setCustomActivity] = useState<string>("65");
@@ -431,7 +433,7 @@ export function MockESP32Simulator({
             ) : (
               <>
                 <Send className="h-3.5 w-3.5" />
-                <span>Generate Reading</span>
+                <span>{t("generateReading")}</span>
               </>
             )}
           </Button>
@@ -504,7 +506,7 @@ export function MockESP32Simulator({
                     className="h-8 text-xs border-amber-600 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 rounded-xl gap-1.5"
                   >
                     <Play className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    <span>Resume</span>
+                    <span>{t("resume")}</span>
                   </Button>
                 ) : (
                   <Button
@@ -529,7 +531,7 @@ export function MockESP32Simulator({
                   className="h-8 text-xs border-rose-700 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 rounded-xl gap-1.5"
                 >
                   <Square className="h-3 w-3 fill-rose-400 text-rose-400" />
-                  <span>Stop</span>
+                  <span>{t("stop")}</span>
                 </Button>
               </>
             )}

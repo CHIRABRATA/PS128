@@ -1,5 +1,6 @@
 import { Show, SignUpButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import Image from "next/image";
 import prisma from "@/lib/db/prisma";
@@ -18,6 +19,8 @@ import { PhoneCall, WifiOff, Camera, MapPin, CalendarCheck } from "lucide-react"
 export default async function Home() {
   const { userId } = await auth();
   const user = userId ? await currentUser() : null;
+  const t = await getTranslations("landing");
+  const tCommon = await getTranslations("common");
 
   // Dynamically fetch live system counts & surveillance points from database
   const [villageCount, animalCount, activeCaseCount, activeAlerts, sampleVillages] = await Promise.all([
@@ -128,16 +131,16 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="text-xs leading-tight text-[#5C5645]">
             <span className="block font-medium text-[#22291F]">
-              Department of Animal Husbandry, Government of Maharashtra
+              {t("deptTitle")}
             </span>
-            <span className="block">Livestock Health &amp; Disease Surveillance Network</span>
+            <span className="block">{t("networkTitle")}</span>
           </div>
           <HelplineModal>
             <button
               type="button"
               className="text-xs font-mono text-[#2F5233] border border-[#2F5233]/40 px-3 py-1.5 hover:bg-[#2F5233] hover:text-[#EDE7D3] transition-colors"
             >
-              Helpline 1962
+              {t("helpline1962")}
             </button>
           </HelplineModal>
         </div>
@@ -151,15 +154,13 @@ export default async function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div className="lg:col-span-7 flex flex-col items-start">
             <p className="text-sm text-[#5C5645] mb-3">
-              For farmers, field workers, veterinarians and district officers
+              {t("heroAudience")}
             </p>
             <h1 className="font-serif text-4xl sm:text-5xl md:text-[58px] text-[#191F1C] leading-[1.15] font-normal max-w-xl">
-              Every animal, once recorded, is never lost track of.
+              {t("heroHeading")}
             </h1>
             <p className="text-[#3A3D30] text-base leading-relaxed max-w-md mt-5">
-              One shared record follows each animal from a farmer&apos;s first
-              report through a field visit to a veterinarian&apos;s decision —
-              across every village in the network.
+              {t("heroLead")}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-7">
@@ -169,7 +170,7 @@ export default async function Home() {
                     size="lg"
                     className="bg-[#2F5233] hover:bg-[#25401F] text-[#F7F3E6] font-normal text-sm px-6 h-11 rounded-none cursor-pointer"
                   >
-                    Report a health concern
+                    {t("reportConcern")}
                   </Button>
                 </Link>
               </Show>
@@ -179,7 +180,7 @@ export default async function Home() {
                     size="lg"
                     className="bg-[#2F5233] hover:bg-[#25401F] text-[#F7F3E6] font-normal text-sm px-6 h-11 rounded-none cursor-pointer"
                   >
-                    Report a health concern
+                    {t("reportConcern")}
                   </Button>
                 </SignUpButton>
               </Show>
@@ -188,13 +189,13 @@ export default async function Home() {
                 href={userId ? "/dashboard" : "/farmer"}
                 className="text-sm text-[#22291F] underline decoration-[#C9BFA0] underline-offset-4 hover:decoration-[#22291F] transition-colors"
               >
-                {userId ? "Enter workspaces" : "Explore Maitri"}
+                {userId ? t("enterWorkspaces") : t("exploreMaitri")}
               </Link>
             </div>
 
             {userId && (
               <p className="text-xs text-[#5C5645] pt-6">
-                Signed in as{" "}
+                {t("signedInAs")}{" "}
                 <strong className="text-[#22291F] font-medium">
                   {user?.firstName || user?.emailAddresses?.[0]?.emailAddress || "User"}
                 </strong>
@@ -207,19 +208,19 @@ export default async function Home() {
                 <div className="font-serif text-2xl text-[#22291F]">
                   <MotionCountUp value={villageCount} duration={1200} />
                 </div>
-                <div className="text-[11px] text-[#5C5645] mt-1">Villages active</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">{t("villagesActive")}</div>
               </div>
               <div className="py-4 px-4 border-r border-[#C9BFA0]">
                 <div className="font-serif text-2xl text-[#22291F]">
                   <MotionCountUp value={animalCount} duration={1500} />
                 </div>
-                <div className="text-[11px] text-[#5C5645] mt-1">Animals monitored</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">{t("animalsMonitored")}</div>
               </div>
               <div className="py-4 pl-4">
                 <div className="font-serif text-2xl text-[#A13D2B]">
                   <MotionCountUp value={activeCaseCount} duration={1000} />
                 </div>
-                <div className="text-[11px] text-[#5C5645] mt-1">Active field cases</div>
+                <div className="text-[11px] text-[#5C5645] mt-1">{t("activeFieldCases")}</div>
               </div>
             </div>
           </div>
@@ -233,8 +234,7 @@ export default async function Home() {
                   activeCaseCount={activeCaseCount}
                 />
                 <p className="text-xs text-[#5C5645] px-4 py-3 border-t border-[#C9BFA0] bg-[#F7F3E6]">
-                  A veterinary officer examines a reported case in Haveli
-                  block, Pune district.
+                  {t("heroImageCaption")}
                 </p>
               </div>
             </MotionFadeIn>
@@ -250,12 +250,10 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-12">
           <div className="max-w-2xl">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal leading-tight">
-              Four people, one record.
+              {t("fourPeopleHeading")}
             </h2>
             <p className="text-[#3A3D30] text-sm md:text-base leading-relaxed mt-3">
-              A livestock owner&apos;s observation, a field worker&apos;s visit, a
-              veterinarian&apos;s decision, and a district officer&apos;s view of the
-              wider picture — all attached to the same animal.
+              {t("fourPeopleLead")}
             </p>
           </div>
 
@@ -272,11 +270,10 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#C9BFA0] pb-6">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
-              Your livestock, kept in one register.
+              {t("livestockRegisterHeading")}
             </h2>
             <p className="text-[#5C5645] text-xs md:text-sm max-w-sm">
-              Digital health profiles, ear-tag registration, vaccination
-              history, and treatment follow-ups for every animal in the herd.
+              {t("livestockRegisterLead")}
             </p>
           </div>
 
@@ -302,7 +299,7 @@ export default async function Home() {
                     </p>
                     <div className="flex items-center justify-between text-xs pt-3 mt-auto border-t border-[#C9BFA0]/70">
                       <span className="text-[#5C5645]">{r.status}</span>
-                      <span className="text-[#2F5233]">View record</span>
+                      <span className="text-[#2F5233]">{t("viewRecord")}</span>
                     </div>
                   </div>
                 </button>
@@ -338,19 +335,18 @@ export default async function Home() {
 
             <div className="lg:col-span-7">
               <h2 className="font-serif text-3xl sm:text-4xl font-normal">
-                Built for the field.
+                {t("builtForFieldTitle")}
               </h2>
               <p className="text-[#C7D2C8] text-sm md:text-base leading-relaxed mt-3 max-w-lg">
-                Engineered for rural Maharashtra, where field agents work
-                through low connectivity and harsh outdoor light.
+                {t("builtForFieldLead")}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 mt-8 border-t border-l border-[#3E5443]">
                 {[
-                  { icon: WifiOff, title: "Offline reporting", body: "Log inspections in remote sheds without network. Syncs automatically on reconnect." },
-                  { icon: Camera, title: "Photo evidence", body: "Attach clinical photos of lesions and mucosal membranes, compressed on-device." },
-                  { icon: MapPin, title: "GPS location", body: "Automatic farm coordinates support reliable disease-cluster detection." },
-                  { icon: CalendarCheck, title: "Village visits", body: "Track daily rounds and follow-up checks with local veterinarians." },
+                  { icon: WifiOff, title: t("offlineReportingTitle"), body: t("offlineReportingBody") },
+                  { icon: Camera, title: t("photoEvidenceTitle"), body: t("photoEvidenceBody") },
+                  { icon: MapPin, title: t("gpsLocationTitle"), body: t("gpsLocationBody") },
+                  { icon: CalendarCheck, title: t("villageVisitsTitle"), body: t("villageVisitsBody") },
                 ].map(({ icon: Icon, title, body }) => (
                   <div key={title} className="p-5 border-r border-b border-[#3E5443] space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium">
@@ -374,11 +370,10 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
           <div className="max-w-2xl">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal leading-tight">
-              From observation to veterinary decision.
+              {t("fromObservationTitle")}
             </h2>
             <p className="text-[#3A3D30] text-sm md:text-base leading-relaxed mt-3">
-              District veterinarians work from field evidence and AI-assisted
-              differentials — the decision, and the record, stay theirs.
+              {t("fromObservationLead")}
             </p>
           </div>
 
@@ -394,20 +389,20 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#C9BFA0] pb-6">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#191F1C] font-normal">
-              What is happening across the district.
+              {t("districtActivityTitle")}
             </h2>
             <div className="grid grid-cols-3 gap-6 text-sm">
               <div>
                 <div className="font-serif text-xl text-[#22291F]">{villageCount || 12}</div>
-                <div className="text-[11px] text-[#5C5645]">Villages monitored</div>
+                <div className="text-[11px] text-[#5C5645]">{t("villagesMonitored")}</div>
               </div>
               <div>
                 <div className="font-serif text-xl text-[#A13D2B]">{activeCaseCount || 4}</div>
-                <div className="text-[11px] text-[#5C5645]">Active concerns</div>
+                <div className="text-[11px] text-[#5C5645]">{t("activeConcerns")}</div>
               </div>
               <div>
                 <div className="font-serif text-xl text-[#22291F]">{activeAlerts.length || 2}</div>
-                <div className="text-[11px] text-[#5C5645]">Follow-ups</div>
+                <div className="text-[11px] text-[#5C5645]">{t("followUpsCount")}</div>
               </div>
             </div>
           </div>
@@ -426,12 +421,10 @@ export default async function Home() {
           <div className="lg:col-span-7 p-8 sm:p-12 md:p-16 flex flex-col justify-between gap-8">
             <div>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal leading-tight">
-                Better observation starts better care.
+                {t("betterCareTitle")}
               </h2>
               <p className="text-[#C7D2C8] text-sm md:text-base leading-relaxed mt-4 max-w-lg">
-                Join livestock owners, village Pashusakhis, and veterinary
-                officers across Maharashtra building a healthier,
-                disease-resilient livestock network.
+                {t("betterCareLead")}
               </p>
             </div>
 
@@ -439,14 +432,14 @@ export default async function Home() {
               <Show when="signed-in">
                 <Link href="/dashboard">
                   <Button className="bg-[#EDE7D3] text-[#22291F] hover:bg-[#F7F3E6] font-normal px-6 h-11 rounded-none cursor-pointer">
-                    Open dashboard &amp; workspaces
+                    {t("openDashboard")}
                   </Button>
                 </Link>
               </Show>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <Button className="bg-[#EDE7D3] text-[#22291F] hover:bg-[#F7F3E6] font-normal px-6 h-11 rounded-none cursor-pointer">
-                    Get started
+                    {t("getStarted")}
                   </Button>
                 </SignUpButton>
               </Show>
@@ -456,7 +449,7 @@ export default async function Home() {
                   type="button"
                   className="text-sm text-[#C7D2C8] hover:text-[#EDE7D3] underline decoration-[#3E5443] underline-offset-4"
                 >
-                  Or call the helpline — 1962
+                  {t("orCallHelpline")}
                 </button>
               </HelplineModal>
             </div>
@@ -481,10 +474,10 @@ export default async function Home() {
             className="mx-auto flex items-center justify-center gap-2 font-medium text-[#22291F] hover:underline decoration-[#C9BFA0] underline-offset-4"
           >
             <PhoneCall className="w-3.5 h-3.5 text-[#2F5233]" />
-            <span>Toll-free livestock emergency &amp; disease helpline — 1962</span>
+            <span>{t("tollFreeHelpline")}</span>
           </button>
         </HelplineModal>
-        <p>Maitri Livestock Health &amp; Disease Surveillance Engine — Department of Animal Husbandry, Government of Maharashtra</p>
+        <p>Maitri Livestock Health &amp; Disease Surveillance Engine — {t("deptTitle")}</p>
       </footer>
     </div>
   );

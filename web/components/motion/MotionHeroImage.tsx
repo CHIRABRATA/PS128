@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { HeartPulse, MapPin } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface MotionHeroImageProps {
   src: string;
@@ -11,6 +12,7 @@ interface MotionHeroImageProps {
 }
 
 export function MotionHeroImage({ src, alt, activeCaseCount }: MotionHeroImageProps) {
+  const t = useTranslations("landing");
   const containerRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -68,10 +70,10 @@ export function MotionHeroImage({ src, alt, activeCaseCount }: MotionHeroImagePr
           <HeartPulse className="h-4 w-4 text-emerald-700 animate-subtle-pulse" />
         </div>
         <div className="text-left leading-tight">
-          <div className="text-xs font-bold text-[#191F1C]">Gauri • Cow</div>
+          <div className="text-xs font-bold text-[#191F1C]">{t("heroImageCowName")}</div>
           <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" style={{ animationDuration: "3s" }} />
-            <span>Monitored & Healthy</span>
+            <span>{t("heroImageHealthy")}</span>
           </div>
         </div>
       </div>
@@ -87,9 +89,9 @@ export function MotionHeroImage({ src, alt, activeCaseCount }: MotionHeroImagePr
           <MapPin className="h-4 w-4 text-amber-700" />
         </div>
         <div className="text-left leading-tight">
-          <div className="text-xs font-bold text-[#191F1C]">Khed Block</div>
+          <div className="text-xs font-bold text-[#191F1C]">{t("heroImageBlock")}</div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            <strong className="text-stone-800">{activeCaseCount || 4}</strong> active field reports
+            <strong className="text-stone-800">{activeCaseCount || 4}</strong> {t("heroImageReports")}
           </div>
         </div>
       </div>

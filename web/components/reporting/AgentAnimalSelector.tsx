@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { PrintableAnimalOption, getAgentScopeFarms } from "@/lib/actions/reporting_data";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertCircle, Cpu, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface AgentAnimalSelectorProps {
   selectedAnimal: PrintableAnimalOption | null;
@@ -34,6 +35,7 @@ interface AgentFarm {
 }
 
 export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAnimalSelectorProps) {
+  const t = useTranslations("reporting");
   const [farms, setFarms] = useState<AgentFarm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,7 +59,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
     return (
       <div className="p-8 flex flex-col items-center justify-center gap-3 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
         <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-        <span className="text-xs text-stone-600">Loading your assigned area…</span>
+        <span className="text-xs text-stone-600">{t("loadingArea")}</span>
       </div>
     );
   }
@@ -81,7 +83,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
       {/* 1. Farm Dropdown */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-          1. Select farm *
+          {t("selectFarmLabel")}
         </label>
         <select
           value={selectedFarmId}
@@ -91,7 +93,7 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
           }}
           className="bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-amber-600 focus:outline-none min-h-[44px] shadow-xs"
         >
-          <option value="">Choose an authorised farm…</option>
+          <option value="">{t("chooseFarmOption")}</option>
           {farms.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name} ({f.village?.name || "Village"}) — Farmer: {f.farmerUser?.name || "Not recorded"}
@@ -104,14 +106,14 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
       {selectedFarm && (
         <div className="flex flex-col gap-2 animate-in fade-in-50 duration-200">
           <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-            2. Select herd *
+            {t("selectHerdLabel")}
           </label>
           <select
             value={selectedHerdId}
             onChange={(e) => setSelectedHerdId(e.target.value)}
             className="bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-amber-600 focus:outline-none min-h-[44px] shadow-xs"
           >
-            <option value="">Choose a herd…</option>
+            <option value="">{t("chooseHerdOption")}</option>
             {herds.map((h) => (
               <option key={h.id} value={h.id}>
                 {h.name || `${h.species} Herd`} ({h.animals.length} animals)
@@ -126,16 +128,16 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
         <div className="space-y-3 animate-in fade-in-50 duration-200">
           <div className="flex justify-between items-center">
             <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-              3. Select animal for inspection *
+              {t("selectAnimalInspection")}
             </label>
             <span className="text-[11px] text-amber-900 font-mono font-bold">
-              {animals.length} animals available
+              {t("animalsAvailable", { count: animals.length })}
             </span>
           </div>
 
           {animals.length === 0 ? (
             <div className="p-6 rounded-2xl border border-[#E5E0D8] bg-[#FAF8F3] text-center text-xs text-stone-500">
-              No animals are registered in this herd.
+              {t("noAnimalsHerd")}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
@@ -182,10 +184,10 @@ export function AgentAnimalSelector({ selectedAnimal, onSelectAnimal }: AgentAni
                       {animal.iotDeviceId ? (
                         <Badge className="bg-amber-50 text-amber-900 border-amber-200 text-[9px] gap-1 px-1.5 py-0.5">
                           <Cpu className="h-2.5 w-2.5" />
-                          <span>IoT Active</span>
+                          <span>{t("iotActive")}</span>
                         </Badge>
                       ) : (
-                        <span className="text-stone-400">No IoT</span>
+                        <span className="text-stone-400">{t("noIot")}</span>
                       )}
                     </div>
                   </div>

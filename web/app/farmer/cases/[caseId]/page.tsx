@@ -22,6 +22,7 @@ import {
   Pill,
 } from "lucide-react";
 import { formatDateTime, formatDate } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export default async function FarmerCaseDetailPage({
   params,
@@ -29,6 +30,7 @@ export default async function FarmerCaseDetailPage({
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
+  const t = await getTranslations("farmer");
 
   let healthCase;
   try {
@@ -67,7 +69,7 @@ export default async function FarmerCaseDetailPage({
               className="h-8 text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl gap-1.5 min-h-[36px]"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Farmer Portal</span>
+              <span>{t("farmerPortal")}</span>
             </Button>
           </Link>
           <div>
@@ -92,7 +94,7 @@ export default async function FarmerCaseDetailPage({
             size="sm"
             className="text-xs gap-1.5 border-emerald-300 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 rounded-xl min-h-[36px]"
           >
-            <span>View Animal Health Passport</span>
+            <span>{t("viewPassport")}</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </Link>
@@ -110,10 +112,10 @@ export default async function FarmerCaseDetailPage({
               </div>
               <div>
                 <CardTitle className="text-lg font-bold text-white tracking-tight">
-                  Official Veterinary Report
+                  {t("officialVetReport")}
                 </CardTitle>
                 <p className="text-xs text-emerald-200">
-                  Licensed Clinical Assessment & Treatment Directives
+                  {t("licensedDirectives")}
                 </p>
               </div>
             </div>
@@ -124,7 +126,7 @@ export default async function FarmerCaseDetailPage({
               </Badge>
             ) : (
               <Badge className="bg-amber-500/20 text-amber-200 border-amber-400/40 text-xs px-3 py-1 font-semibold self-start sm:self-center">
-                Review Pending
+                {t("reviewPending")}
               </Badge>
             )}
           </div>
@@ -138,7 +140,7 @@ export default async function FarmerCaseDetailPage({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E0D8] pb-3">
                   <div>
                     <span className="text-[10px] font-bold uppercase text-stone-500 tracking-wider block">
-                      Doctor Clinical Diagnosis
+                      {t("doctorClinicalDiagnosis")}
                     </span>
                     <h3 className="text-lg font-bold text-emerald-950 mt-0.5">
                       {latestReport.diagnosis}
@@ -162,7 +164,7 @@ export default async function FarmerCaseDetailPage({
                   <div className="flex items-center gap-2 text-stone-700 bg-white p-3 rounded-xl border border-[#E5E0D8]">
                     <UserCheck className="h-4 w-4 text-emerald-700 shrink-0" />
                     <div>
-                      <span className="text-[10px] text-stone-500 block">Examining Veterinarian</span>
+                      <span className="text-[10px] text-stone-500 block">{t("examiningVet")}</span>
                       <strong className="text-stone-900">Dr. {latestReport.vetUser.name}</strong>
                     </div>
                   </div>
@@ -171,7 +173,7 @@ export default async function FarmerCaseDetailPage({
                     <div className="flex items-center gap-2 text-stone-700 bg-white p-3 rounded-xl border border-[#E5E0D8]">
                       <Phone className="h-4 w-4 text-emerald-700 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-stone-500 block">Veterinary Contact</span>
+                        <span className="text-[10px] text-stone-500 block">{t("veterinaryContact")}</span>
                         <a
                           href={`tel:${latestReport.vetUser.phone}`}
                           className="font-semibold text-emerald-800 hover:underline"
@@ -189,7 +191,7 @@ export default async function FarmerCaseDetailPage({
                 <div className="space-y-1.5">
                   <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
                     <FileText className="h-4 w-4 text-emerald-700" />
-                    <span>Instructions & Treatment Guidelines</span>
+                    <span>{t("instructionsGuidelines")}</span>
                   </span>
                   <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-xs text-emerald-950 leading-relaxed">
                     {latestReport.instructions}
@@ -202,7 +204,7 @@ export default async function FarmerCaseDetailPage({
                 <div className="space-y-1.5">
                   <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Activity className="h-4 w-4 text-amber-700" />
-                    <span>Clinical Notes & Farmer Advice</span>
+                    <span>{t("clinicalNotesAdvice")}</span>
                   </span>
                   <div className="p-4 rounded-2xl bg-stone-50 border border-[#E5E0D8] text-xs text-stone-800 leading-relaxed">
                     {latestReport.notes}
@@ -218,7 +220,7 @@ export default async function FarmerCaseDetailPage({
                       <Calendar className="h-5 w-5" />
                     </div>
                     <div>
-                      <span className="font-bold text-amber-950 block">Scheduled Clinical Follow-up</span>
+                      <span className="font-bold text-amber-950 block">{t("scheduledFollowUp")}</span>
                       <span className="text-stone-600">
                         Date:{" "}
                         <strong className="text-stone-900">
@@ -231,11 +233,11 @@ export default async function FarmerCaseDetailPage({
                   {latestReport.followUpCompleted ? (
                     <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs font-semibold gap-1 py-1 px-3">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Follow-up Completed</span>
+                      <span>{t("followUpCompleted")}</span>
                     </Badge>
                   ) : (
                     <Badge className="bg-amber-200 text-amber-950 border-amber-400 text-xs font-semibold py-1 px-3">
-                      Action Required / Visit Due
+                      {t("actionRequiredVisitDue")}
                     </Badge>
                   )}
                 </div>
@@ -287,10 +289,10 @@ export default async function FarmerCaseDetailPage({
               </div>
               <div className="space-y-1 max-w-md mx-auto">
                 <h3 className="text-base font-bold text-[#191F1C]">
-                  Veterinary Review Pending
+                  {t("vetReviewPending")}
                 </h3>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  A licensed veterinarian has not submitted a clinical report for this health concern yet.
+                  {t("vetReviewPendingDesc")}
                 </p>
               </div>
 
@@ -308,12 +310,12 @@ export default async function FarmerCaseDetailPage({
                     </span>
                   ) : (
                     <span className="text-amber-800 font-medium italic">
-                      Queued in district triage
+                      {t("queuedInTriage")}
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-stone-600 border-t border-[#E5E0D8] pt-2">
-                  As soon as the veterinarian completes clinical examination and records findings, you will receive an in-app notification and the prescription will appear here.
+                  {t("inAppNotificationDesc")}
                 </p>
               </div>
             </div>
@@ -330,7 +332,7 @@ export default async function FarmerCaseDetailPage({
           <CardHeader className="border-b border-[#E5E0D8] pb-3">
             <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
               <Activity className="h-4 w-4 text-emerald-700" />
-              <span>Reported Health Symptoms</span>
+              <span>{t("reportedSymptoms")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4 text-xs">
@@ -374,7 +376,7 @@ export default async function FarmerCaseDetailPage({
           <CardHeader className="border-b border-[#E5E0D8] pb-3">
             <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-amber-700" />
-              <span>Doorstep Examination / Field Agent</span>
+              <span>{t("doorstepExamAgent")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4 text-xs">
@@ -386,7 +388,7 @@ export default async function FarmerCaseDetailPage({
                       Inspected by Agent {fieldVisit.fieldAgentUser.name}
                     </span>
                     <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
-                      Visit Completed
+                      {t("visitCompleted")}
                     </Badge>
                   </div>
                   {fieldVisit.fieldAgentUser.phone && (
@@ -406,9 +408,9 @@ export default async function FarmerCaseDetailPage({
             ) : (
               <div className="p-6 text-center text-stone-500 space-y-2">
                 <ShieldCheck className="h-6 w-6 text-stone-400 mx-auto" />
-                <p className="font-semibold text-stone-700">Self-Reported Health Concern</p>
+                <p className="font-semibold text-stone-700">{t("selfReportedConcern")}</p>
                 <p className="text-[11px]">
-                  This report was submitted directly through the Farmer Livestock Portal.
+                  {t("selfReportedDesc")}
                 </p>
               </div>
             )}

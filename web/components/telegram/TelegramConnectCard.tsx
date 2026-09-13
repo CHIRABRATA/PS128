@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   generateTelegramLinkTokenAction,
   getTelegramStatusAction,
@@ -31,6 +32,8 @@ export function TelegramConnectCard({
   initialUsername,
   initialConnectedAt,
 }: TelegramConnectCardProps) {
+  const t = useTranslations("common.telegram");
+  const tCommon = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
   const [isConnected, setIsConnected] = useState(initialConnected ?? false);
@@ -114,9 +117,9 @@ export function TelegramConnectCard({
             <Send className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#191F1C]">Telegram Notifications</h3>
+            <h3 className="text-sm font-bold text-[#191F1C]">{t("title")}</h3>
             <p className="text-xs text-stone-500">
-              Receive role-specific surveillance updates &amp; livestock health alerts on Telegram.
+              {t("subtitle")}
             </p>
           </div>
         </div>
@@ -124,7 +127,7 @@ export function TelegramConnectCard({
         {isConnected ? (
           <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-full flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Connected</span>
+            <span>{t("connected")}</span>
           </span>
         ) : (
           <span className="px-2.5 py-1 bg-stone-100 text-stone-700 border border-[#D9D3C7] text-xs font-semibold rounded-full">
@@ -139,7 +142,7 @@ export function TelegramConnectCard({
             <div className="flex items-center justify-between">
               <span className="font-semibold text-emerald-900 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                <span>Maitri Telegram Bot Connected</span>
+                <span>{t("botConnected")}</span>
               </span>
               {username && (
                 <span className="font-mono text-[11px] px-2 py-0.5 bg-white border border-[#D9D3C7] rounded-md text-stone-800">
@@ -148,7 +151,7 @@ export function TelegramConnectCard({
               )}
             </div>
             <p className="text-stone-500 text-[11px]">
-              Your account is securely linked. Important surveillance alerts and updates will be delivered directly to your Telegram chat.
+              {t("botConnectedDesc")}
             </p>
             {formattedDate && (
               <p className="text-[10px] text-stone-400 flex items-center gap-1 pt-0.5">
@@ -167,12 +170,12 @@ export function TelegramConnectCard({
             {unlinking ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Disconnecting...</span>
+                <span>{t("disconnecting")}</span>
               </>
             ) : (
               <>
                 <Unlink className="w-3.5 h-3.5" />
-                <span>Disconnect Telegram</span>
+                <span>{t("disconnect")}</span>
               </>
             )}
           </Button>
@@ -188,12 +191,12 @@ export function TelegramConnectCard({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Generating token...</span>
+                  <span>{t("generatingToken")}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Connect Telegram</span>
+                  <span>{t("connect")}</span>
                 </>
               )}
             </Button>
@@ -225,7 +228,7 @@ export function TelegramConnectCard({
                 <button
                   onClick={() => copyToClipboard(`/start ${token}`)}
                   className="p-2 bg-white hover:bg-stone-100 border border-[#D9D3C7] text-stone-700 rounded-xl text-xs font-medium transition cursor-pointer"
-                  title="Copy command"
+                  title={t("copyCommand")}
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -233,7 +236,7 @@ export function TelegramConnectCard({
 
               <p className="text-[10px] text-amber-800 font-medium flex items-center gap-1">
                 <Clock className="w-3 h-3 text-amber-700 shrink-0" />
-                <span>This secure single-use link is valid for 10 minutes.</span>
+                <span>{t("tokenNotice")}</span>
               </p>
             </div>
           )}

@@ -53,10 +53,13 @@ interface FarmerProfileViewProps {
   districts: DistrictOption[];
 }
 
+import { useTranslations } from "next-intl";
+
 export function FarmerProfileView({
   initialProfile,
   districts,
 }: FarmerProfileViewProps) {
+  const t = useTranslations("farmer");
   const router = useRouter();
   const [profile, setProfile] = useState<FarmerProfileData>(initialProfile);
   const [isEditing, setIsEditing] = useState(false);
@@ -326,7 +329,7 @@ export function FarmerProfileView({
                 {profile.name}
               </h2>
               <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[11px] font-semibold">
-                Farmer Profile
+                {t("profileTitle")}
               </Badge>
               <Badge className="bg-stone-100 text-stone-700 border-[#D9D3C7] text-[10px]">
                 {profile.status}
@@ -351,7 +354,7 @@ export function FarmerProfileView({
             className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold gap-2 rounded-xl min-h-[42px] px-5 shadow-xs shrink-0 self-start md:self-auto hover-lift-sm"
           >
             <Edit3 className="h-4 w-4" />
-            <span>Edit Profile</span>
+            <span>{t("editProfile")}</span>
           </Button>
         )}
       </div>
@@ -363,7 +366,7 @@ export function FarmerProfileView({
           <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs">
               <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                Registered Farms
+                {t("registeredFarms")}
               </span>
               <span className="text-xl font-bold text-stone-900 mt-1 block">
                 {profile.farms.length}
@@ -371,7 +374,7 @@ export function FarmerProfileView({
             </div>
             <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs">
               <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                Total Livestock
+                {t("totalLivestock")}
               </span>
               <span className="text-xl font-bold text-stone-900 mt-1 block">
                 {totalAnimals}
@@ -379,7 +382,7 @@ export function FarmerProfileView({
             </div>
             <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs">
               <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                Assigned Territory
+                {t("assignedTerritory")}
               </span>
               <span className="text-xs font-bold text-emerald-900 mt-1.5 block truncate">
                 {profile.districtName || "Unassigned"}
@@ -387,7 +390,7 @@ export function FarmerProfileView({
             </div>
             <div className="p-4 rounded-2xl bg-white border border-[#E5E0D8] shadow-2xs">
               <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                Language
+                {t("language")}
               </span>
               <span className="text-xs font-bold text-stone-800 mt-1.5 block">
                 {languageLabels[profile.preferredLanguage] || profile.preferredLanguage}
@@ -401,17 +404,17 @@ export function FarmerProfileView({
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
                 <User className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-bold text-[#191F1C]">Personal Information</h3>
+              <h3 className="text-sm font-bold text-[#191F1C]">{t("personalInformation")}</h3>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <span className="text-stone-500 block text-[11px]">Full Name:</span>
+                <span className="text-stone-500 block text-[11px]">{t("fullNameLabel")}</span>
                 <span className="font-semibold text-stone-900 text-sm">{profile.name}</span>
               </div>
 
               <div>
-                <span className="text-stone-500 block text-[11px]">Phone Number:</span>
+                <span className="text-stone-500 block text-[11px]">{t("phoneLabel")}</span>
                 <span className="font-mono font-medium text-stone-900 flex items-center gap-1.5 mt-0.5">
                   <Phone className="h-3 w-3 text-emerald-700" />
                   <span>{profile.phone}</span>
@@ -419,18 +422,18 @@ export function FarmerProfileView({
               </div>
 
               <div>
-                <span className="text-stone-500 block text-[11px]">Email Address:</span>
+                <span className="text-stone-500 block text-[11px]">{t("emailLabel")}</span>
                 <span className="font-medium text-stone-900 flex items-center gap-1.5 mt-0.5">
                   <Mail className="h-3 w-3 text-stone-400" />
                   <span>{profile.email || "No email linked (Phone-based login)"}</span>
                 </span>
                 <span className="text-[10px] text-stone-400 block mt-0.5">
-                  Managed via secure authentication account.
+                  {t("managedAuthDesc")}
                 </span>
               </div>
 
               <div>
-                <span className="text-stone-500 block text-[11px]">Preferred Interface Language:</span>
+                <span className="text-stone-500 block text-[11px]">{t("preferredLangLabel")}</span>
                 <span className="font-medium text-stone-900 flex items-center gap-1.5 mt-0.5">
                   <Globe className="h-3 w-3 text-emerald-700" />
                   <span>{languageLabels[profile.preferredLanguage] || "English"}</span>
@@ -445,21 +448,21 @@ export function FarmerProfileView({
               <div className="p-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
                 <MapPin className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-bold text-[#191F1C]">Administrative Location</h3>
+              <h3 className="text-sm font-bold text-[#191F1C]">{t("adminLocation")}</h3>
             </div>
 
             <div className="space-y-3 text-xs">
               <div className="p-3 bg-[#FAF8F3] rounded-xl border border-[#E5E0D8] space-y-2">
                 <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-1.5">
-                  <span className="text-stone-500 text-[11px]">Village / Locality:</span>
+                  <span className="text-stone-500 text-[11px]">{t("villageLabel")}</span>
                   <strong className="text-stone-900">{profile.villageName || "Not Set"}</strong>
                 </div>
                 <div className="flex justify-between items-center border-b border-[#E5E0D8] pb-1.5">
-                  <span className="text-stone-500 text-[11px]">Block / Taluka:</span>
+                  <span className="text-stone-500 text-[11px]">{t("blockLabel")}</span>
                   <strong className="text-stone-900">{profile.blockName || "Not Set"}</strong>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-stone-500 text-[11px]">District:</span>
+                  <span className="text-stone-500 text-[11px]">{t("districtLabel")}</span>
                   <strong className="text-stone-900">{profile.districtName || "Not Set"}</strong>
                 </div>
               </div>
@@ -467,10 +470,10 @@ export function FarmerProfileView({
               <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-950 space-y-1">
                 <span className="font-bold block flex items-center gap-1">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>Surveillance Service Area</span>
+                  <span>{t("surveillanceArea")}</span>
                 </span>
                 <p className="text-stone-600">
-                  Your registered village links you directly to the nearest Pashusakhi (Field Agent) and assigned Veterinary Officer for doorstep care.
+                  {t("serviceAreaDesc")}
                 </p>
               </div>
             </div>
@@ -482,7 +485,7 @@ export function FarmerProfileView({
               <div className="p-2 rounded-xl bg-blue-50 text-blue-800 border border-blue-200">
                 <Building2 className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-bold text-[#191F1C]">Farm Infrastructure</h3>
+              <h3 className="text-sm font-bold text-[#191F1C]">{t("farmInfrastructure")}</h3>
             </div>
 
             <div className="space-y-3 text-xs">
@@ -492,7 +495,7 @@ export function FarmerProfileView({
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-stone-900 text-xs">{farm.name}</span>
                       <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">
-                        {farm.animalCount} Animals
+                        {t("animalsBadge", { count: farm.animalCount })}
                       </Badge>
                     </div>
                     <span className="text-[11px] text-stone-600 block">
@@ -505,7 +508,7 @@ export function FarmerProfileView({
                 ))
               ) : (
                 <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-center text-stone-500">
-                  No farm recorded yet.
+                  {t("noFarmRecorded")}
                 </div>
               )}
             </div>
@@ -520,14 +523,14 @@ export function FarmerProfileView({
                 <Edit3 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-[#191F1C]">Edit Farmer Profile</h3>
+                <h3 className="text-base font-bold text-[#191F1C]">{t("editProfile")}</h3>
                 <p className="text-xs text-stone-500">
-                  Update your contact details, preferred language, administrative location, and primary farm name.
+                  {t("editProfileDesc")}
                 </p>
               </div>
             </div>
             <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-xs font-semibold">
-              Editing
+              {t("editing")}
             </Badge>
           </div>
 
@@ -542,7 +545,7 @@ export function FarmerProfileView({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                placeholder="e.g. Ramesh Patil"
+                placeholder={t("placeholderRamesh")}
                 className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl min-h-[44px]"
               />
             </div>
@@ -557,7 +560,7 @@ export function FarmerProfileView({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                placeholder="e.g. +91 98765 43210"
+                placeholder={t("placeholderPhone")}
                 className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl min-h-[44px]"
               />
             </div>
@@ -566,7 +569,7 @@ export function FarmerProfileView({
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Preferred Language</span>
+                <span>{t("language")}</span>
               </Label>
               <select
                 value={preferredLanguage}
@@ -574,6 +577,9 @@ export function FarmerProfileView({
                 className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px]"
               >
                 <option value="en">English</option>
+                <option value="mr">मराठी (Marathi)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+                <option value="bn">বাংলা (Bengali)</option>
               </select>
             </div>
 
@@ -582,12 +588,12 @@ export function FarmerProfileView({
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                   <Building2 className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>Primary Farm Name</span>
+                  <span>{t("primaryFarmName")}</span>
                 </Label>
                 <Input
                   value={primaryFarmName}
                   onChange={(e) => setPrimaryFarmName(e.target.value)}
-                  placeholder="e.g. Patil Dairy Farm"
+                  placeholder={t("placeholderPatilFarm")}
                   className="bg-white border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl min-h-[44px]"
                 />
               </div>
@@ -599,10 +605,10 @@ export function FarmerProfileView({
             <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-2.5">
               <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-emerald-700" />
-                <span>Administrative Jurisdiction Hierarchy</span>
+                <span>{t("adminHierarchy")}</span>
               </span>
               <span className="text-[10px] text-stone-500">
-                Controls Field Agent & Vet routing
+                {t("routingDesc")}
               </span>
             </div>
 
@@ -616,7 +622,7 @@ export function FarmerProfileView({
                   required
                   className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[40px]"
                 >
-                  <option value="">Select District</option>
+                  <option value="">{t("selectDistrict")}</option>
                   {districts.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
@@ -628,7 +634,7 @@ export function FarmerProfileView({
               {/* 2. Block */}
               <div className="space-y-1">
                 <Label className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
-                  <span>Block / Taluka</span>
+                  <span>{t("blockLabel")}</span>
                   {loadingBlocks && <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />}
                 </Label>
                 <select
@@ -637,7 +643,7 @@ export function FarmerProfileView({
                   disabled={loadingBlocks || blocks.length === 0}
                   className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[40px] disabled:bg-stone-100 disabled:text-stone-400"
                 >
-                  <option value="">{blocks.length === 0 ? "No blocks found" : "Select Block"}</option>
+                  <option value="">{blocks.length === 0 ? "No blocks found" : t("selectBlock")}</option>
                   {blocks.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -649,7 +655,7 @@ export function FarmerProfileView({
               {/* 3. Village */}
               <div className="space-y-1">
                 <Label className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
-                  <span>Village / Locality</span>
+                  <span>{t("villageLabel")}</span>
                   {loadingVillages && <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />}
                 </Label>
                 <select
@@ -658,7 +664,7 @@ export function FarmerProfileView({
                   disabled={loadingVillages || villages.length === 0}
                   className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-2.5 focus:border-emerald-600 focus:outline-none min-h-[40px] disabled:bg-stone-100 disabled:text-stone-400"
                 >
-                  <option value="">{villages.length === 0 ? "No villages found" : "Select Village"}</option>
+                  <option value="">{villages.length === 0 ? "No villages found" : t("selectVillage")}</option>
                   {villages.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.name}
@@ -672,7 +678,7 @@ export function FarmerProfileView({
           <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-[11px] text-amber-950 flex items-start gap-2">
             <Info className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
             <p>
-              Modifying your profile location updates your personal profile and routing for future assistance requests. Historical cases and existing clinical reports will retain their original record.
+              {t("modifyLocationNotice")}
             </p>
           </div>
 
@@ -686,7 +692,7 @@ export function FarmerProfileView({
               className="text-xs border-[#D9D3C7] text-stone-700 hover:bg-stone-50 rounded-xl min-h-[42px] gap-1.5"
             >
               <X className="h-4 w-4" />
-              <span>Cancel</span>
+              <span>{t("cancel")}</span>
             </Button>
             <Button
               type="submit"
@@ -696,12 +702,12 @@ export function FarmerProfileView({
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving Changes...</span>
+                  <span>{t("savingChanges")}</span>
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  <span>Save Changes</span>
+                  <span>{t("saveChanges")}</span>
                 </>
               )}
             </Button>

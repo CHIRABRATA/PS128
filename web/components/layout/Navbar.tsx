@@ -10,7 +10,7 @@ import { useLocale } from "@/components/layout/LocaleProvider";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { dictionary } = useLocale();
+  const { locale, dictionary, setLocale } = useLocale();
   const { user } = useUser();
 
   const userRole = (user?.publicMetadata?.role as string | undefined);
@@ -86,6 +86,34 @@ export function Navbar() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
+        {/* Language Switcher Toggle */}
+        <div className="flex items-center rounded-sm border border-[#C9BFA0] bg-[#FBF9F3] p-0.5 text-xs font-semibold" role="group" aria-label="Language switcher">
+          <button
+            type="button"
+            onClick={() => setLocale("en")}
+            className={`px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              locale === "en"
+                ? "bg-[#274C36] text-[#F3EFE5]"
+                : "text-[#5C5645] hover:text-[#20271F] hover:bg-[#EDE7D3]"
+            }`}
+            aria-label="English"
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocale("mr")}
+            className={`px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              locale === "mr"
+                ? "bg-[#274C36] text-[#F3EFE5]"
+                : "text-[#5C5645] hover:text-[#20271F] hover:bg-[#EDE7D3]"
+            }`}
+            aria-label="मराठी"
+          >
+            मराठी
+          </button>
+        </div>
+
         <Show when="signed-out">
           <SignInButton mode="modal">
             <Button variant="outline" size="sm" className="text-xs">

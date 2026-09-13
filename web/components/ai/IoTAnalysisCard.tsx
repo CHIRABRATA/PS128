@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Cpu, Thermometer, Activity, AlertCircle } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { getReportCopy } from "@/lib/i18n/report";
+import { useTranslations } from "next-intl";
 
 interface IoTAnalysisCardProps {
   telemetrySignals?: Record<string, unknown> | null;
@@ -12,6 +13,7 @@ interface IoTAnalysisCardProps {
 
 export function IoTAnalysisCard({ telemetrySignals }: IoTAnalysisCardProps) {
   const { locale } = useLocale();
+  const t = useTranslations("ai");
   const copy = getReportCopy(locale);
   if (!telemetrySignals) {
     return (
@@ -48,7 +50,7 @@ export function IoTAnalysisCard({ telemetrySignals }: IoTAnalysisCardProps) {
               : "border-emerald-200 text-emerald-800 bg-emerald-50"
           }`}
         >
-          {feverDetected ? copy.anomalies : "Normal"}
+          {feverDetected ? copy.anomalies : t("normal")}
         </Badge>
       </div>
 
@@ -74,9 +76,9 @@ export function IoTAnalysisCard({ telemetrySignals }: IoTAnalysisCardProps) {
         {heartRateElevated && (
           <div className="flex justify-between items-center text-red-700">
             <span className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> Heart rate:
+              <AlertCircle className="h-3 w-3" /> {t("heartRate")}
             </span>
-            <span className="font-bold">Elevated BPM</span>
+            <span className="font-bold">{t("elevatedBpm")}</span>
           </div>
         )}
       </div>

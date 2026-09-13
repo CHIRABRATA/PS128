@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { VetAction } from "@prisma/client";
 import { formatDateTime, formatDate } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export default async function VetCaseDetailPage({
   params,
@@ -29,6 +30,7 @@ export default async function VetCaseDetailPage({
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
+  const t = await getTranslations("vet");
 
   // 1. Mark reviewedAt/reviewedByUserId atomically on load if not already set
   try {
@@ -70,7 +72,7 @@ export default async function VetCaseDetailPage({
           <Link href="/vet">
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 gap-1.5 min-h-[36px] rounded-xl">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to Queue</span>
+              <span>{t("backToQueue")}</span>
             </Button>
           </Link>
           <div>
@@ -83,7 +85,7 @@ export default async function VetCaseDetailPage({
               </Badge>
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
-              Animal Tag: <strong className="text-stone-900 font-mono">{healthCase.animal.tag}</strong> ({healthCase.animal.species}) • Farm: <strong className="text-stone-900">{farm.name}</strong> ({village.name}, {district.name})
+              {t("tagIdLabel")}: <strong className="text-stone-900 font-mono">{healthCase.animal.tag}</strong> ({healthCase.animal.species}) • Farm: <strong className="text-stone-900">{farm.name}</strong> ({village.name}, {district.name})
             </p>
           </div>
         </div>
@@ -108,40 +110,40 @@ export default async function VetCaseDetailPage({
             <CardHeader className="border-b border-[#E5E0D8] pb-3">
               <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-emerald-700" />
-                <span>1. Primary Animal & Field Intake Details</span>
+                <span>{t("primaryIntakeTitle")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-[#FAF8F3] p-3.5 rounded-2xl border border-[#E5E0D8]">
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">Species</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("speciesLabel")}</span>
                   <span className="font-bold text-[#191F1C]">{healthCase.animal.species}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">Tag ID</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("tagIdLabel")}</span>
                   <span className="font-bold text-emerald-800 font-mono">{healthCase.animal.tag}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">IoT Sensor ID</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("iotSensorIdLabel")}</span>
                   <span className="font-mono text-stone-700">{healthCase.animal.iotDeviceId || "None"}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">Reported By</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("reportedByLabel")}</span>
                   <span className="text-stone-800 font-medium">{healthCase.createdByUser.name} ({healthCase.reportSource})</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">Symptom Duration</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("symptomDurationLabel")}</span>
                   <span className="text-stone-800 font-medium">{healthCase.durationDays} days</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-stone-500 font-medium block">Herd Impact</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">{t("herdImpactLabel")}</span>
                   <span className="text-stone-800 font-medium">{healthCase.affectedCount} affected / {healthCase.mortalityCount} dead</span>
                 </div>
               </div>
 
               {/* Reported Symptoms */}
               <div className="space-y-1.5">
-                <span className="text-xs font-semibold text-stone-700">Reported Symptoms:</span>
+                <span className="text-xs font-semibold text-stone-700">{t("reportedSymptoms")}:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {healthCase.symptoms.map((sym, idx) => (
                     <Badge key={idx} className="bg-amber-50 text-amber-900 border-amber-200 text-xs px-2.5 py-0.5">
@@ -162,7 +164,7 @@ export default async function VetCaseDetailPage({
               {/* Private Case Photo Viewer */}
               {healthCase.photoUrl && (
                 <div className="space-y-1.5">
-                  <span className="text-xs font-semibold text-stone-700">Lesion / Clinical Photo:</span>
+                  <span className="text-xs font-semibold text-stone-700">{t("lesionPhoto")}:</span>
                   <CasePhotoViewer caseId={healthCase.id} photoUrl={healthCase.photoUrl} alt={`Case ${healthCase.caseNumber} photo`} />
                 </div>
               )}
@@ -182,7 +184,7 @@ export default async function VetCaseDetailPage({
             <CardHeader className="border-b border-[#E5E0D8] pb-3">
               <CardTitle className="text-sm font-bold text-[#191F1C] uppercase tracking-wider flex items-center gap-2">
                 <History className="h-4 w-4 text-emerald-700" />
-                <span>3. Longitudinal Health History & Past Records</span>
+                <span>{t("longitudinalHistoryTitle")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4 text-xs">
@@ -190,10 +192,10 @@ export default async function VetCaseDetailPage({
               <div className="space-y-2">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
                   <History className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>Previous Health Sessions</span>
+                  <span>{t("previousHealthSessions")}</span>
                 </h5>
                 {healthCase.animal.cases.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">No previous health sessions recorded for this animal.</p>
+                  <p className="text-stone-500 italic pl-5">{t("noPreviousSessions")}</p>
                 ) : (
                   <div className="space-y-1.5 pl-5">
                     {healthCase.animal.cases.map((pc) => (
@@ -216,10 +218,10 @@ export default async function VetCaseDetailPage({
               <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
                   <Stethoscope className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>Past Clinical Reports</span>
+                  <span>{t("pastClinicalReports")}</span>
                 </h5>
                 {healthCase.animal.veterinaryReports.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">No prior veterinary clinical reports available.</p>
+                  <p className="text-stone-500 italic pl-5">{t("noPriorVetReports")}</p>
                 ) : (
                   <div className="space-y-1.5 pl-5">
                     {healthCase.animal.veterinaryReports.map((vr) => (
@@ -242,10 +244,10 @@ export default async function VetCaseDetailPage({
               <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
                   <Syringe className="h-3.5 w-3.5 text-amber-700" />
-                  <span>Vaccination Records</span>
+                  <span>{t("vaccinationRecords")}</span>
                 </h5>
                 {healthCase.animal.vaccinations.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">No vaccination records found for this animal.</p>
+                  <p className="text-stone-500 italic pl-5">{t("noVaccinationsFound")}</p>
                 ) : (
                   <div className="space-y-1 pl-5">
                     {healthCase.animal.vaccinations.map((vac) => (
@@ -262,16 +264,16 @@ export default async function VetCaseDetailPage({
               <div className="space-y-2 pt-2 border-t border-[#E5E0D8]">
                 <h5 className="font-semibold text-stone-800 flex items-center gap-1.5">
                   <Pill className="h-3.5 w-3.5 text-purple-700" />
-                  <span>Past Treatments</span>
+                  <span>{t("pastTreatments")}</span>
                 </h5>
                 {healthCase.animal.treatments.length === 0 ? (
-                  <p className="text-stone-500 italic pl-5">No previous treatment records found.</p>
+                  <p className="text-stone-500 italic pl-5">{t("noTreatmentsFound")}</p>
                 ) : (
                   <div className="space-y-1 pl-5">
-                    {healthCase.animal.treatments.map((t) => (
-                      <div key={t.id} className="flex justify-between text-stone-600 bg-[#FAF8F3] p-2 rounded-xl border border-[#E5E0D8]">
-                        <span className="text-stone-900 font-medium">{t.medication}</span>
-                        <span>{formatDate(t.dateGiven)}</span>
+                    {healthCase.animal.treatments.map((tItem) => (
+                      <div key={tItem.id} className="flex justify-between text-stone-600 bg-[#FAF8F3] p-2 rounded-xl border border-[#E5E0D8]">
+                        <span className="text-stone-900 font-medium">{tItem.medication}</span>
+                        <span>{formatDate(tItem.dateGiven)}</span>
                       </div>
                     ))}
                   </div>

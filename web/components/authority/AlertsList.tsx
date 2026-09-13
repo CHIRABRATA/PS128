@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Calendar, MapPin, ShieldAlert, ShieldCheck, Search, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface AlertWithLocation {
   id: string;
@@ -34,6 +35,7 @@ interface AlertsListProps {
 }
 
 export function AlertsList({ alerts }: AlertsListProps) {
+  const t = useTranslations("authority");
   const [filterTab, setFilterTab] = useState<"all" | "active" | "historical">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -89,7 +91,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
           <Input
             type="text"
-            placeholder="Search village or disease..."
+            placeholder={t("searchVillageDisease")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-9 pl-8 text-xs bg-white border-[#D9D3C7] rounded-xl"
@@ -106,18 +108,18 @@ export function AlertsList({ alerts }: AlertsListProps) {
               <span>Active District Outbreak Alerts ({activeAlerts.length})</span>
             </CardTitle>
             <CardDescription className="text-xs text-stone-600">
-              Automated trigger on 3+ cases of the same disease detected in a village within a 7-day rolling window.
+              {t("clusterAlertRule")}
             </CardDescription>
           </div>
           <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200">
-            Automated Alert
+            {t("automatedAlertBadge")}
           </Badge>
         </CardHeader>
         <CardContent className="pt-4">
           {displayedAlerts.length === 0 ? (
             <div className="p-6 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D8] text-center text-xs text-stone-600 flex flex-col items-center gap-2">
               <ShieldCheck className="h-8 w-8 text-emerald-600" />
-              <span>No matching outbreak alerts found.</span>
+              <span>{t("noAlertsFound")}</span>
             </div>
           ) : (
             <div className="space-y-3">
@@ -163,7 +165,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                   <div className="flex items-center gap-2 self-end md:self-center">
                     <Link href="/authority">
                       <Button size="sm" variant="outline" className="h-8 text-xs border-red-200 text-red-800 hover:bg-red-50 rounded-xl gap-1">
-                        <span>View on Map</span>
+                        <span>{t("viewOnMap")}</span>
                         <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>

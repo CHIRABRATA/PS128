@@ -4,10 +4,11 @@ import Image from "next/image";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { Badge } from "@/components/ui/badge";
 import { LayoutDashboard, ScrollText, MapPin } from "lucide-react";
-
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
+  const t = await getTranslations("admin");
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#191F1C] flex flex-col font-sans">
@@ -19,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Image src="/images/maitri-livestock-logo.png" alt="Maitri" width={28} height={28} className="h-full w-full object-contain scale-125" priority />
             </div>
             <span className="font-bold text-xs tracking-wide text-stone-900 uppercase font-mono">
-              Admin Cockpit
+              {t("adminCockpit")}
             </span>
             <span className="text-stone-300">•</span>
             <Badge className="text-[10px] border-emerald-300 text-emerald-900 px-2 py-0 bg-emerald-50 font-mono">
@@ -32,21 +33,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin">
               <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer shadow-2xs">
                 <LayoutDashboard className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Dashboard</span>
+                <span>{t("dashboard")}</span>
               </button>
             </Link>
 
             <Link href="/admin/audit-log">
               <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl hover:bg-blue-50 text-stone-700 hover:text-blue-800 transition-colors cursor-pointer">
                 <ScrollText className="h-3.5 w-3.5 text-blue-600" />
-                <span>Audit Ledger</span>
+                <span>{t("auditLedger")}</span>
               </button>
             </Link>
 
             <Link href="/admin/geography">
               <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl hover:bg-purple-50 text-stone-700 hover:text-purple-800 transition-colors cursor-pointer">
                 <MapPin className="h-3.5 w-3.5 text-purple-700" />
-                <span>Geography</span>
+                <span>{t("geography")}</span>
               </button>
             </Link>
           </div>

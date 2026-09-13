@@ -5,13 +5,16 @@ import { AssistanceRequestForm } from "@/components/farmer/AssistanceRequestForm
 import { ensureFarmerPrimaryFarmAction } from "@/lib/actions/farmer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function FarmerRequestHelpPage({
+
   searchParams,
 }: {
   searchParams?: Promise<{ animalId?: string }>;
 }) {
   const farmer = await requireFarmer();
+  const t = await getTranslations("farmer");
   const params = searchParams ? await searchParams : {};
   const preSelectedAnimalId = params.animalId || null;
 
@@ -74,20 +77,20 @@ export default async function FarmerRequestHelpPage({
       <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-4">
         <div>
           <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">
-            DOORSTEP FIELD SUPPORT
+            {t("doorstepFieldSupport")}
           </span>
           <h1 className="text-2xl font-bold text-[#191F1C] tracking-tight mt-1">
-            Request Field Agent Visit
+            {t("requestFieldAgentVisit")}
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            If you need assistance with livestock examination, ear-tagging, or clinical reporting.
+            {t("requestFieldAgentLead")}
           </p>
         </div>
 
         <Link href="/farmer">
           <Button variant="outline" size="sm" className="gap-1.5 text-xs border-[#D9D3C7] text-stone-700 hover:bg-white rounded-xl">
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Farmer Portal</span>
+            <span>{t("farmerPortal")}</span>
           </Button>
         </Link>
       </div>

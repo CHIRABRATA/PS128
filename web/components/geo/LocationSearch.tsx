@@ -22,6 +22,7 @@ import {
   ResolvedLocationHierarchy,
   UserGpsCoordinates,
 } from "@/lib/actions/geo";
+import { useTranslations } from "next-intl";
 
 export type SelectedLocationData = ResolvedLocationHierarchy;
 
@@ -52,6 +53,7 @@ export function LocationSearch({
   showMapPreview = true,
   className = "",
 }: LocationSearchProps) {
+  const t = useTranslations("geo");
   const [internalSelectedLocation, setInternalSelectedLocation] = useState<SelectedLocationData | null>(value ?? null);
   const selectedLocation = value !== undefined ? value : internalSelectedLocation;
 
@@ -236,7 +238,7 @@ export function LocationSearch({
     if (onClear) onClear();
   };
 
-  const headingText = title || label;
+  const headingText = title || label || t("whereLocated");
 
   // 1. SELECTED STATE: Display chosen location card
   if (selectedLocation) {
@@ -267,12 +269,12 @@ export function LocationSearch({
                 </span>
                 {selectedLocation.isUrban && (
                   <Badge className="bg-stone-200 text-stone-700 border-stone-300 text-[10px]">
-                    Urban / Town
+                    {t("urbanTown")}
                   </Badge>
                 )}
                 {isGpsOrigin && (
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
-                    GPS Source
+                    {t("gpsSource")}
                   </Badge>
                 )}
               </div>
@@ -280,17 +282,17 @@ export function LocationSearch({
               <div className="flex flex-wrap gap-2 text-[11px] text-stone-600 pt-0.5">
                 {selectedLocation.villageName && (
                   <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
-                    Village: <strong className="text-stone-800">{selectedLocation.villageName}</strong>
+                    {t("village")} <strong className="text-stone-800">{selectedLocation.villageName}</strong>
                   </span>
                 )}
                 {selectedLocation.blockName && (
                   <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
-                    Block: <strong className="text-stone-800">{selectedLocation.blockName}</strong>
+                    {t("block")} <strong className="text-stone-800">{selectedLocation.blockName}</strong>
                   </span>
                 )}
                 {selectedLocation.districtName && (
                   <span className="bg-white/80 px-2 py-0.5 rounded-md border border-[#E5E0D8]">
-                    District: <strong className="text-stone-800">{selectedLocation.districtName}</strong>
+                    {t("district")} <strong className="text-stone-800">{selectedLocation.districtName}</strong>
                   </span>
                 )}
               </div>
@@ -312,7 +314,7 @@ export function LocationSearch({
           {showMapPreview && hasCoordinates && selectedLocation.latitude !== null && selectedLocation.longitude !== null && (
             <div className="relative w-full h-36 rounded-xl overflow-hidden border border-emerald-200 bg-stone-100">
               <iframe
-                title="Selected Location Map Preview"
+                title={t("mapPreviewTitle")}
                 className="w-full h-full border-0 pointer-events-none"
                 src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedLocation.longitude - 0.01}%2C${selectedLocation.latitude - 0.01}%2C${selectedLocation.longitude + 0.01}%2C${selectedLocation.latitude + 0.01}&layer=mapnik&marker=${selectedLocation.latitude}%2C${selectedLocation.longitude}`}
               />
@@ -344,7 +346,7 @@ export function LocationSearch({
             <Loader2 className="h-6 w-6 animate-spin text-amber-700" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-stone-900">Detecting your current location...</h4>
+            <h4 className="text-sm font-bold text-stone-900">{t("detectingLocation")}</h4>
             <p className="text-xs text-stone-600 mt-1">
               Please allow GPS access if prompted by your browser.
             </p>
@@ -380,8 +382,8 @@ export function LocationSearch({
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-stone-800">Location access was not granted.</p>
-              <p className="text-xs text-stone-600 mt-0.5">Search for a location instead.</p>
+              <p className="text-xs font-bold text-stone-800">{t("locationNotGranted")}</p>
+              <p className="text-xs text-stone-600 mt-0.5">{t("searchInstead")}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -391,7 +393,7 @@ export function LocationSearch({
               className="flex-1 min-h-[40px] bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl gap-2"
             >
               <Search className="h-4 w-4" />
-              <span>Search for a location</span>
+              <span>{t("searchBtn")}</span>
             </Button>
             <Button
               type="button"
@@ -424,7 +426,7 @@ export function LocationSearch({
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-red-900">GPS Unavailable</p>
+              <p className="text-xs font-bold text-red-900">{t("gpsUnavailable")}</p>
               <p className="text-xs text-red-700 mt-0.5">{gpsErrorMessage || "Search for a location instead."}</p>
             </div>
           </div>
@@ -435,7 +437,7 @@ export function LocationSearch({
               className="flex-1 min-h-[40px] bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl gap-2"
             >
               <Search className="h-4 w-4" />
-              <span>Search for a location</span>
+              <span>{t("searchBtn")}</span>
             </Button>
             <Button
               type="button"
@@ -458,7 +460,7 @@ export function LocationSearch({
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-stone-700 uppercase tracking-wide flex items-center gap-1.5">
             <Search className="h-3.5 w-3.5 text-emerald-700" />
-            <span>Search Village, Town or Area</span>
+            <span>{t("searchVillageTown")}</span>
           </label>
           <Button
             type="button"
@@ -473,7 +475,7 @@ export function LocationSearch({
             className="h-7 px-2 text-xs text-stone-600 hover:text-stone-900 gap-1"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back</span>
+            <span>{t("back")}</span>
           </Button>
         </div>
 
@@ -481,7 +483,7 @@ export function LocationSearch({
           <Input
             value={query}
             onChange={handleInputChange}
-            placeholder="Type at least 3 letters (e.g. Wagholi, Haveli, Baramati)..."
+            placeholder={t("searchPlaceholder")}
             disabled={disabled || isResolving}
             autoFocus
             className="pl-9 pr-10 min-h-[44px] text-xs bg-white border-[#D9D3C7] rounded-xl focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 shadow-xs"
@@ -537,7 +539,7 @@ export function LocationSearch({
                     </p>
                     {item.distanceKm !== null && typeof item.distanceKm === "number" && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-800 border-emerald-200 shrink-0">
-                        ~{item.distanceKm < 1 ? "<1" : item.distanceKm.toFixed(0)} km away
+                        {t("kmAway", { dist: item.distanceKm < 1 ? "<1" : item.distanceKm.toFixed(0) })}
                       </Badge>
                     )}
                   </div>
@@ -553,14 +555,14 @@ export function LocationSearch({
         {/* No results message */}
         {hasSearched && results.length === 0 && !isSearching && query.trim().length >= 3 && (
           <div className="p-4 text-center rounded-xl bg-stone-50 border border-[#E5E0D8] text-xs text-stone-500">
-            No matching locations found for &ldquo;{query}&rdquo;. Check spelling or try a nearby town.
+            {t("noMatchingLocations", { query })}
           </div>
         )}
 
         {isResolving && (
           <div className="p-3 text-center rounded-xl bg-emerald-50 text-emerald-800 text-xs flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
-            <span>Resolving location hierarchy...</span>
+            <span>{t("resolvingLocation")}</span>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import {
 import { IoTMonitoringView } from "@/components/iot/IoTMonitoringView";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft, Cpu } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function FarmerIoTMonitoringPage({
   searchParams,
@@ -15,6 +16,7 @@ export default async function FarmerIoTMonitoringPage({
   searchParams: Promise<{ animalId?: string }>;
 }) {
   await requireFarmer();
+  const t = await getTranslations("farmer");
   const { animalId } = await searchParams;
 
   const animals = await getFarmerAnimalsWithIoTAction();
@@ -25,21 +27,21 @@ export default async function FarmerIoTMonitoringPage({
         <div className="h-16 w-16 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
           <Cpu className="h-8 w-8" />
         </div>
-        <h1 className="text-xl font-bold text-[#191F1C]">No Livestock Registered</h1>
+        <h1 className="text-xl font-bold text-[#191F1C]">{t("noLivestockRegistered")}</h1>
         <p className="text-xs text-stone-600">
-          To monitor IoT telemetry or simulate ESP32 biometrics, please register at least one livestock animal in your profile.
+          {t("noLivestockIotDesc")}
         </p>
         <div className="pt-2 flex items-center gap-3">
           <Link href="/farmer">
             <Button variant="outline" size="sm" className="rounded-xl border-[#D9D3C7]">
               <ArrowLeft className="h-4 w-4 mr-1.5" />
-              <span>Back to Dashboard</span>
+              <span>{t("backToDashboard")}</span>
             </Button>
           </Link>
           <Link href="/farmer/report">
             <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl">
               <PlusCircle className="h-4 w-4 mr-1.5" />
-              <span>Register Animal</span>
+              <span>{t("registerAnimalBtn")}</span>
             </Button>
           </Link>
         </div>

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   ArrowLeft,
@@ -49,6 +50,8 @@ export function HealthReportForm({
   expectedUpdatedAt,
 }: HealthReportFormProps) {
   const { user } = useUser();
+  const t = useTranslations("reporting");
+  const tCommon = useTranslations("common");
   const [step, setStep] = useState(1);
   const [animalSelectorKey, setAnimalSelectorKey] = useState(0);
 
@@ -356,11 +359,11 @@ export function HealthReportForm({
           </Badge>
 
           <CardTitle className="text-xl font-bold text-[#191F1C]">
-            Report saved locally
+            {t("savedLocallyTitle")}
           </CardTitle>
 
           <CardDescription className="text-xs text-stone-600 max-w-sm">
-            Your report for <strong className="text-stone-900">{selectedAnimal?.tag}</strong> is safely stored on this device and will sync automatically when the network is available.
+            {t("savedLocallyDesc", { tag: selectedAnimal?.tag || "" })}
           </CardDescription>
         </div>
 
@@ -389,7 +392,7 @@ export function HealthReportForm({
           }}
           className="w-full text-xs bg-amber-700 hover:bg-amber-800 text-white font-semibold rounded-xl min-h-[44px]"
         >
-            Create another report
+            {t("createAnotherReport")}
         </Button>
       </Card>
     );
@@ -409,7 +412,7 @@ export function HealthReportForm({
           </div>
 
           <Badge className="text-xs px-3 py-1 bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold">
-            Health report submitted
+            {t("reportSubmittedTitle")}
           </Badge>
 
           <CardTitle className="text-2xl font-bold text-[#191F1C]">
@@ -417,7 +420,7 @@ export function HealthReportForm({
           </CardTitle>
 
           <CardDescription className="text-xs text-stone-600 max-w-sm">
-            Health report created for <strong className="text-stone-900">{selectedAnimal?.tag}</strong> ({selectedAnimal?.species}).
+            {t("reportCreatedFor", { tag: selectedAnimal?.tag || "", species: selectedAnimal?.species || "" })}
           </CardDescription>
         </CardHeader>
 
@@ -428,7 +431,7 @@ export function HealthReportForm({
             <div className="space-y-1 border-b border-[#E5E0D8] pb-2.5">
               <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-emerald-700" />
-                <span>Location</span>
+                <span>{tCommon("location")}</span>
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
                 <div className="bg-white px-2.5 py-1 rounded-lg border border-[#E5E0D8]">
@@ -450,7 +453,7 @@ export function HealthReportForm({
             <div className="space-y-1.5 border-b border-[#E5E0D8] pb-2.5">
               <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
                 <Stethoscope className="h-3 w-3 text-emerald-700" />
-                <span>Sent to Veterinarian</span>
+                <span>{t("sentToVet")}</span>
               </span>
               {assignedVet ? (
                 <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
@@ -467,13 +470,13 @@ export function HealthReportForm({
               ) : (
                 <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-amber-950">Awaiting veterinarian assignment</span>
+                    <span className="font-bold text-xs text-amber-950">{t("awaitingVetAssignment")}</span>
                     <Badge className="bg-amber-100 text-amber-950 border-amber-300 text-[10px]">
-                      Pending Assignment
+                      {t("pendingAssignmentBadge")}
                     </Badge>
                   </div>
                   <p className="text-[11px] text-amber-900">
-                    No active veterinarian found in this immediate area; your case is queued for district assignment.
+                    {t("noVetFoundQueued")}
                   </p>
                 </div>
               )}
@@ -510,7 +513,7 @@ export function HealthReportForm({
           {selectedAnimal && (
             <Link href={`/farmer/animals/${selectedAnimal.id}`} className="flex-1 w-full">
               <Button variant="outline" size="sm" className="w-full text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl min-h-[40px] font-semibold">
-                <span>View Animal Health History</span>
+                <span>{t("viewAnimalHealthHistory")}</span>
               </Button>
             </Link>
           )}
@@ -518,7 +521,7 @@ export function HealthReportForm({
             onClick={resetReport}
             className="flex-1 w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[40px] rounded-xl"
           >
-            <span>Create Another Report</span>
+            <span>{t("createAnotherReport")}</span>
           </Button>
         </CardFooter>
       </Card>
@@ -533,18 +536,18 @@ export function HealthReportForm({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px] font-bold">
-                Report Options
+                {t("reportOptions")}
               </Badge>
-              <h3 className="text-sm font-bold text-stone-900">Need help from a Pashusakhi / Field Agent?</h3>
+              <h3 className="text-sm font-bold text-stone-900">{t("needHelpAgent")}</h3>
             </div>
             <p className="text-xs text-stone-600">
-              Can&apos;t fill this report yourself? Request a field agent to visit your farm, inspect the animal, and complete the report with you.
+              {t("cantFillReportDesc")}
             </p>
           </div>
           <Link href="/farmer/request-help" className="shrink-0">
             <Button size="sm" variant="outline" className="text-xs border-amber-300 bg-white text-amber-900 hover:bg-amber-50 font-semibold gap-1.5 rounded-xl h-10 shadow-xs cursor-pointer">
               <PhoneCall className="h-3.5 w-3.5 text-amber-700" />
-              <span>Call a Field Agent &rarr;</span>
+              <span>{t("callFieldAgent")}</span>
             </Button>
           </Link>
         </div>
@@ -562,7 +565,7 @@ export function HealthReportForm({
       <CardHeader className="border-b border-[#E5E0D8] pb-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <Badge className="border-emerald-200 text-emerald-800 bg-emerald-50 text-[10px] uppercase font-mono shrink-0">
-            Step {step} / 7 — {mode === "farmer" ? "Farmer report" : "Field inspection"}
+            {t("stepOf", { step, mode: mode === "farmer" ? t("farmerReportMode") : t("fieldInspectionMode") })}
           </Badge>
           <div className="flex items-center gap-1.5 shrink-0">
             {[1, 2, 3, 4, 5, 6, 7].map((s) => (
@@ -581,23 +584,23 @@ export function HealthReportForm({
         </div>
 
         <CardTitle className="text-xl font-bold text-[#191F1C] tracking-tight mt-1">
-          {step === 1 && "1. Select Sick Animal (Animal Tag)"}
-          {step === 2 && "2. Observed Symptoms"}
-          {step === 3 && "3. Duration and Affected Animals"}
-          {step === 4 && "4. Lesion Photo"}
-          {step === 5 && "5. GPS Location"}
-          {step === 6 && "6. Temperature and IoT Vitals"}
-          {step === 7 && "7. Review and Submit Report"}
+          {step === 1 && t("step1Title")}
+          {step === 2 && t("step2Title")}
+          {step === 3 && t("step3Title")}
+          {step === 4 && t("step4Title")}
+          {step === 5 && t("step5Title")}
+          {step === 6 && t("step6Title")}
+          {step === 7 && t("step7Title")}
         </CardTitle>
 
         <CardDescription className="text-xs text-stone-500">
-          {step === 1 && "Select the animal showing signs of illness."}
-          {step === 2 && "Select all symptoms observed in the animal."}
-          {step === 3 && "Record how long the illness has lasted and how many animals are affected."}
-          {step === 4 && "Add a clear photo of skin lesions, the mouth, eyes, or saliva."}
-          {step === 5 && "Add GPS coordinates for accurate disease mapping."}
-          {step === 6 && "Enter measured temperature or available sensor information."}
-          {step === 7 && "Review all information and submit the report."}
+          {step === 1 && t("step1Desc")}
+          {step === 2 && t("step2Desc")}
+          {step === 3 && t("step3Desc")}
+          {step === 4 && t("step4Desc")}
+          {step === 5 && t("step5Desc")}
+          {step === 6 && t("step6Desc")}
+          {step === 7 && t("step7Desc")}
         </CardDescription>
       </CardHeader>
 
@@ -655,24 +658,24 @@ export function HealthReportForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Duration Days */}
               <div className="space-y-2">
-                <Label htmlFor="duration" className="text-xs text-stone-700 font-bold">How long have symptoms been present? *</Label>
+                <Label htmlFor="duration" className="text-xs text-stone-700 font-bold">{t("howLongSymptoms")}</Label>
                 <select
                   id="duration"
                   value={durationDays}
                   onChange={(e) => setDurationDays(parseInt(e.target.value, 10))}
                   className="w-full bg-white border border-[#D9D3C7] text-xs text-[#191F1C] rounded-xl p-3 focus:border-emerald-600 focus:outline-none min-h-[44px] shadow-xs"
                 >
-                  <option value={1}>Today (1 day)</option>
-                  <option value={2}>2 days</option>
-                  <option value={3}>3 days</option>
-                  <option value={5}>4-5 days</option>
-                  <option value={7}>More than one week</option>
+                  <option value={1}>{t("today1Day")}</option>
+                  <option value={2}>{t("twoDays")}</option>
+                  <option value={3}>{t("threeDays")}</option>
+                  <option value={5}>{t("fourToFiveDays")}</option>
+                  <option value={7}>{t("moreThanWeek")}</option>
                 </select>
               </div>
 
               {/* Affected Count */}
               <div className="space-y-2">
-                <Label htmlFor="affected" className="text-xs text-stone-700 font-bold">Number of affected animals *</Label>
+                <Label htmlFor="affected" className="text-xs text-stone-700 font-bold">{t("numAffectedAnimals")}</Label>
                 <Input
                   id="affected"
                   type="number"
@@ -685,7 +688,7 @@ export function HealthReportForm({
 
               {/* Herd Size */}
               <div className="space-y-2">
-                <Label htmlFor="herd" className="text-xs text-stone-700 font-bold">Total animals in herd *</Label>
+                <Label htmlFor="herd" className="text-xs text-stone-700 font-bold">{t("totalAnimalsHerd")}</Label>
                 <Input
                   id="herd"
                   type="number"
@@ -698,7 +701,7 @@ export function HealthReportForm({
 
               {/* Mortality Count */}
               <div className="space-y-2">
-                <Label htmlFor="mortality" className="text-xs text-stone-700 font-bold">Deaths (mortality)</Label>
+                <Label htmlFor="mortality" className="text-xs text-stone-700 font-bold">{t("deathsMortality")}</Label>
                 <Input
                   id="mortality"
                   type="number"
@@ -769,54 +772,54 @@ export function HealthReportForm({
         {step === 7 && (
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-              Report Summary
+              {t("reportSummaryTitle")}
             </h4>
 
             <div className="bg-[#FAF8F3] p-4 rounded-2xl border border-[#E5E0D8] text-xs space-y-2.5 text-stone-700">
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Selected animal:</span>
+                <span className="text-stone-500">{t("selectedAnimalLabel")}</span>
                 <span className="font-bold text-stone-900">{selectedAnimal?.tag} ({selectedAnimal?.species})</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Farm / village:</span>
+                <span className="text-stone-500">{t("farmVillageLabel")}</span>
                 <span className="font-medium text-stone-900">{selectedAnimal?.farmName} ({selectedAnimal?.villageName})</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Selected symptoms:</span>
+                <span className="text-stone-500">{t("selectedSymptomsLabel")}</span>
                 <span className="font-medium text-amber-800">{symptoms.join(", ")}</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Duration and count:</span>
+                <span className="text-stone-500">{t("durationAndCount")}</span>
                 <span>{durationDays} days • {affectedCount} of {herdSize} affected</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Deaths:</span>
+                <span className="text-stone-500">{t("deathsLabel")}</span>
                 <span className={mortalityCount > 0 ? "font-bold text-red-700" : "text-stone-600"}>
                   {mortalityCount}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">IoT Telemetry:</span>
+                <span className="text-stone-500">{t("iotTelemetryLabel")}</span>
                 <span>
                   {temperature || activity || heartRate ? (
                     <span className="font-medium text-stone-900 inline-flex items-center gap-1.5 flex-wrap justify-end">
                       <span>{temperature ? `${temperature}°C` : ""}{activity ? ` • Act: ${activity}` : ""}{heartRate ? ` • HR: ${heartRate}` : ""}</span>
-                      {iotSource === "REAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">REAL ESP32</span>}
-                      {iotSource === "SIMULATED" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800">SIMULATED ESP32</span>}
-                      {iotSource === "MANUAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">MANUAL</span>}
+                      {iotSource === "REAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">{t("realEsp32")}</span>}
+                      {iotSource === "SIMULATED" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800">{t("simulatedEsp32")}</span>}
+                      {iotSource === "MANUAL" && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">{t("manual")}</span>}
                     </span>
                   ) : (
-                    "No sensor telemetry"
+                    t("noSensorTelemetry")
                   )}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E0D8] pb-2">
-                <span className="text-stone-500">Photo:</span>
-                <span>{photoUrl ? "Attached (ready for review)" : "No photo attached"}</span>
+                <span className="text-stone-500">{t("photoLabel")}</span>
+                <span>{photoUrl ? t("photoAttachedReview") : t("noPhotoAttached")}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stone-500">GPS location:</span>
-                <span>{gpsLat && gpsLng ? `${gpsLat.toFixed(4)}, ${gpsLng.toFixed(4)}` : "Village default location"}</span>
+                <span className="text-stone-500">{t("gpsLocationLabel")}</span>
+                <span>{gpsLat && gpsLng ? `${gpsLat.toFixed(4)}, ${gpsLng.toFixed(4)}` : t("villageDefaultLocation")}</span>
               </div>
             </div>
           </div>
@@ -835,7 +838,7 @@ export function HealthReportForm({
             className="gap-1 text-xs border-[#D9D3C7] bg-white text-stone-800 hover:bg-stone-50 min-h-[40px] rounded-xl cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back</span>
+            <span>{t("backBtn")}</span>
           </Button>
         ) : (
           <div />
@@ -848,7 +851,7 @@ export function HealthReportForm({
             onClick={handleNextStep}
             className="gap-1.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[40px] rounded-xl cursor-pointer shadow-sm"
           >
-            <span>Next step</span>
+            <span>{t("nextStepBtn")}</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         ) : (
@@ -862,12 +865,12 @@ export function HealthReportForm({
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Submitting report...</span>
+                <span>{t("submittingReport")}</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Submit report</span>
+                <span>{t("submitReportBtn")}</span>
               </>
             )}
           </Button>

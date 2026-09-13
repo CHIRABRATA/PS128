@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { History, AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { IoTReadingData } from "./IoTSensorDashboard";
 
 export interface IoTReadingsHistoryTableProps {
@@ -12,6 +13,7 @@ export interface IoTReadingsHistoryTableProps {
 }
 
 export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTableProps) {
+  const t = useTranslations("iot");
   return (
     <Card className="border-[#E5E0D8] bg-white rounded-3xl shadow-xs overflow-hidden">
       <CardHeader className="p-5 border-b border-[#F0EBE1] pb-3">
@@ -22,7 +24,7 @@ export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTablePro
             </div>
             <div>
               <CardTitle className="text-sm font-bold text-[#191F1C]">
-                Telemetry Transmission Ledger
+                {t("readingsHistory")}
               </CardTitle>
               <CardDescription className="text-xs text-stone-500">
                 Authoritative chronological record of physical & simulated readings
@@ -42,7 +44,7 @@ export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTablePro
             className="p-8 text-center flex flex-col items-center justify-center space-y-1 bg-[#FAF8F3]/40"
           >
             <History className="h-6 w-6 text-stone-300 mb-1" />
-            <p className="text-xs font-semibold text-stone-600">No IoT data recorded yet</p>
+            <p className="text-xs font-semibold text-stone-600">{t("noData")}</p>
             <p className="text-[11px] text-stone-400">
               Historical readings will appear here once ingested from physical or virtual ESP32.
             </p>
@@ -52,11 +54,11 @@ export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTablePro
             <table className="w-full text-left text-xs border-collapse" data-testid="iot-history-table">
               <thead className="bg-[#FAF8F3] border-b border-[#E5E0D8] text-stone-600 sticky top-0 z-10">
                 <tr>
-                  <th className="py-2.5 px-4 font-semibold">Recorded Time</th>
-                  <th className="py-2.5 px-4 font-semibold">Temperature</th>
-                  <th className="py-2.5 px-4 font-semibold">Activity Index</th>
-                  <th className="py-2.5 px-4 font-semibold">Source</th>
-                  <th className="py-2.5 px-4 font-semibold">Observation Status</th>
+                  <th className="py-2.5 px-4 font-semibold">{t("recordedTime")}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t("temperature")}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t("activity")}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t("source")}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t("observationStatus")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0EBE1]">
@@ -94,14 +96,14 @@ export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTablePro
                             data-testid="reading-source-simulated"
                             className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] px-2 py-0.5 tracking-wider uppercase"
                           >
-                            SIMULATED ESP32
+                            {t("simulatedEsp32")}
                           </Badge>
                         ) : (
                           <Badge
                             data-testid="reading-source-real"
                             className="bg-blue-100 text-blue-900 border border-blue-300 font-mono text-[10px] px-2 py-0.5 tracking-wider uppercase"
                           >
-                            REAL ESP32
+                            {t("realEsp32")}
                           </Badge>
                         )}
                       </td>
@@ -130,7 +132,7 @@ export function IoTReadingsHistoryTable({ readings }: IoTReadingsHistoryTablePro
                         ) : (
                           <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px] py-0.5 px-1.5 gap-1">
                             <CheckCircle2 className="h-2.5 w-2.5 text-emerald-700" />
-                            <span>Normal Baseline</span>
+                            <span>{t("normalBaseline")}</span>
                           </Badge>
                         )}
                       </td>

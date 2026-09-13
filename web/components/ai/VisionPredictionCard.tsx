@@ -5,6 +5,7 @@ import { runCasePhotoVisionAction } from "@/lib/actions/analysis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, RefreshCw, AlertTriangle, Eye, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface VisionPredictionCardProps {
   caseId: string;
@@ -17,6 +18,7 @@ export function VisionPredictionCard({
   visionResult: initialVision,
   onVisionUpdated,
 }: VisionPredictionCardProps) {
+  const t = useTranslations("ai");
   const [vision, setVision] = useState<Record<string, unknown> | null>(initialVision || null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
@@ -83,14 +85,14 @@ export function VisionPredictionCard({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Computer Vision Lesion Scan
+                {t("visionScanTitle")}
               </span>
               <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px] font-mono">
-                YOLO Neural Model
+                {t("yoloModel")}
               </Badge>
             </div>
             <p className="text-[11px] text-stone-500">
-              Automated visual inspection of lesions, skin nodules, ocular, or oral symptoms.
+              {t("visionScanDesc")}
             </p>
           </div>
         </div>
@@ -104,7 +106,7 @@ export function VisionPredictionCard({
           className="h-8 text-xs border-[#D9D3C7] bg-[#FAF8F3] text-stone-800 hover:bg-white min-h-[32px] cursor-pointer self-end sm:self-auto rounded-xl font-semibold gap-1.5"
         >
           <RefreshCw className={`h-3.5 w-3.5 text-blue-700 ${running ? "animate-spin" : ""}`} />
-          <span>{effectiveVision ? "Rescan Image" : "Scan Image"}</span>
+          <span>{effectiveVision ? t("rescanImage") : t("scanImage")}</span>
         </Button>
       </div>
 
@@ -118,15 +120,15 @@ export function VisionPredictionCard({
       {!effectiveVision && !running && (
         <div className="text-center py-6 text-xs text-stone-500 space-y-2 bg-[#FAF8F3] rounded-2xl border border-[#E5E0D8]">
           <Eye className="h-7 w-7 text-stone-400 mx-auto" />
-          <p className="font-semibold text-stone-700">Photo attached and ready for neural inspection</p>
-          <p className="text-[11px] text-stone-400">Click &quot;Scan Image&quot; to execute YOLO lesion detection model.</p>
+          <p className="font-semibold text-stone-700">{t("photoReady")}</p>
+          <p className="text-[11px] text-stone-400">{t("clickScanDesc")}</p>
         </div>
       )}
 
       {running && (
         <div className="flex items-center justify-center gap-2.5 py-6 text-xs text-blue-900 font-semibold bg-blue-50/50 rounded-2xl border border-blue-200 animate-pulse">
           <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-          <span>Analyzing skin lesions and symptoms with computer vision model...</span>
+          <span>{t("analyzingLesions")}</span>
         </div>
       )}
 
@@ -134,17 +136,17 @@ export function VisionPredictionCard({
         <div className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#FAF8F3] p-3 rounded-2xl border border-[#E5E0D8] text-center">
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
-              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">Lesion Severity</span>
+              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">{t("lesionSeverity")}</span>
               <span className="font-bold text-amber-900 font-mono text-sm">{lesionSeverity}</span>
             </div>
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
-              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">Confidence Score</span>
+              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">{t("confidenceScore")}</span>
               <span className="font-bold text-emerald-700 font-mono text-sm">
                 {Math.round(confidenceScore)}%
               </span>
             </div>
             <div className="p-2 rounded-xl bg-white border border-[#E5E0D8]/80 shadow-2xs">
-              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">Diagnostic Confidence</span>
+              <span className="text-[10px] font-bold text-stone-500 uppercase block tracking-wider">{t("diagnosticConfidence")}</span>
               <span className="font-bold text-slate-900 font-mono text-sm">{diagnosticConfidence}</span>
             </div>
           </div>
@@ -153,10 +155,10 @@ export function VisionPredictionCard({
             <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-emerald-600" />
-                <span className="font-bold text-emerald-950">Primary Finding: {String(primaryPrediction)}</span>
+                <span className="font-bold text-emerald-950">{t("primaryFinding", { finding: String(primaryPrediction) })}</span>
               </div>
               <Badge className="bg-emerald-600 text-white font-mono text-xs">
-                Verified Signatures
+                {t("verifiedSignatures")}
               </Badge>
             </div>
           )}
@@ -164,7 +166,7 @@ export function VisionPredictionCard({
           {detectedDiseases.length > 0 && (
             <div className="space-y-2">
               <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
-                Detected Visual Signatures & Patterns:
+                {t("detectedSignatures")}
               </span>
               <div className="space-y-2">
                 {detectedDiseases.map((d, i) => (
@@ -181,7 +183,7 @@ export function VisionPredictionCard({
                       )}
                     </div>
                     <Badge variant="outline" className="text-[10px] font-mono border-blue-200 text-blue-900 bg-blue-50 font-bold">
-                      {Math.round(d.confidence > 1 ? d.confidence : d.confidence * 100)}% Match
+                      {t("match", { percent: Math.round(d.confidence > 1 ? d.confidence : d.confidence * 100) })}
                     </Badge>
                   </div>
                 ))}

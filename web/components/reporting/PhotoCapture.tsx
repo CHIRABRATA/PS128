@@ -8,6 +8,7 @@ import type { YoloVisionAnalysis } from "@/lib/types/livestock";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { getReportCopy } from "@/lib/i18n/report";
+import { useTranslations } from "next-intl";
 
 export type PhotoUploadStatus = "idle" | "uploading" | "uploaded" | "failed";
 
@@ -32,6 +33,7 @@ export function PhotoCapture({
 }: PhotoCaptureProps) {
   const { locale } = useLocale();
   const copy = getReportCopy(locale);
+  const t = useTranslations("reporting");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
@@ -187,9 +189,9 @@ export function PhotoCapture({
       <div className="flex justify-between items-center">
         <label className="text-xs font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
           <Camera className="h-4 w-4 text-emerald-700" />
-          <span>Lesion Inspection Photo</span>
+          <span>{t("lesionInspectionPhoto")}</span>
         </label>
-        <span className="text-[11px] text-stone-500 font-medium">Optional</span>
+        <span className="text-[11px] text-stone-500 font-medium">{t("photoOptional")}</span>
       </div>
 
       <input
@@ -264,7 +266,7 @@ export function PhotoCapture({
             <div className="absolute bottom-3 left-3">
               <Badge className="bg-blue-600/90 text-white border-blue-400 backdrop-blur-sm gap-1.5 px-2.5 py-1 shadow-lg animate-pulse">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                <span className="text-[10px] font-bold tracking-wide">AI Analyzing...</span>
+                <span className="text-[10px] font-bold tracking-wide">{t("aiAnalyzing")}</span>
               </Badge>
             </div>
           )}
@@ -277,7 +279,7 @@ export function PhotoCapture({
               onClick={handleRemovePhoto}
               disabled={uploadStatus === "uploading"}
               className="h-8 w-8 p-0 rounded-full bg-red-700 hover:bg-red-800 text-white shadow-md cursor-pointer"
-              title="Remove photo"
+              title={t("removePhotoTitle")}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -299,19 +301,19 @@ export function PhotoCapture({
             <ImageIcon className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-stone-900">Take a photo or drag and drop a file here</p>
+            <p className="text-xs font-bold text-stone-900">{t("takePhotoOrDrag")}</p>
             <p className="text-[11px] text-stone-500 max-w-xs mt-0.5">
-              Clear photos of skin lesions, saliva, eyes, or hooves help the veterinary team review the report.
+              {t("clearPhotosHelp")}
             </p>
           </div>
           <div className="flex items-center gap-2 pt-1">
             <Button type="button" size="sm" variant="outline" className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 min-h-[36px] rounded-xl shadow-2xs hover-lift-sm">
               <Camera className="h-3.5 w-3.5 text-emerald-700" />
-              <span>Camera</span>
+              <span>{t("cameraBtn")}</span>
             </Button>
             <Button type="button" size="sm" variant="outline" className="text-xs gap-1.5 border-[#D9D3C7] bg-white text-stone-800 min-h-[36px] rounded-xl shadow-2xs hover-lift-sm">
               <Upload className="h-3.5 w-3.5" />
-              <span>Gallery</span>
+              <span>{t("galleryBtn")}</span>
             </Button>
           </div>
         </div>
